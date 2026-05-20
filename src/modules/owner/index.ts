@@ -1,0 +1,5 @@
+export { OwnerDashboard } from './pages/OwnerDashboard'
+export { OwnerProperties } from './pages/OwnerProperties'
+export { OwnerTenants } from './pages/OwnerTenants'
+export { OwnerAnalytics } from './pages/OwnerAnalytics'
+export { ownerRoutes } from './routes'

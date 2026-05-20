@@ -1,0 +1,5 @@
+export { TenantDashboard } from './pages/TenantDashboard'
+export { TenantProperties } from './pages/TenantProperties'
+export { TenantPayments } from './pages/TenantPayments'
+export { TenantMaintenance } from './pages/TenantMaintenance'
+export { tenantRoutes } from './routes'
