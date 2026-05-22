@@ -12,6 +12,10 @@ export const ROUTES = {
   TENANT: {
     ROOT: '/tenant',
     DASHBOARD: '/tenant/dashboard',
+    LISTINGS: '/tenant/listings',
+    PROPERTY: (id: string) => `/tenant/properties/${id}`,
+    SAVED: '/tenant/saved',
+    PROFILE: '/tenant/profile',
     PROPERTIES: '/tenant/properties',
     PAYMENTS: '/tenant/payments',
     MAINTENANCE: '/tenant/maintenance',

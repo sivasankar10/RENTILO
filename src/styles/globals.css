@@ -2,25 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── RENTILO Design System Base Styles ── */
+/* ── RENTILO centralized theme (see src/styles/theme/rentilo-tokens.ts) ── */
 
 @layer base {
   html {
-    font-family: 'Manrope', sans-serif;
+    font-family: Manrope, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-canvas text-text-primary;
+    @apply bg-canvas text-text-primary font-manrope;
     margin: 0;
     padding: 0;
     min-height: 100vh;
-  }
-
-  /* Strict rule: No pure black anywhere */
-  * {
-    color: inherit;
   }
 
   h1 {
@@ -35,7 +30,6 @@
     @apply text-heading-3 font-manrope;
   }
 
-  /* Scrollbar styling */
   ::-webkit-scrollbar {
     width: 6px;
   }
@@ -54,14 +48,21 @@
 }
 
 @layer components {
-  /* Utility class for the strict 280px sidebar */
   .sidebar-width {
-    width: 280px;
-    min-width: 280px;
+    @apply w-70 min-w-70;
   }
 
-  /* Container utility */
   .page-container {
     @apply max-w-container mx-auto px-6;
+  }
+
+  .tenant-page-container {
+    @apply max-w-tenant mx-auto;
+  }
+
+  /* Material Symbols — tenant browse */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
   }
 }

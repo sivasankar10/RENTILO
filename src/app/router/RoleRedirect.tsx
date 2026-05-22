@@ -16,7 +16,7 @@ export function RoleRedirect() {
 
   switch (role) {
     case 'tenant':
-      return <Navigate to={ROUTES.TENANT.DASHBOARD} replace />
+      return <Navigate to={ROUTES.TENANT.LISTINGS} replace />
     case 'owner':
       return <Navigate to={ROUTES.OWNER.DASHBOARD} replace />
     case 'broker':

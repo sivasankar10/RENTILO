@@ -60,10 +60,14 @@
 *   **Badges:** Small font (10px-11px), uppercase/bold, high-contrast text on light background (e.g., Green text on light green background).
 *   **Sidebars (Web):** Fixed 280px width. Active links use a left-border or background-fill indicator.
 
-## 8. TAILWIND DESIGN TOKENS
-*   **Colors:** `bg-surface`, `text-primary`, `border-outline-variant`.
-*   **Typography:** `font-manrope`, `tracking-tight` for headings.
-*   **Layout:** `max-w-7xl`, `mx-auto`, `px-6`.
+## 8. TAILWIND DESIGN TOKENS (centralized)
+
+Source of truth: `src/styles/theme/rentilo-tokens.ts` → `tailwind.config.ts` + `globals.css` `:root`.
+
+*   **Marketplace (dashboards/auth):** `bg-primary`, `bg-canvas`, `text-text-primary`, `border-outline`.
+*   **Tenant brand (fe1):** `bg-brand`, `text-brand`, `bg-brand-background`, or CSS vars `var(--primary)`.
+*   **Typography:** `font-manrope`, `font-inter`, `font-display`, `tracking-tight` for headings.
+*   **Layout:** `max-w-container`, `max-w-tenant`, `mx-auto`, `px-6`.
 *   **Transitions:** `transition-all duration-200 ease-in-out`.
 
 ## 9. RULES ANOTHER AI AGENT MUST FOLLOW

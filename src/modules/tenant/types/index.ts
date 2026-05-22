@@ -1,3 +1,14 @@
+export type {
+  Property,
+  PropertyHighlight,
+  OverviewSpec,
+  PropertyRule,
+  NearbyPlace,
+  PropertyNearby,
+  PropertyTransit,
+  PropertyAmenity,
+} from './property'
+
 export interface TenantDashboardData {
   totalProperties: number
   activeLeases: number
