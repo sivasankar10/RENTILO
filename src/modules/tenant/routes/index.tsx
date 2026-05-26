@@ -1,13 +1,60 @@
+import type { ReactNode } from 'react'
+import { Navigate } from 'react-router-dom'
 import type { RouteObject } from 'react-router-dom'
+import { ROUTES } from '@shared/constants/routes'
+import { ListingsPage } from '../pages/ListingsPage'
+import { PropertyDetailsPage } from '../pages/PropertyDetailsPage'
+import { SavedPropertiesPage } from '../pages/SavedPropertiesPage'
+import { EditProfilePage } from '../pages/EditProfilePage'
 import { TenantDashboard } from '../pages/TenantDashboard'
 import { TenantProperties } from '../pages/TenantProperties'
 import { TenantPayments } from '../pages/TenantPayments'
 import { TenantMaintenance } from '../pages/TenantMaintenance'
 
+function TenantPageShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex-1 w-full max-w-[1200px] mx-auto px-8 py-8 font-body">
+      {children}
+    </div>
+  )
+}
+
 export const tenantRoutes: RouteObject[] = [
-  { index: true, element: <TenantDashboard /> },
-  { path: 'dashboard', element: <TenantDashboard /> },
-  { path: 'properties', element: <TenantProperties /> },
-  { path: 'payments', element: <TenantPayments /> },
-  { path: 'maintenance', element: <TenantMaintenance /> },
+  { index: true, element: <Navigate to={ROUTES.TENANT.LISTINGS} replace /> },
+  { path: 'listings', element: <ListingsPage /> },
+  { path: 'properties/:id', element: <PropertyDetailsPage /> },
+  { path: 'saved', element: <SavedPropertiesPage /> },
+  { path: 'profile', element: <EditProfilePage /> },
+  {
+    path: 'dashboard',
+    element: (
+      <TenantPageShell>
+        <TenantDashboard />
+      </TenantPageShell>
+    ),
+  },
+  {
+    path: 'properties',
+    element: (
+      <TenantPageShell>
+        <TenantProperties />
+      </TenantPageShell>
+    ),
+  },
+  {
+    path: 'payments',
+    element: (
+      <TenantPageShell>
+        <TenantPayments />
+      </TenantPageShell>
+    ),
+  },
+  {
+    path: 'maintenance',
+    element: (
+      <TenantPageShell>
+        <TenantMaintenance />
+      </TenantPageShell>
+    ),
+  },
 ]

@@ -11,7 +11,7 @@ export function TenantDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-text-primary">
       <div>
         <h1 className="text-heading-1 text-text-primary">Dashboard</h1>
         <p className="text-body text-text-muted mt-1">

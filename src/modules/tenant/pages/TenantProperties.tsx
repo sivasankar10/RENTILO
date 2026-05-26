@@ -1,7 +1,10 @@
+import { useNavigate } from 'react-router-dom'
 import { EmptyState } from '@shared/components'
+import { ROUTES } from '@shared/constants/routes'
 import { Building2 } from 'lucide-react'
 
 export function TenantProperties() {
+  const navigate = useNavigate()
   return (
     <div className="space-y-8">
       <div>
@@ -16,7 +19,7 @@ export function TenantProperties() {
         title="No Properties Found"
         description="You haven't rented any properties yet. Start exploring available listings."
         actionLabel="Browse Properties"
-        onAction={() => {}}
+        onAction={() => navigate(ROUTES.TENANT.LISTINGS)}
       />
     </div>
   )

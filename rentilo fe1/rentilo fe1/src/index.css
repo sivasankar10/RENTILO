@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+:root {
+  /* Colors - The Tonal Landscape */
+  --primary: #002542;
+  --primary-container: #1b3b5a;
+  --secondary: #46617b;
+  --background: #f6fafe;
+  --surface: #f6fafe;
+  --surface-container-low: #f0f4f8;
+  --surface-container-lowest: #ffffff;
+  --surface-container-high: #e4e9ed;
+  --on-surface: #171c1f;
+  --on-surface-variant: #43474d;
+  --outline: #73777e;
+  --outline-variant: rgba(115, 119, 126, 0.15);
+  
+  /* Feature Colors */
+  --verified-bg: #d1e4ff;
+  --search-bg: #cee5ff;
+  --trusted-bg: #ffddb3;
+  --trusted-icon: #5f4110;
+
+  /* Typography */
+  --font-display: 'Manrope', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Elevation */
+  --shadow-ambient: 0px 12px 32px rgba(23, 28, 31, 0.06);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--background);
+  color: var(--on-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, .brand-font {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
