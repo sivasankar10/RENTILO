@@ -38,7 +38,7 @@ const mainNavItems: BrokerNavItem[] = [
   },
   { label: 'Portfolio', href: ROUTES.BROKER.PORTFOLIO, icon: Briefcase },
   { label: 'Tenant leads', href: ROUTES.BROKER.CLIENTS, icon: Users },
-  { label: 'Leads', href: ROUTES.BROKER.LISTINGS, icon: FileText },
+  { label: 'Listings', href: ROUTES.BROKER.LISTINGS, icon: FileText },
   { label: 'Analytics', href: ROUTES.BROKER.ANALYTICS, icon: BarChart3 },
 ]
 
@@ -193,8 +193,9 @@ export function BrokerDashboardLayout() {
             </button>
             <button
               type="button"
+              onClick={() => navigate(ROUTES.BROKER.PROFILE)}
               className="ml-1 p-0.5 rounded-full ring-2 ring-white/20 hover:ring-white/40 transition-all"
-              aria-label="Account"
+              aria-label="My profile"
             >
               <img
                 src={brokerProfileImg}

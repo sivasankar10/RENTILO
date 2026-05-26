@@ -48,6 +48,8 @@ export const ROUTES = {
     COMMISSION: '/broker/commission',
     ANALYTICS: '/broker/analytics',
     MESSAGES: '/broker/messages',
+    PROFILE: '/broker/profile',
+    EDIT_PROFILE: '/broker/profile/edit',
   },
 
   // Enterprise

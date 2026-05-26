@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Building2,
   Users,
@@ -13,6 +14,7 @@ import {
   Download,
   ChevronRight,
   FileText,
+  X,
 } from 'lucide-react'
 import skylineImg from '@/assets/images/skyline_heights.png'
 import marketImg from '@/assets/images/market_insights.png'
@@ -172,34 +174,201 @@ function ActivityItem({ title, time, description, attachment, dotActive }: Activ
   )
 }
 
+type Visit = {
+  id: number
+  month: string
+  day: string
+  title: string
+  client: string
+  time: string
+  property: string
+}
+
+const initialVisits: Visit[] = [
+  {
+    id: 1,
+    month: 'OCT',
+    day: '15',
+    title: 'Penthouse Tour',
+    client: 'Julianna Smith',
+    time: '2:00 PM',
+    property: 'Skyline Heights 14B',
+  },
+]
+
+const visitProperties = ['Skyline Heights 14B', 'Harbor Residences 8C', 'Garden Lofts Apt 12']
+const visitClients = ['Julianna Smith', 'Robert King', 'Meera Iyer', 'Arjun Patel']
+
 /* ─────────────────────────────────────────────
    Upcoming Visit Card
 ───────────────────────────────────────────── */
-function UpcomingVisitCard() {
+function UpcomingVisitCard({ visit }: { visit: Visit }) {
   return (
     <div className="border-l-4 border-primary rounded-r-xl bg-white shadow-ambient p-4 flex items-start gap-4">
       <div className="text-center min-w-[48px]">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">OCT</p>
-        <p className="text-[2rem] font-bold leading-none text-[#0f172a]">15</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{visit.month}</p>
+        <p className="text-[2rem] font-bold leading-none text-[#0f172a]">{visit.day}</p>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-bold text-[#0f172a]">Penthouse Tour</p>
-        <p className="text-label text-text-muted">Julianna Smith · 2:00 PM</p>
+        <p className="text-[13px] font-bold text-[#0f172a]">{visit.title}</p>
+        <p className="text-label text-text-muted">{visit.client} · {visit.time}</p>
         <button className="mt-2 inline-flex items-center gap-1 text-label font-semibold text-primary hover:underline">
           <MapPin size={11} />
-          Get Directions
+          {visit.property}
         </button>
       </div>
     </div>
   )
 }
 
+function ScheduleVisitModal({
+  onClose,
+  onSchedule,
+}: {
+  onClose: () => void
+  onSchedule: (visit: Visit) => void
+}) {
+  const [client, setClient] = useState(visitClients[0])
+  const [property, setProperty] = useState(visitProperties[0])
+  const [date, setDate] = useState('2024-10-16')
+  const [time, setTime] = useState('11:30 AM')
+  const [visitType, setVisitType] = useState('Guided property tour')
 
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const visitDate = new Date(`${date}T00:00:00`)
+    onSchedule({
+      id: Date.now(),
+      month: visitDate.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+      day: String(visitDate.getDate()).padStart(2, '0'),
+      title: visitType,
+      client,
+      time,
+      property,
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0f172a]/60 px-4 py-6 backdrop-blur-sm">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-lg rounded-2xl bg-white shadow-card"
+      >
+        <div className="flex items-center justify-between border-b border-outline px-5 py-4">
+          <div>
+            <h2 className="text-[18px] font-bold text-[#0f172a]">Schedule Visit</h2>
+            <p className="mt-0.5 text-[12px] text-text-muted">
+              Mock appointment data for the broker dashboard.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-text-muted hover:bg-hover-light hover:text-[#0f172a]"
+            aria-label="Close schedule visit"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="grid gap-4 p-5 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Client
+            </span>
+            <select
+              value={client}
+              onChange={(event) => setClient(event.target.value)}
+              className="h-11 w-full rounded-lg border border-outline bg-white px-3 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+              {visitClients.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Property
+            </span>
+            <select
+              value={property}
+              onChange={(event) => setProperty(event.target.value)}
+              className="h-11 w-full rounded-lg border border-outline bg-white px-3 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+              {visitProperties.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Date
+            </span>
+            <input
+              type="date"
+              value={date}
+              onChange={(event) => setDate(event.target.value)}
+              className="h-11 w-full rounded-lg border border-outline bg-white px-3 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Time
+            </span>
+            <select
+              value={time}
+              onChange={(event) => setTime(event.target.value)}
+              className="h-11 w-full rounded-lg border border-outline bg-white px-3 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+              {['10:00 AM', '11:30 AM', '2:00 PM', '4:30 PM'].map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Visit Type
+            </span>
+            <input
+              value={visitType}
+              onChange={(event) => setVisitType(event.target.value)}
+              className="h-11 w-full rounded-lg border border-outline bg-white px-3.5 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-outline px-5 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-10 rounded-lg border border-outline bg-white px-4 text-[13px] font-bold text-text-muted hover:bg-hover-light hover:text-[#0f172a]"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="h-10 rounded-lg bg-[#0f172a] px-4 text-[13px] font-bold text-white hover:bg-navy/90"
+          >
+            Add Visit
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
 
 /* ─────────────────────────────────────────────
    Main Dashboard
 ───────────────────────────────────────────── */
 export function BrokerDashboard() {
+  const [visits, setVisits] = useState(initialVisits)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
+
+  const handleScheduleVisit = (visit: Visit) => {
+    setVisits((currentVisits) => [visit, ...currentVisits])
+    setScheduleOpen(false)
+  }
+
   return (
     <div className="space-y-6 pb-10">
 
@@ -336,13 +505,23 @@ export function BrokerDashboard() {
             <h2 className="text-[14px] font-bold text-[#0f172a]">Upcoming Visits</h2>
           </div>
 
-          <UpcomingVisitCard />
+          <div className="space-y-3">
+            {visits.map((visit) => (
+              <UpcomingVisitCard key={visit.id} visit={visit} />
+            ))}
+          </div>
 
           {/* No other visits today */}
           <div className="flex-1 border-2 border-dashed border-outline rounded-xl flex flex-col items-center justify-center gap-2 py-5">
             <CalendarDays size={28} className="text-text-muted opacity-50" />
-            <p className="text-label text-text-muted font-medium">No other visits today</p>
-            <button className="mt-1 px-4 py-1.5 rounded-lg bg-[#0f172a] text-white text-label font-bold hover:bg-navy/80 transition-colors">
+            <p className="text-label text-text-muted font-medium">
+              {visits.length > 1 ? `${visits.length - 1} mock visit added` : 'No other visits today'}
+            </p>
+            <button
+              type="button"
+              onClick={() => setScheduleOpen(true)}
+              className="mt-1 px-4 py-1.5 rounded-lg bg-[#0f172a] text-white text-label font-bold hover:bg-navy/80 transition-colors"
+            >
               Schedule Visit
             </button>
           </div>
@@ -401,6 +580,12 @@ export function BrokerDashboard() {
         </div>
       </div>
 
+      {scheduleOpen && (
+        <ScheduleVisitModal
+          onClose={() => setScheduleOpen(false)}
+          onSchedule={handleScheduleVisit}
+        />
+      )}
     </div>
   )
 }

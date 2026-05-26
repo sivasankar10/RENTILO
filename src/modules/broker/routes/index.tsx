@@ -5,8 +5,11 @@ import { BrokerAssignedProperties } from '../pages/BrokerAssignedProperties'
 import { BrokerListings } from '../pages/BrokerListings'
 import { BrokerClients } from '../pages/BrokerClients'
 import { BrokerCommission } from '../pages/BrokerCommission'
+import { BrokerAnalytics } from '../pages/BrokerAnalytics'
 import { BrokerPropertyDetails } from '../pages/BrokerPropertyDetails'
 import { BrokerMessagesPage } from '../pages/BrokerMessagesPage'
+import { BrokerProfile } from '../pages/BrokerProfile'
+import { BrokerEditProfile } from '../pages/BrokerEditProfile'
 
 export const brokerRoutes: RouteObject[] = [
   { index: true, element: <BrokerDashboard /> },
@@ -17,6 +20,8 @@ export const brokerRoutes: RouteObject[] = [
   { path: 'listings', element: <BrokerListings /> },
   { path: 'clients', element: <BrokerClients /> },
   { path: 'commission', element: <BrokerCommission /> },
-  { path: 'analytics', element: <BrokerCommission /> },
+  { path: 'analytics', element: <BrokerAnalytics /> },
   { path: 'messages', element: <BrokerMessagesPage /> },
+  { path: 'profile', element: <BrokerProfile /> },
+  { path: 'profile/edit', element: <BrokerEditProfile /> },
 ]
