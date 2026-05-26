@@ -1,6 +1,6 @@
 export interface ChatMessage {
   id: string
-  sender: 'tenant' | 'owner'
+  sender: 'tenant' | 'owner' | 'broker'
   text: string
   time: string
   read?: boolean
@@ -9,6 +9,8 @@ export interface ChatMessage {
 export interface ChatConversation {
   id: string
   contactName: string
+  /** Shown in broker chat header alongside owner */
+  tenantName?: string
   avatar: string
   lastMessage: string
   timeLabel: string

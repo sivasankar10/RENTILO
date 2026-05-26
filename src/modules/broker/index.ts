@@ -1,4 +1,6 @@
 export { BrokerDashboard } from './pages/BrokerDashboard'
+export { BrokerPortfolio } from './pages/BrokerPortfolio'
+export { BrokerAssignedProperties } from './pages/BrokerAssignedProperties'
 export { BrokerListings } from './pages/BrokerListings'
 export { BrokerClients } from './pages/BrokerClients'
 export { BrokerCommission } from './pages/BrokerCommission'

@@ -40,9 +40,14 @@ export const ROUTES = {
   BROKER: {
     ROOT: '/broker',
     DASHBOARD: '/broker/dashboard',
+    PORTFOLIO: '/broker/portfolio',
+    PROPERTY: (id: string) => `/broker/portfolio/${id}`,
+    ASSIGNED_PROPERTIES: '/broker/assigned-properties',
     LISTINGS: '/broker/listings',
     CLIENTS: '/broker/clients',
     COMMISSION: '/broker/commission',
+    ANALYTICS: '/broker/analytics',
+    MESSAGES: '/broker/messages',
   },
 
   // Enterprise
