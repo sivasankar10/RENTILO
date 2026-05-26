@@ -10,7 +10,7 @@ export function OwnerAnalytics() {
       </div>
       <EmptyState
         icon={<BarChart3 size={48} strokeWidth={1.5} />}
-        title="Analytics Coming Soon"
+        title="Pay to view Analyatics"
         description="Detailed revenue, occupancy, and performance analytics will be available here."
       />
     </div>

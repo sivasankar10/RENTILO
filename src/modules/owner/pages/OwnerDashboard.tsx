@@ -82,7 +82,12 @@ export function OwnerDashboard() {
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
             <div className="space-y-6">
               <article className="overflow-hidden rounded-card border border-outline bg-white shadow-surface">
-                <div className="relative h-64 overflow-hidden bg-slate-100">
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL('opus-tower-14b'))}
+                  className="block w-full text-left"
+                >
+                  <div className="relative h-64 overflow-hidden bg-slate-100">
                   <img
                     src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"
                     alt="Modern rental property with pool and glass facade"
@@ -91,33 +96,38 @@ export function OwnerDashboard() {
                   <span className="absolute left-6 top-6 rounded-pill bg-primary-50 px-2.5 py-1 text-badge uppercase text-primary">
                     Active
                   </span>
-                </div>
-
-                <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <h2 className="text-body-lg font-semibold text-text-primary">
-                      Modern Loft in Downtown
-                    </h2>
-                    <div className="mt-3 flex flex-wrap items-center gap-4 text-label text-text-muted">
-                      <span className="inline-flex items-center gap-1">
-                        <Bed size={14} />
-                        2 Beds
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Bath size={14} />
-                        2 Baths
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Ruler size={14} />
-                        1,200 sqft
-                      </span>
-                    </div>
                   </div>
 
-                  <div className="text-left sm:text-right">
-                    <p className="text-heading-2 font-bold tracking-tight text-primary">
-                      $3,500/mo
-                    </p>
+                  <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <h2 className="text-body-lg font-semibold text-text-primary">
+                        Modern Loft in Downtown
+                      </h2>
+                      <div className="mt-3 flex flex-wrap items-center gap-4 text-label text-text-muted">
+                        <span className="inline-flex items-center gap-1">
+                          <Bed size={14} />
+                          2 Beds
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Bath size={14} />
+                          2 Baths
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Ruler size={14} />
+                          1,200 sqft
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-left sm:text-right">
+                      <p className="text-heading-2 font-bold tracking-tight text-primary">
+                        $3,500/mo
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                <div className="border-t border-outline px-6 pb-6 pt-0 text-left sm:text-right">
                     <button
                       type="button"
                       onClick={() => navigate(ROUTES.OWNER.PROPERTIES)}
@@ -126,7 +136,6 @@ export function OwnerDashboard() {
                       Edit Details
                       <Pencil size={14} />
                     </button>
-                  </div>
                 </div>
               </article>
 

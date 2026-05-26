@@ -2,6 +2,8 @@ import type { RouteObject } from 'react-router-dom'
 import { OwnerDashboard } from '../pages/OwnerDashboard'
 import { OwnerPortfolio } from '../pages/OwnerPortfolio'
 import { OwnerProperties } from '../pages/OwnerProperties'
+import { OwnerPropertyDetail } from '../pages/OwnerPropertyDetail'
+import { OwnerLeases } from '../pages/OwnerLeases'
 import { OwnerTenants } from '../pages/OwnerTenants'
 import { OwnerAnalytics } from '../pages/OwnerAnalytics'
 import { OwnerPlansRules } from '../pages/OwnerPlansRules'
@@ -14,6 +16,8 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'dashboard', element: <OwnerDashboard /> },
   { path: 'portfolio', element: <OwnerPortfolio /> },
   { path: 'properties', element: <OwnerProperties /> },
+  { path: 'properties/:propertyId', element: <OwnerPropertyDetail /> },
+  { path: 'leases', element: <OwnerLeases /> },
   { path: 'tenants', element: <OwnerTenants /> },
   { path: 'analytics', element: <OwnerAnalytics /> },
   { path: 'plans-rules', element: <OwnerPlansRules /> },
