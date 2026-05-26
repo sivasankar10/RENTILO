@@ -7,9 +7,9 @@ interface ChatMessageBubbleProps {
 }
 
 export function ChatMessageBubble({ message, avatar }: ChatMessageBubbleProps) {
-  const isTenant = message.sender === 'tenant'
+  const isOutgoing = message.sender === 'tenant' || message.sender === 'broker'
 
-  if (isTenant) {
+  if (isOutgoing) {
     return (
       <div className="flex flex-col items-end mb-4">
         <div className="max-w-[75%] px-4 py-3 rounded-2xl rounded-br-md bg-brand text-white font-body text-sm leading-relaxed">

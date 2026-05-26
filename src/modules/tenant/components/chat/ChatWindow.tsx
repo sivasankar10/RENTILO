@@ -18,9 +18,23 @@ export function ChatWindow({ conversation }: ChatWindowProps) {
           <h1 className="font-display text-lg font-extrabold text-brand">
             {conversation.propertyTitle}
           </h1>
-          <p className="flex items-center gap-2 font-body text-sm text-brand-on-surface-variant mt-0.5">
-            <span className="font-medium">Owner: {conversation.contactName}</span>
-            {conversation.online && (
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-body text-sm text-brand-on-surface-variant mt-0.5">
+            <span className="inline-flex items-center gap-1.5 font-medium">
+              Owner: {conversation.contactName}
+              <span className="w-2 h-2 rounded-full bg-green-500" aria-hidden />
+            </span>
+            {conversation.tenantName && (
+              <>
+                <span className="text-brand-outline" aria-hidden>
+                  ·
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-medium">
+                  Tenant: {conversation.tenantName}
+                  <span className="w-2 h-2 rounded-full bg-green-500" aria-hidden />
+                </span>
+              </>
+            )}
+            {!conversation.tenantName && conversation.online && (
               <span className="w-2 h-2 rounded-full bg-green-500" aria-label="Online" />
             )}
           </p>
