@@ -80,10 +80,9 @@ export function ListingsPage() {
           <button
             type="button"
             className="flex items-center gap-2 whitespace-nowrap px-6 py-3 rounded-md border-0 text-white font-body text-sm font-medium cursor-pointer bg-gradient-to-r from-brand to-brand-container shadow-sm hover:opacity-90 transition-opacity"
-            onClick={() => navigate(ROUTES.TENANT.PROFILE)}
+            onClick={() => console.log('search')}    
           >
-            <MaterialIcon name="person" className="!text-xl" />
-            My Profile
+              Search
           </button>
         </div>
       </div>

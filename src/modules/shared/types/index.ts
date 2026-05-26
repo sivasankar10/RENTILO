@@ -22,7 +22,10 @@ export interface User {
   email: string
   firstName: string
   lastName: string
-  role: UserRole
+  /** All roles this account may use (RBAC membership) */
+  roles: UserRole[]
+  /** Default role when logging in or when activeRole is unset */
+  primaryRole?: UserRole
   avatar?: string
   phone?: string
   isVerified: boolean

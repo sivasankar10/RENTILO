@@ -77,7 +77,11 @@ export const rentiloTailwindExtend: NonNullable<Config['theme']>['extend'] = {
         border: '#ffd89b',
       },
       membership: '#b8860b',
+      gold: rentiloBrand.badgeGold,
       whatsapp: '#25d366',
+      'search-bg': rentiloBrand.searchBg,
+      'trusted-bg': rentiloBrand.trustedBg,
+      'trusted-icon': rentiloBrand.trustedIcon,
     },
   },
 

@@ -1,29 +1,21 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '@shared/hooks/useAuth'
 import { ROUTES } from '@shared/constants/routes'
+import { getRoleHome } from '@shared/constants/roleHome'
+import { LandingPage } from '@modules/marketing'
 
 /**
  * Root `/` route handler.
- * Redirects authenticated users to their role-specific dashboard.
- * Redirects unauthenticated users to the login page.
+ * Guests see the public landing page; authenticated users go to active role home.
  */
 export function RoleRedirect() {
-  const { isAuthenticated, role } = useAuth()
+  const { isAuthenticated, activeRole, user } = useAuth()
 
   if (!isAuthenticated) {
-    return <Navigate to={ROUTES.AUTH.LOGIN} replace />
+    return <LandingPage />
   }
 
-  switch (role) {
-    case 'tenant':
-      return <Navigate to={ROUTES.TENANT.LISTINGS} replace />
-    case 'owner':
-      return <Navigate to={ROUTES.OWNER.DASHBOARD} replace />
-    case 'broker':
-      return <Navigate to={ROUTES.BROKER.DASHBOARD} replace />
-    case 'enterprise':
-      return <Navigate to={ROUTES.ENTERPRISE.DASHBOARD} replace />
-    default:
-      return <Navigate to={ROUTES.AUTH.LOGIN} replace />
-  }
+  const homeRole = activeRole ?? user?.roles[0]
+  const home = homeRole ? getRoleHome(homeRole) : ROUTES.AUTH.LOGIN
+  return <Navigate to={home} replace />
 }

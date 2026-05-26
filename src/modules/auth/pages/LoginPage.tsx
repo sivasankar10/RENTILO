@@ -1,5 +1,5 @@
-import { LoginForm } from '../components/LoginForm'
+import { OtpLoginForm } from '../components/OtpLoginForm'
 
 export function LoginPage() {
-  return <LoginForm />
+  return <OtpLoginForm />
 }

@@ -1,29 +1,24 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { authApi } from '../services/auth.api'
 import { useAuth } from '@shared/hooks/useAuth'
-import { ROUTES } from '@shared/constants/routes'
+import { getRoleHome } from '@shared/constants/roleHome'
 import type { UserRole } from '@shared/constants/roles'
-import type { LoginPayload } from '../types'
 import type { User } from '@shared/types'
-
-const ROLE_HOME: Record<UserRole, string> = {
-  tenant: ROUTES.TENANT.LISTINGS,
-  owner: ROUTES.OWNER.DASHBOARD,
-  broker: ROUTES.BROKER.DASHBOARD,
-  enterprise: ROUTES.ENTERPRISE.DASHBOARD,
-}
-
+import { normalizeUser } from '@shared/utils/normalizeUser'
+/**
+ * @deprecated Use useVerifyOtp — kept for internal/dev compatibility
+ */
 export function useLogin() {
   const { setAuth } = useAuth()
   const navigate = useNavigate()
 
   return useMutation({
-    mutationFn: async (payload: LoginPayload) => {
-      // Hardcoded bypass for testing all 4 roles
-      const validRoles = ['tenant', 'owner', 'broker', 'enterprise']
-      if (validRoles.includes(payload.email) && payload.password === '123') {
-        const role = payload.email // The username corresponds to the role
+    mutationFn: async (payload: { email: string; password: string }) => {
+      const validRoles: UserRole[] = ['tenant', 'owner', 'broker', 'enterprise']
+      if (validRoles.includes(payload.email as UserRole) && payload.password === '123') {
+        const role = payload.email as UserRole
+        const roles: UserRole[] =
+          role === 'tenant' ? ['tenant', 'owner'] : [role]
         return {
           data: {
             user: {
@@ -31,22 +26,24 @@ export function useLogin() {
               email: `${role}@rentilo.com`,
               firstName: 'Test',
               lastName: role.charAt(0).toUpperCase() + role.slice(1),
-              role: role,
+              roles,
+              primaryRole: role,
               isVerified: true,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             },
             token: `mock-jwt-token-${role}`,
           },
-        } as any
+        }
       }
-      // If it doesn't match the mock, attempt the real API call
-      return authApi.login(payload)
+      throw new Error('Use phone OTP login. Demo phones: 9000000001–9000000005, OTP 123456')
     },
     onSuccess: (response) => {
       const { user, token } = response.data
-      setAuth(user as User, token)
-      navigate(ROLE_HOME[user.role as UserRole] ?? ROUTES.AUTH.LOGIN)
+      const normalized = normalizeUser(user as User)
+      setAuth(normalized, token)
+      const homeRole = normalized.primaryRole ?? normalized.roles[0]
+      navigate(getRoleHome(homeRole as UserRole))
     },
   })
 }

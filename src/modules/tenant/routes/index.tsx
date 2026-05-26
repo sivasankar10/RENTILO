@@ -10,6 +10,10 @@ import { TenantDashboard } from '../pages/TenantDashboard'
 import { TenantProperties } from '../pages/TenantProperties'
 import { TenantPayments } from '../pages/TenantPayments'
 import { TenantMaintenance } from '../pages/TenantMaintenance'
+import { TenantDocuments } from '../pages/TenantDocuments'
+import { NotificationsPage } from '../pages/NotificationsPage'
+import { MessagesPage } from '../pages/MessagesPage'
+import { SeriousBuyerBadgePage } from '../pages/SeriousBuyerBadgePage'
 
 function TenantPageShell({ children }: { children: ReactNode }) {
   return (
@@ -24,6 +28,9 @@ export const tenantRoutes: RouteObject[] = [
   { path: 'listings', element: <ListingsPage /> },
   { path: 'properties/:id', element: <PropertyDetailsPage /> },
   { path: 'saved', element: <SavedPropertiesPage /> },
+  { path: 'notifications', element: <NotificationsPage /> },
+  { path: 'messages', element: <MessagesPage /> },
+  { path: 'serious-buyer-badge', element: <SeriousBuyerBadgePage /> },
   { path: 'profile', element: <EditProfilePage /> },
   {
     path: 'dashboard',
@@ -54,6 +61,14 @@ export const tenantRoutes: RouteObject[] = [
     element: (
       <TenantPageShell>
         <TenantMaintenance />
+      </TenantPageShell>
+    ),
+  },
+  {
+    path: 'documents',
+    element: (
+      <TenantPageShell>
+        <TenantDocuments />
       </TenantPageShell>
     ),
   },
