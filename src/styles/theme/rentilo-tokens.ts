@@ -25,6 +25,7 @@ export const rentiloBrand = {
   trustedIcon: '#5f4110',
   favorite: '#ba1a1a',
   locationAccent: '#fde047',
+  badgeGold: '#c5a059',
 } as const
 
 export const rentiloMarketplace = {

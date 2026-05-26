@@ -6,6 +6,22 @@ import { getPropertyById } from '../constants/properties'
 import type { NearbyPlace } from '../types/property'
 import { MaterialIcon } from '../components/MaterialIcon'
 import { tenantStyles } from '../utils/tenantStyles'
+import { Toast, ToastContainer } from '@shared/ui/Toast'
+import { KycVerificationModal } from '../components/KycVerificationModal'
+import { ScheduleVisitModal } from '../components/ScheduleVisitModal'
+import { ApplicationProgressPanel } from '../components/ApplicationProgressPanel'
+
+// ─── Per-property schedule behaviour ─────────────────────────────────────────
+// prop-1 → KYC gate
+// prop-2 → Calendar / time picker
+// prop-3 → Application progress panel (replaces highlights card)
+type ScheduleMode = 'kyc' | 'calendar' | 'progress'
+
+function getScheduleMode(id: string): ScheduleMode {
+  if (id === 'prop-1') return 'kyc'
+  if (id === 'prop-2') return 'calendar'
+  return 'progress'
+}
 
 function renderPlaceList(places: NearbyPlace[] | undefined, emptyMessage: string) {
   if (!places?.length) {
@@ -36,6 +52,24 @@ export function PropertyDetailsPage() {
   const [activeNearbyTab, setActiveNearbyTab] = useState<'transit' | 'essentials' | 'utility'>(
     'transit'
   )
+  const [showInterestToast, setShowInterestToast] = useState(false)
+  const [showKycModal, setShowKycModal] = useState(false)
+  const [showVisitToast, setShowVisitToast] = useState(false)
+  const [showCalendarModal, setShowCalendarModal] = useState(false)
+  const [visitConfirmedMsg, setVisitConfirmedMsg] = useState('')
+
+  const scheduleMode = getScheduleMode(id ?? '')
+
+  function handleScheduleClick() {
+    if (scheduleMode === 'kyc')      setShowKycModal(true)
+    if (scheduleMode === 'calendar') setShowCalendarModal(true)
+    // 'progress' mode has no modal — the panel is always visible in the aside
+  }
+
+  function handleCalendarConfirmed(date: string, time: string) {
+    setVisitConfirmedMsg(`Visit confirmed for ${date} at ${time}.`)
+    setShowVisitToast(true)
+  }
 
   if (!property) {
     return (
@@ -266,54 +300,65 @@ export function PropertyDetailsPage() {
           </div>
 
           <aside className="sticky top-[100px] max-lg:static max-lg:order-1">
-            <div className="bg-brand-container-lowest rounded-2xl p-7 shadow-card border border-brand-outline-variant">
-              <div className="grid grid-cols-2 gap-5 mb-6">
-                {property.highlights.map((item) => (
-                  <div key={item.label}>
-                    <span className="block text-[11px] font-semibold text-brand-outline mb-1 leading-snug">
-                      {item.label}
+            {scheduleMode === 'progress' ? (
+              /* ── Application Progress Panel (prop-3) ── */
+              <ApplicationProgressPanel />
+            ) : (
+              /* ── Standard highlights card (prop-1, prop-2) ── */
+              <div className="bg-brand-container-lowest rounded-2xl p-7 shadow-card border border-brand-outline-variant">
+                <div className="grid grid-cols-2 gap-5 mb-6">
+                  {property.highlights.map((item) => (
+                    <div key={item.label}>
+                      <span className="block text-[11px] font-semibold text-brand-outline mb-1 leading-snug">
+                        {item.label}
+                      </span>
+                      <span className="text-sm font-semibold text-brand leading-snug">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className={cn(tenantStyles.primaryBtn, 'mb-3')}
+                  onClick={handleScheduleClick}
+                >
+                  {scheduleMode === 'kyc' ? 'Schedule Visit' : 'Schedule Visit'}
+                </button>
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 px-5 mb-6 rounded-[10px] border-0 bg-brand-container-low text-brand font-body text-[15px] font-semibold cursor-pointer hover:bg-brand-container-high transition-colors"
+                  onClick={() => setShowInterestToast(true)}
+                >
+                  <MaterialIcon name="chat" className="!text-xl" />
+                  I&apos;m Interested
+                </button>
+
+                <div className="grid grid-cols-3 gap-2 pt-5 border-t border-brand-outline-variant text-center">
+                  <div>
+                    <span className="block font-display text-[22px] font-extrabold text-brand">
+                      {property.views}
                     </span>
-                    <span className="text-sm font-semibold text-brand leading-snug">{item.value}</span>
+                    <span className="text-[10px] font-bold tracking-wider text-brand-outline">VIEWS</span>
                   </div>
-                ))}
-              </div>
-
-              <button type="button" className={cn(tenantStyles.primaryBtn, 'mb-3')}>
-                Schedule Visit
-              </button>
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-2 py-3.5 px-5 mb-6 rounded-[10px] border-0 bg-brand-container-low text-brand font-body text-[15px] font-semibold cursor-pointer hover:bg-brand-container-high transition-colors"
-              >
-                <MaterialIcon name="chat" className="!text-xl" />
-                I&apos;m Interested
-              </button>
-
-              <div className="grid grid-cols-3 gap-2 pt-5 border-t border-brand-outline-variant text-center">
-                <div>
-                  <span className="block font-display text-[22px] font-extrabold text-brand">
-                    {property.views}
-                  </span>
-                  <span className="text-[10px] font-bold tracking-wider text-brand-outline">VIEWS</span>
-                </div>
-                <div>
-                  <span className="block font-display text-[22px] font-extrabold text-brand">
-                    {property.shortlists}
-                  </span>
-                  <span className="text-[10px] font-bold tracking-wider text-brand-outline">
-                    SHORTLISTS
-                  </span>
-                </div>
-                <div>
-                  <span className="block font-display text-[22px] font-extrabold text-brand">
-                    {property.contacts}
-                  </span>
-                  <span className="text-[10px] font-bold tracking-wider text-brand-outline">
-                    CONTACTS
-                  </span>
+                  <div>
+                    <span className="block font-display text-[22px] font-extrabold text-brand">
+                      {property.shortlists}
+                    </span>
+                    <span className="text-[10px] font-bold tracking-wider text-brand-outline">
+                      SHORTLISTS
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block font-display text-[22px] font-extrabold text-brand">
+                      {property.contacts}
+                    </span>
+                    <span className="text-[10px] font-bold tracking-wider text-brand-outline">
+                      CONTACTS
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </aside>
         </div>
       </main>
@@ -336,6 +381,44 @@ export function PropertyDetailsPage() {
           </nav>
         </div>
       </footer>
+
+      {/* Toasts */}
+      <ToastContainer>
+        {showInterestToast && (
+          <Toast
+            variant="success"
+            message="Interest sent to owner!"
+            description="The owner will reach out to you shortly."
+            onClose={() => setShowInterestToast(false)}
+          />
+        )}
+        {showVisitToast && (
+          <Toast
+            variant="success"
+            message="Visit scheduled successfully!"
+            description={visitConfirmedMsg || "You're verified. The owner will confirm your visit shortly."}
+            onClose={() => setShowVisitToast(false)}
+          />
+        )}
+      </ToastContainer>
+
+      {/* KYC modal — prop-1 */}
+      <KycVerificationModal
+        isOpen={showKycModal}
+        onClose={() => setShowKycModal(false)}
+        onVerified={() => {
+          setVisitConfirmedMsg("You're verified. The owner will confirm your visit shortly.")
+          setShowVisitToast(true)
+        }}
+      />
+
+      {/* Calendar modal — prop-2 */}
+      <ScheduleVisitModal
+        propertyTitle={property.title}
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        onConfirmed={handleCalendarConfirmed}
+      />
     </div>
   )
 }
