@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Bath,
   Bed,
@@ -10,6 +12,7 @@ import {
   Ruler,
   Zap,
 } from 'lucide-react'
+import { ROUTES } from '@shared/constants/routes'
 
 const tenantSignals = [
   {
@@ -26,7 +29,7 @@ const tenantSignals = [
   },
 ]
 
-const activityItems = [
+const initialActivityItems = [
   { label: 'Login / Check-in', complete: true },
   { label: 'Edit Listing', complete: true },
   { label: 'Respond to Requests', complete: false },
@@ -39,6 +42,18 @@ const advantageItems = [
 ]
 
 export function OwnerDashboard() {
+  const navigate = useNavigate()
+  const [activityItems, setActivityItems] = useState(initialActivityItems)
+  const completedCount = activityItems.filter((item) => item.complete).length
+
+  const toggleActivity = (label: string) => {
+    setActivityItems((items) =>
+      items.map((item) =>
+        item.label === label ? { ...item, complete: !item.complete } : item
+      )
+    )
+  }
+
   return (
     <div className="min-h-screen bg-canvas-alt px-6 py-12">
       <div className="mx-auto max-w-7xl">
@@ -105,6 +120,7 @@ export function OwnerDashboard() {
                     </p>
                     <button
                       type="button"
+                      onClick={() => navigate(ROUTES.OWNER.PROPERTIES)}
                       className="mt-2 inline-flex items-center gap-2 text-label font-bold text-primary transition-colors duration-200 hover:text-primary-700"
                     >
                       Edit Details
@@ -150,6 +166,7 @@ export function OwnerDashboard() {
                             </span>
                             <button
                               type="button"
+                              onClick={() => navigate(ROUTES.OWNER.PLANS_RULES)}
                               className="mt-1 text-badge uppercase text-primary"
                             >
                               Upgrade Plan
@@ -174,10 +191,15 @@ export function OwnerDashboard() {
                 <div className="mt-6">
                   <div className="flex items-center justify-between text-label">
                     <span>Visibility Boost</span>
-                    <span>2/3 Completed</span>
+                    <span>
+                      {completedCount}/{activityItems.length} Completed
+                    </span>
                   </div>
                   <div className="mt-3 h-2 rounded-pill bg-slate-800">
-                    <div className="h-full w-2/3 rounded-pill bg-primary" />
+                    <div
+                      className="h-full rounded-pill bg-primary transition-all duration-200"
+                      style={{ width: `${(completedCount / activityItems.length) * 100}%` }}
+                    />
                   </div>
                   <p className="mt-4 text-label leading-5 text-slate-400">
                     Complete these to boost visibility in local searches.
@@ -189,6 +211,7 @@ export function OwnerDashboard() {
                     <button
                       key={item.label}
                       type="button"
+                      onClick={() => toggleActivity(item.label)}
                       className={
                         item.complete
                           ? 'flex w-full items-center gap-3 rounded-button border border-slate-700 bg-white/5 px-4 py-3 text-left text-label font-semibold text-white transition-colors duration-200 hover:bg-white/10'
@@ -225,6 +248,7 @@ export function OwnerDashboard() {
                 </ul>
                 <button
                   type="button"
+                  onClick={() => navigate(ROUTES.OWNER.PLANS_RULES)}
                   className="mt-6 w-full rounded-button bg-primary px-4 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
                 >
                   Start 7-Day Trial

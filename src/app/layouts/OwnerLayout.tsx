@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Settings,
   X,
+  type LucideIcon,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { useAuth } from '@shared/hooks/useAuth'
@@ -26,17 +27,26 @@ const topNavItems = [
   { label: 'Analytics', href: ROUTES.OWNER.ANALYTICS },
 ]
 
-const sidebarItems = [
+interface OwnerSidebarItem {
+  label: string
+  href: string
+  icon: LucideIcon
+  disabled?: boolean
+  actionOnly?: boolean
+}
+
+const sidebarItems: OwnerSidebarItem[] = [
   { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
-  { label: 'Portfolio', href: ROUTES.OWNER.PROPERTIES, icon: Building2 },
+  { label: 'Owner Plans & Rules', href: ROUTES.OWNER.PLANS_RULES, icon: Settings },
+  { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
   { label: 'Leases', href: ROUTES.OWNER.TENANTS, icon: FileText },
   { label: 'Finances', href: ROUTES.OWNER.ANALYTICS, icon: CreditCard, disabled: true },
-  { label: 'Settings', href: ROUTES.OWNER.ROOT, icon: Settings, actionOnly: true },
+  { label: 'Settings', href: ROUTES.OWNER.SETTINGS, icon: Settings },
 ]
 
 const mobileNavItems = [
   { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
-  { label: 'Portfolio', href: ROUTES.OWNER.PROPERTIES, icon: Building2 },
+  { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
   { label: 'Leases', href: ROUTES.OWNER.TENANTS, icon: FileText },
   { label: 'Analytics', href: ROUTES.OWNER.ANALYTICS, icon: BarChart3 },
 ]
@@ -68,7 +78,7 @@ export function OwnerLayout() {
           </button>
 
           <NavLink to={ROUTES.OWNER.DASHBOARD} className="flex items-center gap-2">
-            <span className="text-body-lg font-extrabold tracking-tight">PropManage</span>
+            <span className="text-body-lg font-extrabold tracking-tight">Rentillo</span>
           </NavLink>
 
           <nav className="hidden h-full items-center gap-8 md:flex">
@@ -91,33 +101,33 @@ export function OwnerLayout() {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            <button
-              type="button"
+            <NavLink
+              to={ROUTES.OWNER.PLANS_RULES}
               className="hidden rounded-button bg-primary px-4 py-2 text-label font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md sm:inline-flex"
             >
               Upgrade Plan
-            </button>
-            <button
-              type="button"
+            </NavLink>
+            <NavLink
+              to={ROUTES.OWNER.NOTIFICATIONS}
               className="rounded-button p-2 text-slate-300 transition-colors duration-200 hover:bg-white/10 hover:text-white"
               aria-label="Notifications"
             >
               <Bell size={18} />
-            </button>
-            <button
-              type="button"
+            </NavLink>
+            <NavLink
+              to={ROUTES.OWNER.MESSAGES}
               className="rounded-button p-2 text-slate-300 transition-colors duration-200 hover:bg-white/10 hover:text-white"
               aria-label="Messages"
             >
               <MessageSquare size={18} />
-            </button>
-            <button
-              type="button"
+            </NavLink>
+            <NavLink
+              to={ROUTES.OWNER.SETTINGS}
               className="rounded-button p-2 text-slate-300 transition-colors duration-200 hover:bg-white/10 hover:text-white"
               aria-label="Settings"
             >
               <Settings size={18} />
-            </button>
+            </NavLink>
             <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-primary-100 text-label font-bold text-primary">
               {user?.avatar ? (
                 <img src={user.avatar} alt={displayName} className="h-full w-full object-cover" />
@@ -148,7 +158,7 @@ export function OwnerLayout() {
       >
         <div className="border-b border-outline px-6 py-6">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-button bg-canvas-alt text-navy">
+            <div className="flex h-10 w-10 items-center justify-center rounded-button bg-navy text-white">
               <Home size={18} />
             </div>
             <div className="min-w-0 flex-1">
