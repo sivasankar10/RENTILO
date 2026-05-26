@@ -5,6 +5,7 @@ import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { MaterialIcon } from '../components/MaterialIcon'
 import { tenantStyles } from '../utils/tenantStyles'
+import { EnableOwnerModeCard } from '../components/EnableOwnerModeCard'
 
 const AVATAR_SRC =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBsjFwGI8TSSdoEXUZWAE-nRGmK8p1eH8KgYLjT3Urn8_obEczpwXsONy_TGRwKE0xPxoIiwJBviAzhbr8_8hIDA4l_kLNXdDbBX6-QfmRcjzG89x6vzPJXOX37ffQJu6xx0_zNwcREd9vf8PK0Du-IaTWhO6oVo0nqBbRArkk5eIc0SIYI174D3jXGPi3s-g82-4iFdrt9-Rhjwsej9Y7K0PTNiC4gdcsm5cL4dCFxk6wfXLf_ncUSgwvGRPdp_YbPZzioXRLYcnuV'
@@ -49,6 +50,8 @@ export function EditProfilePage() {
             Edit Your Profile
           </h1>
           <div className="h-px bg-brand-outline-variant mb-7" />
+
+          <EnableOwnerModeCard />
 
           <div className="flex items-center gap-6 mb-8 max-sm:flex-col max-sm:items-start">
             <img

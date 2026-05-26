@@ -1,6 +1,8 @@
 /** Centralized route path constants for all modules */
 
 export const ROUTES = {
+  HOME: '/',
+
   // Auth
   AUTH: {
     LOGIN: '/auth/login',
@@ -19,6 +21,10 @@ export const ROUTES = {
     PROPERTIES: '/tenant/properties',
     PAYMENTS: '/tenant/payments',
     MAINTENANCE: '/tenant/maintenance',
+    DOCUMENTS: '/tenant/documents',
+    NOTIFICATIONS: '/tenant/notifications',
+    MESSAGES: '/tenant/messages',
+    SERIOUS_BUYER_BADGE: '/tenant/serious-buyer-badge',
   },
 
   // Owner

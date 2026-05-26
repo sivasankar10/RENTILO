@@ -1,0 +1,123 @@
+import type { UserRole } from '@shared/constants/roles'
+import type { AuthUserPayload, VerifyOtpResponse } from '../types'
+
+const MOCK_OTP = '123456'
+
+/** Dev mock: phone (digits only) → account definition */
+const MOCK_ACCOUNTS: Record<
+  string,
+  { roles: UserRole[]; firstName: string; lastName: string; email: string }
+> = {
+  '9000000001': { roles: ['tenant'], firstName: 'Test', lastName: 'Tenant', email: 'tenant@rentilo.com' },
+  '9000000002': { roles: ['owner'], firstName: 'Test', lastName: 'Owner', email: 'owner@rentilo.com' },
+  '9000000003': {
+    roles: ['tenant', 'owner'],
+    firstName: 'Test',
+    lastName: 'Dual',
+    email: 'dual@rentilo.com',
+  },
+  '9000000004': { roles: ['broker'], firstName: 'Test', lastName: 'Broker', email: 'broker@rentilo.com' },
+  '9000000005': {
+    roles: ['enterprise'],
+    firstName: 'Test',
+    lastName: 'Enterprise',
+    email: 'enterprise@rentilo.com',
+  },
+}
+
+const otpSessions = new Map<string, { phone: string; createdAt: number }>()
+
+export function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, '').slice(-10)
+}
+
+export function mockSendOtp(phone: string): { otpSessionId: string } {
+  const normalized = normalizePhone(phone)
+  const otpSessionId = `mock-session-${normalized}-${Date.now()}`
+  otpSessions.set(otpSessionId, { phone: normalized, createdAt: Date.now() })
+  return { otpSessionId }
+}
+
+export function mockVerifyOtp(
+  phone: string,
+  otp: string,
+  otpSessionId: string
+): VerifyOtpResponse {
+  const normalized = normalizePhone(phone)
+  const session = otpSessions.get(otpSessionId)
+
+  if (!session || session.phone !== normalized) {
+    throw new Error('Invalid or expired OTP session')
+  }
+
+  if (otp !== MOCK_OTP) {
+    throw new Error('Invalid OTP. Use 123456 for demo.')
+  }
+
+  const account = MOCK_ACCOUNTS[normalized]
+
+  if (!account) {
+    return {
+      user: null,
+      token: `mock-pending-${normalized}`,
+      isNewUser: true,
+    }
+  }
+
+  const user: AuthUserPayload = {
+    id: `mock-${normalized}`,
+    email: account.email,
+    firstName: account.firstName,
+    lastName: account.lastName,
+    roles: account.roles,
+    primaryRole: account.roles[0],
+    phone: normalized,
+    isVerified: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  return {
+    user,
+    token: `mock-jwt-${normalized}`,
+    isNewUser: false,
+  }
+}
+
+export function mockCompleteRegistration(
+  phone: string,
+  role: UserRole,
+  firstName: string,
+  lastName: string,
+  email?: string
+): AuthUserPayload {
+  const normalized = normalizePhone(phone)
+  return {
+    id: `mock-${normalized}`,
+    email: email ?? `${normalized}@rentilo.com`,
+    firstName,
+    lastName,
+    roles: [role],
+    primaryRole: role,
+    phone: normalized,
+    isVerified: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+export function mockEnableRole(
+  user: AuthUserPayload,
+  role: UserRole
+): AuthUserPayload {
+  const roles = user.roles ?? (user.role ? [user.role] : [])
+  if (roles.includes(role)) return { ...user, roles }
+  return {
+    ...user,
+    roles: [...roles, role],
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+export const AUTH_MOCK_HINT =
+  'Demo: OTP is 123456. Phones 9000000001 (tenant), 9000000002 (owner), 9000000003 (tenant+owner).'

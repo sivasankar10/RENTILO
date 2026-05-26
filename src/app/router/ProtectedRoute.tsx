@@ -1,7 +1,8 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@shared/hooks/useAuth'
 import type { UserRole } from '@shared/constants/roles'
 import { ROUTES } from '@shared/constants/routes'
+import { getRoleFromPath, getRoleHome } from '@shared/constants/roleHome'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -9,21 +10,28 @@ interface ProtectedRouteProps {
 }
 
 /**
- * Route guard component.
- * - Checks authentication state
- * - Validates user role against allowed roles
- * - Redirects to /auth/login if unauthorized
+ * Route guard: authentication + membership in roles[] + activeRole matches URL tree.
  */
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, role } = useAuth()
+  const { isAuthenticated, user, activeRole } = useAuth()
+  const { pathname } = useLocation()
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <Navigate to={ROUTES.AUTH.LOGIN} replace />
   }
 
-  if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // Redirect to their own dashboard if role doesn't match
-    return <Navigate to={`/${role}/dashboard`} replace />
+  const routeRole = getRoleFromPath(pathname)
+
+  if (allowedRoles && routeRole && !allowedRoles.includes(routeRole)) {
+    return <Navigate to={getRoleHome(activeRole ?? user.roles[0])} replace />
+  }
+
+  if (routeRole && !user.roles.includes(routeRole)) {
+    return <Navigate to={getRoleHome(activeRole ?? user.roles[0])} replace />
+  }
+
+  if (routeRole && activeRole && routeRole !== activeRole) {
+    return <Navigate to={getRoleHome(activeRole)} replace />
   }
 
   return <>{children}</>

@@ -1,8 +1,0 @@
-{
-  "name": "RENTILO",
-  "description": "A premium real estate rental platform built on trust and transparency.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}

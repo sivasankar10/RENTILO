@@ -1,5 +1,5 @@
-import { RegisterForm } from '../components/RegisterForm'
+import { OtpRegisterForm } from '../components/OtpRegisterForm'
 
 export function RegisterPage() {
-  return <RegisterForm />
+  return <OtpRegisterForm />
 }

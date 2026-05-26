@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { Menu, X, LogOut, Bell, Search } from 'lucide-react'
 import { useAuth } from '@shared/hooks/useAuth'
 import { useMediaQuery } from '@shared/hooks/useMediaQuery'
+import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
 import { cn } from '@shared/utils/cn'
 import type { NavItem } from '@shared/types'
 
@@ -154,7 +155,8 @@ export function DashboardLayout({ navItems, roleLabel }: DashboardLayoutProps) {
           </div>
 
           {/* Navbar Actions */}
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex items-center gap-3 ml-4">
+            <RoleModeSwitcher className="hidden md:inline-flex" />
             <button className="relative p-2 rounded-button text-text-muted hover:bg-hover-light transition-colors">
               <Bell size={20} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-status-error rounded-full" />
