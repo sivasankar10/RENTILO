@@ -31,9 +31,14 @@ export const ROUTES = {
   OWNER: {
     ROOT: '/owner',
     DASHBOARD: '/owner/dashboard',
+    PORTFOLIO: '/owner/portfolio',
     PROPERTIES: '/owner/properties',
     TENANTS: '/owner/tenants',
     ANALYTICS: '/owner/analytics',
+    PLANS_RULES: '/owner/plans-rules',
+    SETTINGS: '/owner/settings',
+    NOTIFICATIONS: '/owner/notifications',
+    MESSAGES: '/owner/messages',
   },
 
   // Broker
