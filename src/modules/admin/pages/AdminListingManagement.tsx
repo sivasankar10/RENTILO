@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Home, MoreVertical, Plus, Search, ShieldAlert, CheckCircle2 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 
@@ -8,6 +9,7 @@ type ListingTab = 'Enterprise' | 'Non-Enterprise'
 interface Listing {
   image: string
   id: string
+  slug: string
   owner: string
   location: string
   rent: string
@@ -16,10 +18,69 @@ interface Listing {
   updated: string
 }
 
-const listings: Listing[] = [
+const enterpriseListings: Listing[] = [
+  {
+    image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=120&q=80',
+    id: '#ENT-55201',
+    slug: 'ent-55201',
+    owner: 'Skyline Corp',
+    location: 'Whitefield, Bangalore',
+    rent: '₹4,50,000',
+    status: 'Active',
+    postedDate: '12 Oct 2023',
+    updated: 'Just now',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=120&q=80',
+    id: '#ENT-55202',
+    slug: 'ent-55202',
+    owner: 'Prestige Group',
+    location: 'Indiranagar, Bangalore',
+    rent: '₹3,20,000',
+    status: 'Active',
+    postedDate: '08 Oct 2023',
+    updated: '1 day ago',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=120&q=80',
+    id: '#ENT-55203',
+    slug: 'ent-55203',
+    owner: 'Brigade Enterprises',
+    location: 'Bandra West, Mumbai',
+    rent: '₹6,80,000',
+    status: 'Paused',
+    postedDate: '01 Oct 2023',
+    updated: '3 days ago',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=120&q=80',
+    id: '#ENT-55204',
+    slug: 'ent-55204',
+    owner: 'DLF Limited',
+    location: 'Cyber City, Gurgaon',
+    rent: '₹8,50,000',
+    status: 'Active',
+    postedDate: '25 Sep 2023',
+    updated: '5 hours ago',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=120&q=80',
+    id: '#ENT-55205',
+    slug: 'ent-55205',
+    owner: 'Godrej Properties',
+    location: 'Worli, Mumbai',
+    rent: '₹5,20,000',
+    status: 'Flagged',
+    postedDate: '18 Sep 2023',
+    updated: '1 week ago',
+  },
+]
+
+const nonEnterpriseListings: Listing[] = [
   {
     image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=120&q=80',
     id: '#LST-88210',
+    slug: 'lst-88210',
     owner: 'Arjun Raghavan',
     location: 'Koramangala 4th B',
     rent: '₹85,000',
@@ -30,6 +91,7 @@ const listings: Listing[] = [
   {
     image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=120&q=80',
     id: '#LST-45902',
+    slug: 'lst-45902',
     owner: 'Priya Sharma',
     location: 'EPIP Zone, Whitefi',
     rent: '₹1,20,000',
@@ -40,6 +102,7 @@ const listings: Listing[] = [
   {
     image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=120&q=80',
     id: '#LST-22314',
+    slug: 'lst-22314',
     owner: 'Vikram Malhotra',
     location: 'Indiranagar, Doubl',
     rent: '₹45,000',
@@ -50,6 +113,7 @@ const listings: Listing[] = [
   {
     image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=120&q=80',
     id: '#LST-11005',
+    slug: 'lst-11005',
     owner: 'Sanya Reddy',
     location: 'Sarjapur Road, Bar',
     rent: '₹32,000',
@@ -60,9 +124,10 @@ const listings: Listing[] = [
   {
     image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=120&q=80',
     id: '#LST-99203',
+    slug: 'lst-99203',
     owner: 'Karan Singh',
     location: 'HSR Layout Sector',
-    rent: '₹a2,500',
+    rent: '₹32,500',
     status: 'Active',
     postedDate: '10 Sep 2023',
     updated: '3 hours ago',
@@ -77,13 +142,16 @@ const statusColors: Record<ListingStatus, string> = {
 }
 
 export function AdminListingManagement() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<ListingTab>('Enterprise')
   const [statusFilter, setStatusFilter] = useState('All Statuses')
   const [sortBy, setSortBy] = useState('Latest Posted')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
-  const filteredListings = listings.filter((listing) => {
+  const sourceListings = activeTab === 'Enterprise' ? enterpriseListings : nonEnterpriseListings
+
+  const filteredListings = sourceListings.filter((listing) => {
     if (statusFilter !== 'All Statuses' && listing.status !== statusFilter) return false
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
@@ -95,6 +163,14 @@ export function AdminListingManagement() {
     }
     return true
   })
+
+  const handleRowClick = (listing: Listing) => {
+    if (activeTab === 'Enterprise') {
+      navigate(`/admin/listing-management/enterprise/${listing.slug}`)
+    } else {
+      navigate(`/admin/listing-management/non-enterprise/${listing.slug}`)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-canvas-alt px-2 py-8 sm:px-6">
@@ -130,7 +206,7 @@ export function AdminListingManagement() {
             <button
               key={tab}
               type="button"
-              onClick={() => setActiveTab(tab)}
+              onClick={() => { setActiveTab(tab); setCurrentPage(1) }}
               className={cn(
                 'flex-1 py-4 text-center text-heading-3 font-bold transition-colors border-b-2',
                 activeTab === tab
@@ -222,7 +298,8 @@ export function AdminListingManagement() {
                 {filteredListings.map((listing) => (
                   <tr
                     key={listing.id}
-                    className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors"
+                    onClick={() => handleRowClick(listing)}
+                    className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors cursor-pointer"
                   >
                     <td className="px-6 py-4">
                       <img
@@ -262,6 +339,7 @@ export function AdminListingManagement() {
                     <td className="px-4 py-4 text-center">
                       <button
                         type="button"
+                        onClick={(e) => e.stopPropagation()}
                         className="p-1.5 rounded-button text-text-muted hover:bg-hover-light hover:text-text-primary transition-colors"
                         aria-label={`Actions for ${listing.id}`}
                       >
@@ -277,7 +355,7 @@ export function AdminListingManagement() {
           {/* Pagination */}
           <div className="flex items-center justify-between border-t border-outline px-6 py-4">
             <p className="text-label text-text-muted">
-              Showing 1-5 of 1,284 listings
+              Showing 1-5 of {activeTab === 'Enterprise' ? '842' : '1,284'} listings
             </p>
             <div className="flex items-center gap-1">
               <button
@@ -307,7 +385,7 @@ export function AdminListingManagement() {
                 type="button"
                 className="h-8 rounded-button border border-outline px-2 text-label font-medium text-text-muted hover:bg-hover-light transition-colors"
               >
-                257
+                {activeTab === 'Enterprise' ? '169' : '257'}
               </button>
               <button
                 type="button"
@@ -327,7 +405,9 @@ export function AdminListingManagement() {
               <Home size={22} className="text-primary" />
             </div>
             <div>
-              <p className="text-heading-2 font-bold text-text-primary">1,284</p>
+              <p className="text-heading-2 font-bold text-text-primary">
+                {activeTab === 'Enterprise' ? '842' : '1,284'}
+              </p>
               <p className="text-label text-text-muted">Total Properties</p>
             </div>
           </div>
@@ -337,7 +417,9 @@ export function AdminListingManagement() {
               <CheckCircle2 size={22} className="text-status-success" />
             </div>
             <div>
-              <p className="text-heading-2 font-bold text-text-primary">942</p>
+              <p className="text-heading-2 font-bold text-text-primary">
+                {activeTab === 'Enterprise' ? '678' : '942'}
+              </p>
               <p className="text-label text-text-muted">Active Listings</p>
             </div>
           </div>
@@ -347,7 +429,9 @@ export function AdminListingManagement() {
               <ShieldAlert size={22} className="text-status-error" />
             </div>
             <div>
-              <p className="text-heading-2 font-bold text-text-primary">12</p>
+              <p className="text-heading-2 font-bold text-text-primary">
+                {activeTab === 'Enterprise' ? '5' : '12'}
+              </p>
               <p className="text-label text-text-muted">Pending Flags</p>
             </div>
           </div>
