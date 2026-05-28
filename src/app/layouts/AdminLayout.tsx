@@ -19,6 +19,8 @@ import { useMediaQuery } from '@shared/hooks/useMediaQuery'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { useAuthStore } from '@app/store/authStore'
+import { ToastContainer } from '@modules/admin/components/Toast'
+import { ConfirmDialog } from '@modules/admin/components/ConfirmDialog'
 
 type AdminNavItem = {
   label: string
@@ -90,6 +92,8 @@ function NavItemLink({
  */
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const isMobile = useMediaQuery('(max-width: 1024px)')
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
@@ -125,21 +129,31 @@ export function AdminLayout() {
           <div className="flex-1" />
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <button
-              type="button"
-              className="relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
-              aria-label="Notifications"
-            >
-              <Bell size={20} strokeWidth={1.75} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
-            </button>
-            <button
-              type="button"
-              className="p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
-              aria-label="Help"
-            >
-              <CircleHelp size={20} strokeWidth={1.75} />
-            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => { setNotifOpen((v) => !v); setHelpOpen(false) }}
+                className="relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell size={20} strokeWidth={1.75} />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
+              </button>
+              {notifOpen && (
+                <NotificationsPopover onClose={() => setNotifOpen(false)} />
+              )}
+            </div>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => { setHelpOpen((v) => !v); setNotifOpen(false) }}
+                className="p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
+                aria-label="Help"
+              >
+                <CircleHelp size={20} strokeWidth={1.75} />
+              </button>
+              {helpOpen && <HelpPopover onClose={() => setHelpOpen(false)} />}
+            </div>
             <button
               type="button"
               className="ml-1 p-0.5 rounded-full ring-2 ring-white/20 hover:ring-white/40 transition-all"
@@ -224,6 +238,91 @@ export function AdminLayout() {
         >
           <Outlet />
         </main>
+      </div>
+
+      <ToastContainer />
+      <ConfirmDialog />
+    </div>
+  )
+}
+
+const mockNotifications = [
+  { title: 'New broker registration', desc: 'Aditi Sharma submitted KYC for review.', time: '2 mins ago', unread: true },
+  { title: '2 listings flagged', desc: 'Automated screening flagged listings for compliance.', time: '12 mins ago', unread: true },
+  { title: 'High volume alert', desc: 'Standard queue exceeds 450 unassigned items.', time: '1 hour ago', unread: false },
+  { title: 'Payment refund processed', desc: 'TRX-82911 refunded successfully.', time: '3 hours ago', unread: false },
+]
+
+function NotificationsPopover({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="absolute right-0 top-full mt-2 w-80 rounded-card border border-outline bg-white shadow-modal overflow-hidden z-50">
+      <div className="flex items-center justify-between border-b border-outline px-4 py-3">
+        <p className="text-body font-bold text-text-primary">Notifications</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-label text-text-muted hover:text-text-primary transition-colors"
+        >
+          Close
+        </button>
+      </div>
+      <div className="max-h-80 overflow-y-auto divide-y divide-outline">
+        {mockNotifications.map((n) => (
+          <div key={n.title} className="px-4 py-3 hover:bg-hover-light transition-colors">
+            <div className="flex items-start gap-2">
+              {n.unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />}
+              <div className="flex-1 min-w-0">
+                <p className="text-body font-semibold text-text-primary">{n.title}</p>
+                <p className="text-label text-text-muted truncate">{n.desc}</p>
+                <p className="mt-1 text-label text-text-muted">{n.time}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-outline px-4 py-2 text-center">
+        <button
+          type="button"
+          className="text-label font-semibold text-primary hover:text-primary-700 transition-colors"
+        >
+          Mark all as read
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function HelpPopover({ onClose }: { onClose: () => void }) {
+  const items = [
+    { title: 'Documentation', desc: 'Read the admin handbook' },
+    { title: 'Contact support', desc: '24/7 enterprise success team' },
+    { title: 'Keyboard shortcuts', desc: 'View all available shortcuts' },
+    { title: "What's new", desc: 'See the latest platform updates' },
+  ]
+  return (
+    <div className="absolute right-0 top-full mt-2 w-72 rounded-card border border-outline bg-white shadow-modal overflow-hidden z-50">
+      <div className="flex items-center justify-between border-b border-outline px-4 py-3">
+        <p className="text-body font-bold text-text-primary">Help & Support</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-label text-text-muted hover:text-text-primary transition-colors"
+        >
+          Close
+        </button>
+      </div>
+      <div className="divide-y divide-outline">
+        {items.map((item) => (
+          <button
+            key={item.title}
+            type="button"
+            onClick={onClose}
+            className="block w-full px-4 py-3 text-left hover:bg-hover-light transition-colors"
+          >
+            <p className="text-body font-semibold text-text-primary">{item.title}</p>
+            <p className="text-label text-text-muted">{item.desc}</p>
+          </button>
+        ))}
       </div>
     </div>
   )
