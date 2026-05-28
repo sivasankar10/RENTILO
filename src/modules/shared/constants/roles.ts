@@ -4,6 +4,7 @@ export const ROLES = {
   OWNER: 'owner',
   BROKER: 'broker',
   ENTERPRISE: 'enterprise',
+  ADMIN: 'admin',
 } as const
 
 export type UserRole = (typeof ROLES)[keyof typeof ROLES]
@@ -14,4 +15,5 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   [ROLES.OWNER]: 'Property Owner',
   [ROLES.BROKER]: 'Broker',
   [ROLES.ENTERPRISE]: 'Enterprise',
+  [ROLES.ADMIN]: 'Admin',
 }

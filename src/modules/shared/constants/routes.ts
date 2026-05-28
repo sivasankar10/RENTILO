@@ -55,6 +55,8 @@ export const ROUTES = {
     COMMISSION: '/broker/commission',
     ANALYTICS: '/broker/analytics',
     MESSAGES: '/broker/messages',
+    NOTIFICATIONS: '/broker/notifications',
+    SETTINGS: '/broker/settings',
     PROFILE: '/broker/profile',
     EDIT_PROFILE: '/broker/profile/edit',
   },
@@ -66,5 +68,17 @@ export const ROUTES = {
     PORTFOLIO: '/enterprise/portfolio',
     TEAMS: '/enterprise/teams',
     REPORTS: '/enterprise/reports',
+  },
+
+  // Admin
+  ADMIN: {
+    ROOT: '/admin',
+    DASHBOARD: '/admin/dashboard',
+    BROKER_MANAGEMENT: '/admin/broker-management',
+    LISTING_MANAGEMENT: '/admin/listing-management',
+    USER_MANAGEMENT: '/admin/user-management',
+    FINANCE_PAYMENTS: '/admin/finance-payments',
+    PLATFORM_CONFIGURATION: '/admin/platform-configuration',
+    ASSIGNMENT_MANAGEMENT: '/admin/assignment-management',
   },
 } as const

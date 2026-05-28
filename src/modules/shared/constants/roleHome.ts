@@ -7,6 +7,7 @@ export const ROLE_HOME: Record<UserRole, string> = {
   owner: ROUTES.OWNER.DASHBOARD,
   broker: ROUTES.BROKER.DASHBOARD,
   enterprise: ROUTES.ENTERPRISE.DASHBOARD,
+  admin: ROUTES.ADMIN.DASHBOARD,
 }
 
 /** Roles supported in the tenant/owner mode switcher (v1) */
@@ -19,8 +20,8 @@ export function getRoleHome(role: UserRole): string {
 /** Derive route tree role from URL pathname */
 export function getRoleFromPath(pathname: string): UserRole | null {
   const segment = pathname.split('/').filter(Boolean)[0]
-  if (segment === 'tenant' || segment === 'owner' || segment === 'broker' || segment === 'enterprise') {
-    return segment
+  if (segment === 'tenant' || segment === 'owner' || segment === 'broker' || segment === 'enterprise' || segment === 'admin') {
+    return segment as UserRole
   }
   return null
 }
