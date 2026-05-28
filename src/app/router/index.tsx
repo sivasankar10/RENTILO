@@ -6,11 +6,13 @@ import { TenantLayout } from '@app/layouts/TenantLayout'
 import { OwnerLayout } from '@app/layouts/OwnerLayout'
 import { BrokerLayout } from '@app/layouts/BrokerLayout'
 import { EnterpriseLayout } from '@app/layouts/EnterpriseLayout'
+import { AdminLayout } from '@app/layouts/AdminLayout'
 import { authRoutes } from '@modules/auth'
 import { tenantRoutes } from '@modules/tenant'
 import { ownerRoutes } from '@modules/owner'
 import { brokerRoutes } from '@modules/broker'
 import { enterpriseRoutes } from '@modules/enterprise'
+import { adminRoutes } from '@modules/admin'
 
 export const router = createBrowserRouter([
   {
@@ -67,6 +69,17 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: enterpriseRoutes,
+  },
+
+  // ── Admin Routes (protected) ──
+  {
+    path: '/admin',
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <AdminLayout />
+      </ProtectedRoute>
+    ),
+    children: adminRoutes,
   },
 
   // ── Catch-all 404 ──
