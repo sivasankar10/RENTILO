@@ -61,7 +61,7 @@ export function OwnerPortfolio() {
               </div>
               <button
                 type="button"
-                onClick={() => navigate(ROUTES.OWNER.PROPERTIES)}
+                onClick={() => navigate(ROUTES.OWNER.REGISTER_PROPERTY)}
                 className="inline-flex items-center justify-center gap-2 rounded-button bg-slate-200 px-4 py-3 text-body font-semibold text-text-primary transition-colors duration-200 hover:bg-outline"
               >
                 <PlusCircle size={16} />

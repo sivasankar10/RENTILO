@@ -34,6 +34,7 @@ export const ROUTES = {
     PORTFOLIO: '/owner/portfolio',
     PROPERTY_DETAIL: (id: string) => `/owner/properties/${id}`,
     PROPERTIES: '/owner/properties',
+    REGISTER_PROPERTY: '/owner/properties/register',
     LEASES: '/owner/leases',
     TENANTS: '/owner/tenants',
     ANALYTICS: '/owner/analytics',
@@ -80,5 +81,6 @@ export const ROUTES = {
     FINANCE_PAYMENTS: '/admin/finance-payments',
     PLATFORM_CONFIGURATION: '/admin/platform-configuration',
     ASSIGNMENT_MANAGEMENT: '/admin/assignment-management',
+    NOTIFICATIONS: '/admin/notifications',
   },
 } as const

@@ -521,44 +521,7 @@ export function BrokerListings() {
         )}
       </section>
 
-      {/* ── Suggested Properties ── */}
-      <section>
-        {/* Section header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-500">
-              <Sparkles size={15} />
-            </div>
-            <div>
-              <h2 className="text-[18px] font-bold text-[#0f172a]">Suggested for You</h2>
-              <p className="text-[12px] text-text-muted">
-                AI-matched properties based on your portfolio and client demand
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="text-[13px] font-semibold text-primary hover:underline flex items-center gap-1"
-          >
-            View all <ChevronRight size={14} />
-          </button>
-        </div>
-
-        {/* Match score legend */}
-        <div className="flex items-center gap-2 mb-4 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
-          <Star size={14} className="text-amber-500" fill="currentColor" />
-          <p className="text-[12px] text-amber-800 font-medium">
-            Match score is calculated based on your current clients' demand, preferred property types, and location history.
-          </p>
-        </div>
-
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {suggestedProperties.map((prop) => (
-            <SuggestedCard key={prop.id} prop={prop} />
-          ))}
-        </div>
-      </section>
+      
     </div>
   )
 }

@@ -97,7 +97,7 @@ const defaultAssignmentRows: AssignmentRow[] = [
 export function AdminAssignmentManagement() {
   const [assignModalOpen, setAssignModalOpen] = useState(false)
   const [standardAssignModalOpen, setStandardAssignModalOpen] = useState(false)
-  const [selectedProperty, setSelectedProperty] = useState<EnterpriseProperty | null>(null)
+  const [, setSelectedProperty] = useState<EnterpriseProperty | null>(null)
   const [selectedStandardProperty, setSelectedStandardProperty] = useState<StandardProperty | null>(null)
 
   const handleAssignClick = (property: EnterpriseProperty) => {

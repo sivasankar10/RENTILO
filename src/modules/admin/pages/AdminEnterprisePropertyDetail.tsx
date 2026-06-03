@@ -54,7 +54,7 @@ const paymentStatusColors: Record<string, string> = {
 
 export function AdminEnterprisePropertyDetail() {
   const navigate = useNavigate()
-  const { propertyId } = useParams()
+  useParams()
 
   return (
     <div className="min-h-screen bg-canvas-alt px-2 py-6 sm:px-6">

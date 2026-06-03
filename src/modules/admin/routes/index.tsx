@@ -8,6 +8,7 @@ import { AdminUserManagement } from '../pages/AdminUserManagement'
 import { AdminFinancePayments } from '../pages/AdminFinancePayments'
 import { AdminPlatformConfiguration } from '../pages/AdminPlatformConfiguration'
 import { AdminAssignmentManagement } from '../pages/AdminAssignmentManagement'
+import { AdminNotifications } from '../pages/AdminNotifications'
 
 export const adminRoutes: RouteObject[] = [
   { index: true, element: <AdminDashboard /> },
@@ -20,4 +21,5 @@ export const adminRoutes: RouteObject[] = [
   { path: 'finance-payments', element: <AdminFinancePayments /> },
   { path: 'platform-configuration', element: <AdminPlatformConfiguration /> },
   { path: 'assignment-management', element: <AdminAssignmentManagement /> },
+  { path: 'notifications', element: <AdminNotifications /> },
 ]
