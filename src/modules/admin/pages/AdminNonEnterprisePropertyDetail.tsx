@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  Edit,
   MapPin,
   Navigation,
   Pencil,

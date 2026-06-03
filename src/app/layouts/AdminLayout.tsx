@@ -254,6 +254,7 @@ const mockNotifications = [
 ]
 
 function NotificationsPopover({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate()
   return (
     <div className="absolute right-0 top-full mt-2 w-80 rounded-card border border-outline bg-white shadow-modal overflow-hidden z-50">
       <div className="flex items-center justify-between border-b border-outline px-4 py-3">
@@ -280,12 +281,23 @@ function NotificationsPopover({ onClose }: { onClose: () => void }) {
           </div>
         ))}
       </div>
-      <div className="border-t border-outline px-4 py-2 text-center">
+      <div className="border-t border-outline px-4 py-2 flex items-center justify-between">
         <button
           type="button"
           className="text-label font-semibold text-primary hover:text-primary-700 transition-colors"
+          onClick={onClose}
         >
           Mark all as read
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            onClose()
+            navigate(ROUTES.ADMIN.NOTIFICATIONS)
+          }}
+          className="text-label font-semibold text-text-primary hover:text-primary transition-colors"
+        >
+          View all →
         </button>
       </div>
     </div>

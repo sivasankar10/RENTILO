@@ -3,6 +3,7 @@ import { OwnerDashboard } from '../pages/OwnerDashboard'
 import { OwnerPortfolio } from '../pages/OwnerPortfolio'
 import { OwnerProperties } from '../pages/OwnerProperties'
 import { OwnerPropertyDetail } from '../pages/OwnerPropertyDetail'
+import { OwnerRegisterProperty } from '../pages/OwnerRegisterProperty'
 import { OwnerLeases } from '../pages/OwnerLeases'
 import { OwnerTenants } from '../pages/OwnerTenants'
 import { OwnerAnalytics } from '../pages/OwnerAnalytics'
@@ -16,6 +17,7 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'dashboard', element: <OwnerDashboard /> },
   { path: 'portfolio', element: <OwnerPortfolio /> },
   { path: 'properties', element: <OwnerProperties /> },
+  { path: 'properties/register', element: <OwnerRegisterProperty /> },
   { path: 'properties/:propertyId', element: <OwnerPropertyDetail /> },
   { path: 'leases', element: <OwnerLeases /> },
   { path: 'tenants', element: <OwnerTenants /> },

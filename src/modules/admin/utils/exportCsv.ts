@@ -2,7 +2,7 @@
  * Convert an array of records into CSV and trigger a browser download.
  * Lightweight implementation — handles strings, numbers, booleans, escaping.
  */
-export function exportToCsv<T extends Record<string, unknown>>(
+export function exportToCsv<T extends object>(
   filename: string,
   rows: T[],
   headers?: { key: keyof T; label: string }[],
@@ -11,10 +11,10 @@ export function exportToCsv<T extends Record<string, unknown>>(
 
   const cols =
     headers ??
-    (Object.keys(rows[0]).map((k) => ({ key: k as keyof T, label: k })) as {
-      key: keyof T
-      label: string
-    }[])
+    (Object.keys(rows[0] as Record<string, unknown>).map((k) => ({
+      key: k as keyof T,
+      label: k,
+    })) as { key: keyof T; label: string }[])
 
   const escape = (val: unknown): string => {
     if (val == null) return ''
@@ -25,7 +25,7 @@ export function exportToCsv<T extends Record<string, unknown>>(
 
   const csvLines = [
     cols.map((c) => escape(c.label)).join(','),
-    ...rows.map((row) => cols.map((c) => escape(row[c.key])).join(',')),
+    ...rows.map((row) => cols.map((c) => escape((row as Record<string, unknown>)[c.key as string])).join(',')),
   ]
 
   const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' })

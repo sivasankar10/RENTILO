@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertCircle, Ban, CheckCircle2, Eye, Mail, Search, Trash2, TrendingUp, UserCheck } from 'lucide-react'
+import { AlertCircle, Ban, Eye, Mail, Search, Trash2, TrendingUp, UserCheck } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore } from '../store/adminStore'
 import type { AdminBroker } from '../store/adminStore'
