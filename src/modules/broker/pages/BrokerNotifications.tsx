@@ -7,6 +7,7 @@ import {
   Bell,
   Trash2,
   Check,
+  Star,
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 
@@ -143,15 +144,26 @@ function NotifRow({
   notif,
   onMarkRead,
   onDelete,
+  onToggleImportant,
 }: {
   notif: Notification
   onMarkRead: (id: number) => void
   onDelete: (id: number) => void
+  onToggleImportant: (id: number) => void
 }) {
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onMarkRead(notif.id)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onMarkRead(notif.id)
+        }
+      }}
       className={cn(
-        'flex items-start gap-4 px-5 py-4 rounded-xl transition-colors group',
+        'flex items-start gap-4 px-5 py-4 rounded-xl transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20',
         notif.isRead
           ? 'bg-white hover:bg-slate-50'
           : 'bg-white hover:bg-slate-50 border-l-2 border-primary',
@@ -173,6 +185,11 @@ function NotifRow({
             {!notif.isRead && (
               <span className="inline-block ml-1.5 w-2 h-2 rounded-full bg-primary align-middle" />
             )}
+            {notif.isImportant && (
+              <span className="ml-1.5 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-600">
+                Important
+              </span>
+            )}
           </p>
         </div>
         <p className="text-[12px] text-text-muted leading-relaxed line-clamp-2">
@@ -186,10 +203,30 @@ function NotifRow({
           {notif.timestamp}
         </span>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              onToggleImportant(notif.id)
+            }}
+            aria-pressed={notif.isImportant}
+            title={notif.isImportant ? 'Remove from important' : 'Mark as important'}
+            className={cn(
+              'p-1 rounded-md transition-colors',
+              notif.isImportant
+                ? 'text-amber-500 hover:bg-amber-50'
+                : 'text-text-muted hover:text-amber-500 hover:bg-amber-50'
+            )}
+          >
+            <Star size={13} fill={notif.isImportant ? 'currentColor' : 'none'} />
+          </button>
           {!notif.isRead && (
             <button
               type="button"
-              onClick={() => onMarkRead(notif.id)}
+              onClick={(event) => {
+                event.stopPropagation()
+                onMarkRead(notif.id)
+              }}
               title="Mark as read"
               className="p-1 rounded-md text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
             >
@@ -198,7 +235,10 @@ function NotifRow({
           )}
           <button
             type="button"
-            onClick={() => onDelete(notif.id)}
+            onClick={(event) => {
+              event.stopPropagation()
+              onDelete(notif.id)
+            }}
             title="Delete notification"
             className="p-1 rounded-md text-text-muted hover:text-red-500 hover:bg-red-50 transition-colors"
           >
@@ -234,6 +274,12 @@ export function BrokerNotifications() {
 
   const handleDelete = (id: number) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
+  }
+
+  const handleToggleImportant = (id: number) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isImportant: !n.isImportant } : n)),
+    )
   }
 
   const handleMarkAllRead = () => {
@@ -323,6 +369,7 @@ export function BrokerNotifications() {
               notif={notif}
               onMarkRead={handleMarkRead}
               onDelete={handleDelete}
+              onToggleImportant={handleToggleImportant}
             />
           ))
         )}

@@ -19,6 +19,8 @@ export function NotificationsPage() {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const [filter, setFilter] = useState<NotificationFilter>('all')
+  const [notifications, setNotifications] = useState(TENANT_NOTIFICATIONS)
+  const unreadCount = notifications.filter((notification) => notification.unread).length
 
   const handleLogout = () => {
     logout()
@@ -27,13 +29,37 @@ export function NotificationsPage() {
 
   const filtered = useMemo(() => {
     if (filter === 'unread') {
-      return TENANT_NOTIFICATIONS.filter((n) => n.unread)
+      return notifications.filter((n) => n.unread)
     }
     if (filter === 'important') {
-      return TENANT_NOTIFICATIONS.filter((n) => n.important)
+      return notifications.filter((n) => n.important)
     }
-    return TENANT_NOTIFICATIONS
-  }, [filter])
+    return notifications
+  }, [filter, notifications])
+
+  const toggleImportant = (id: string) => {
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.id === id
+          ? { ...notification, important: !notification.important }
+          : notification
+      )
+    )
+  }
+
+  const markAsRead = (id: string) => {
+    setNotifications((current) =>
+      current.map((notification) =>
+        notification.id === id ? { ...notification, unread: false } : notification
+      )
+    )
+  }
+
+  const markAllAsRead = () => {
+    setNotifications((current) =>
+      current.map((notification) => ({ ...notification, unread: false }))
+    )
+  }
 
   return (
     <div className="flex flex-1 min-h-0 bg-brand-background">
@@ -51,12 +77,13 @@ export function NotificationsPage() {
               </p>
             </div>
 
-            <div
-              className="inline-flex shrink-0 p-1 rounded-full bg-brand-container-high border border-brand-outline-variant/50"
-              role="tablist"
-              aria-label="Filter notifications"
-            >
-              {FILTERS.map((item) => (
+            <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
+              <div
+                className="inline-flex p-1 rounded-full bg-brand-container-high border border-brand-outline-variant/50"
+                role="tablist"
+                aria-label="Filter notifications"
+              >
+                {FILTERS.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -71,8 +98,23 @@ export function NotificationsPage() {
                   onClick={() => setFilter(item.id)}
                 >
                   {item.label}
+                  {item.id === 'unread' && unreadCount > 0 && (
+                    <span className="ml-1.5 inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-brand text-white text-[9px] font-bold">
+                      {unreadCount}
+                    </span>
+                  )}
                 </button>
-              ))}
+                ))}
+              </div>
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={markAllAsRead}
+                  className="font-body text-[12px] font-semibold text-brand hover:underline"
+                >
+                  Mark all as read
+                </button>
+              )}
             </div>
           </div>
 
@@ -85,7 +127,12 @@ export function NotificationsPage() {
               </div>
             ) : (
               filtered.map((notification) => (
-                <NotificationCard key={notification.id} notification={notification} />
+                <NotificationCard
+                  key={notification.id}
+                  notification={notification}
+                  onMarkRead={markAsRead}
+                  onToggleImportant={toggleImportant}
+                />
               ))
             )}
           </div>

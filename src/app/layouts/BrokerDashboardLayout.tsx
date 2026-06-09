@@ -11,7 +11,6 @@ import {
   Menu,
   MessageSquare,
   Search,
-  Settings,
   Users,
   X,
 } from 'lucide-react'
@@ -45,7 +44,6 @@ const mainNavItems: BrokerNavItem[] = [
 ]
 
 const footerNavItems: BrokerNavItem[] = [
-  { label: 'Settings', href: ROUTES.BROKER.SETTINGS, icon: Settings },
   { label: 'Support', href: '#support', icon: CircleHelp },
 ]
 
@@ -191,13 +189,6 @@ export function BrokerDashboardLayout() {
               aria-label="Help"
             >
               <CircleHelp size={20} strokeWidth={1.75} />
-            </button>
-            <button
-              type="button"
-              className="p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
-              aria-label="Settings"
-            >
-              <Settings size={20} strokeWidth={1.75} />
             </button>
             <button
               type="button"

@@ -72,6 +72,16 @@ export function AdminListingManagement() {
     }
   }
 
+  const handleEditListing = (listing: AdminListing) => {
+    if (listing.segment === 'enterprise') {
+      navigate(`/admin/listing-management/enterprise/${listing.slug}`)
+      toast.info('Opening enterprise listing', 'Enterprise editor will be handled separately.')
+      return
+    }
+
+    navigate(`/admin/listing-management/non-enterprise/${listing.slug}?mode=edit&step=1`)
+  }
+
   const handlePauseResume = (listing: AdminListing) => {
     const next: ListingStatus = listing.status === 'Active' ? 'Paused' : 'Active'
     setListingStatus(listing.id, next)
@@ -281,7 +291,7 @@ export function AdminListingManagement() {
                           ariaLabel={`Actions for ${listing.id}`}
                           items={[
                             { label: 'View details', icon: Eye, onClick: () => handleRowClick(listing) },
-                            { label: 'Edit listing', icon: Pencil, onClick: () => { handleRowClick(listing); toast.info('Opening editor', listing.id) } },
+                            { label: 'Edit listing', icon: Pencil, onClick: () => handleEditListing(listing) },
                             {
                               label: listing.status === 'Active' ? 'Pause listing' : 'Resume listing',
                               icon: listing.status === 'Active' ? Pause : Play,

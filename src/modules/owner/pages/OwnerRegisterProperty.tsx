@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { useOwnerStore, type OwnerRegisterPropertyFormData } from '../store/ownerStore'
 
 type StepNumber = 1 | 2 | 3 | 4 | 5
 
@@ -42,77 +43,29 @@ const steps: StepDef[] = [
 export function OwnerRegisterProperty() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState<StepNumber>(1)
+  const formData = useOwnerStore((state) => state.registerPropertyDraft)
+  const updateRegisterPropertyDraft = useOwnerStore((state) => state.updateRegisterPropertyDraft)
+  const saveRegisterPropertyDraft = useOwnerStore((state) => state.saveRegisterPropertyDraft)
+  const submitRegisterProperty = useOwnerStore((state) => state.submitRegisterProperty)
 
-  // Form state — persists across steps
-  const [formData, setFormData] = useState({
-    // Step 1
-    propertyName: '',
-    propertyType: '',
-    yearBuilt: '',
-    referenceId: '',
-    currentStatus: 'Available for Rent',
-    description: '',
-    // Step 2
-    streetAddress: '',
-    unit: '',
-    postalCode: '',
-    city: '',
-    neighborhood: '',
-    blockName: '',
-    numFloors: '10',
-    numFlats: '10001',
-    numBrokers: '15',
-    residentialZoning: true,
-    mixedUse: false,
-    // Step 3
-    amenities: {
-      wifi: false,
-      ac: true,
-      heating: true,
-      smartLock: false,
-      washerDryer: false,
-      dishwasher: false,
-    },
-    buildingFeatures: {
-      gym: false,
-      pool: false,
-      parking: true,
-      security: true,
-    },
-    sellingPoints: '',
-    customTags: [] as string[],
-    // Step 4
-    photos: [
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=400&q=80',
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=400&q=80',
-    ] as string[],
-    virtualTourUrl: '',
-    // Step 5
-    baseRent: '2400',
-    securityDeposit: '1.5',
-    depositUnit: 'Months',
-    availableFrom: '06/01/2024',
-    leaseDuration: 12,
-    noticePeriod: '30',
-    utilities: { electricity: true, water: true, internet: false, gas: false },
-    petPolicy: true,
-    petDetails: '',
-  })
-
-  const update = <K extends keyof typeof formData>(key: K, val: (typeof formData)[K]) => {
-    setFormData((prev) => ({ ...prev, [key]: val }))
+  const update = <K extends keyof OwnerRegisterPropertyFormData>(
+    key: K,
+    val: OwnerRegisterPropertyFormData[K]
+  ) => {
+    updateRegisterPropertyDraft(key, val)
   }
 
   const goNext = () => setCurrentStep((s) => Math.min(5, s + 1) as StepNumber)
   const goPrev = () => setCurrentStep((s) => Math.max(1, s - 1) as StepNumber)
 
   const handleSaveDraft = () => {
-    alert('Property saved as draft.')
+    saveRegisterPropertyDraft()
+    alert('Property saved as a draft for this session.')
   }
 
   const handleSubmit = () => {
-    alert('Property submitted for review!')
+    submitRegisterProperty()
+    alert('Property submitted for review and saved for this session!')
     navigate(ROUTES.OWNER.PROPERTIES)
   }
 
@@ -233,7 +186,7 @@ export function OwnerRegisterProperty() {
             )}
 
             {/* Bottom info cards */}
-            <BottomInfoCards step={currentStep} />
+            <BottomInfoCards />
           </div>
         </div>
       </div>
@@ -372,33 +325,6 @@ function Step2Location({ formData, update }: StepProps) {
             <label className="text-body font-medium text-text-primary">Neighborhood</label>
             <input type="text" placeholder="Manhattan" value={formData.neighborhood} onChange={(e) => update('neighborhood', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
           </div>
-        </div>
-      </div>
-
-      {/* Block Details */}
-      <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
-        <div>
-          <label className="text-body font-medium text-text-primary">Block Name</label>
-          <input type="text" placeholder="e.g., Block A" value={formData.blockName} onChange={(e) => update('blockName', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="text-body font-medium text-text-primary">Number Of Floors</label>
-            <input type="text" value={formData.numFloors} onChange={(e) => update('numFloors', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
-          </div>
-          <div>
-            <label className="text-body font-medium text-text-primary">No Of Flats in each Floor</label>
-            <input type="text" value={formData.numFlats} onChange={(e) => update('numFlats', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
-          </div>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 items-end">
-          <div>
-            <label className="text-body font-medium text-text-primary">Number of Brokers Required</label>
-            <input type="text" value={formData.numBrokers} onChange={(e) => update('numBrokers', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
-          </div>
-          <button type="button" className="h-11 rounded-button bg-navy px-5 text-body font-semibold text-white hover:bg-slate-800 transition-colors">
-            <Plus size={16} className="inline mr-2" />Add Property
-          </button>
         </div>
       </div>
 
@@ -749,7 +675,7 @@ function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { on
 }
 
 /* ───────── Bottom Info Cards ───────── */
-function BottomInfoCards({ step }: { step: StepNumber }) {
+function BottomInfoCards() {
   const cards = [
     { icon: ShieldCheck, title: 'Verified Listings', desc: 'Verified properties receive 5x more views and inquiries.', color: 'bg-primary-100 text-primary' },
     { icon: TrendingUp, title: 'Pricing Insights', desc: "We'll suggest optimal rents based on local market data.", color: 'bg-status-error-bg text-status-error' },
@@ -778,6 +704,9 @@ function BottomInfoCards({ step }: { step: StepNumber }) {
 
 /* ───────── Types ───────── */
 type StepProps = {
-  formData: ReturnType<typeof Object.create> & Record<string, any>
-  update: (key: string, val: any) => void
+  formData: OwnerRegisterPropertyFormData
+  update: <K extends keyof OwnerRegisterPropertyFormData>(
+    key: K,
+    val: OwnerRegisterPropertyFormData[K]
+  ) => void
 }

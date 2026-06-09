@@ -1,4 +1,5 @@
-import type { RouteObject } from 'react-router-dom'
+import { Navigate, type RouteObject } from 'react-router-dom'
+import { ROUTES } from '@shared/constants/routes'
 import { BrokerDashboard } from '../pages/BrokerDashboard'
 import { BrokerPortfolio } from '../pages/BrokerPortfolio'
 import { BrokerAssignedProperties } from '../pages/BrokerAssignedProperties'
@@ -11,7 +12,6 @@ import { BrokerMessagesPage } from '../pages/BrokerMessagesPage'
 import { BrokerProfile } from '../pages/BrokerProfile'
 import { BrokerEditProfile } from '../pages/BrokerEditProfile'
 import { BrokerNotifications } from '../pages/BrokerNotifications'
-import { BrokerSettings } from '../pages/BrokerSettings'
 
 export const brokerRoutes: RouteObject[] = [
   { index: true, element: <BrokerDashboard /> },
@@ -27,5 +27,5 @@ export const brokerRoutes: RouteObject[] = [
   { path: 'profile', element: <BrokerProfile /> },
   { path: 'profile/edit', element: <BrokerEditProfile /> },
   { path: 'notifications', element: <BrokerNotifications /> },
-  { path: 'settings', element: <BrokerSettings /> },
+  { path: 'settings', element: <Navigate to={ROUTES.BROKER.PROFILE} replace /> },
 ]

@@ -1,7 +1,30 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { CalendarDays, Car, Dumbbell, MapPin, MessageSquare, Waves, Wifi } from 'lucide-react'
-import { ROUTES } from '@shared/constants/routes'
+import { useMemo, useState, type FormEvent } from 'react'
+import {
+  Bath,
+  BedDouble,
+  Building2,
+  CalendarDays,
+  Car,
+  CheckCircle2,
+  Clock3,
+  ClipboardList,
+  Dumbbell,
+  Home,
+  KeyRound,
+  MapPin,
+  MessageSquare,
+  PawPrint,
+  Phone,
+  Send,
+  ShieldCheck,
+  Sofa,
+  UserRound,
+  Utensils,
+  Waves,
+  Wifi,
+  X,
+} from 'lucide-react'
+import { cn } from '@shared/utils/cn'
 
 const galleryImages = [
   {
@@ -35,20 +58,208 @@ const amenities = [
   { label: 'Secure Parking', icon: Car },
 ]
 
+const overviewSpecs = [
+  { label: 'Bedrooms', value: '2 Beds', icon: BedDouble },
+  { label: 'Bathrooms', value: '2 Baths', icon: Bath },
+  { label: 'Built-up Area', value: '1,200 sqft', icon: Home },
+  { label: 'Floor', value: '14 / 32', icon: Building2 },
+  { label: 'Property Type', value: 'Luxury Apartment', icon: ClipboardList },
+  { label: 'Possession', value: 'Immediate', icon: KeyRound },
+]
+
+const propertyFeatures = [
+  { label: 'Semi-Furnished', detail: 'Sofa, wardrobes, dining setup', icon: Sofa },
+  { label: 'Modular Kitchen', detail: 'Hob, chimney, storage, stone counter', icon: Utensils },
+  { label: 'Gated Security', detail: '24/7 front desk and CCTV coverage', icon: ShieldCheck },
+  { label: 'Pet Friendly', detail: 'Pets allowed with owner approval', icon: PawPrint },
+  { label: 'Both Parking', detail: '2-wheeler and 4-wheeler parking available', icon: Car },
+  { label: 'NoBroker Services', detail: 'Verified listing support enabled', icon: CheckCircle2 },
+]
+
+const propertyRules = [
+  { rule: 'No smoking inside the unit or common areas', category: 'Health & Safety' },
+  { rule: 'Quiet hours between 10:00 PM and 7:00 AM', category: 'Community' },
+  { rule: 'Visitors must register with security after 9:00 PM', category: 'Security' },
+  { rule: 'Monthly rent must be paid by the 5th of each month', category: 'Payments' },
+  { rule: 'Subletting requires written owner approval', category: 'Lease' },
+]
+
+const nearbyHighlights = [
+  { name: 'Central Metro Station', distance: '0.4 km', time: '5 mins' },
+  { name: 'Fresh Mart Grocery', distance: '0.5 km', time: '7 mins' },
+  { name: 'City Care Clinic', distance: '1.2 km', time: '14 mins' },
+  { name: 'HDFC ATM', distance: '0.3 km', time: '4 mins' },
+]
+
+type VisitStatus = 'Confirmed' | 'Pending' | 'Completed'
+
+interface VisitSchedule {
+  id: string
+  date: string
+  day: string
+  weekday: string
+  tenantName: string
+  phone: string
+  avatar: string
+  time: string
+  status: VisitStatus
+  note: string
+}
+
+interface InterestedLead {
+  id: string
+  tenantName: string
+  phone: string
+  avatar: string
+  profile: string
+  budget: string
+  clickedAt: string
+}
+
+interface ContactTarget {
+  id: string
+  name: string
+  phone: string
+  avatar: string
+  context: string
+}
+
+const visitSchedules: VisitSchedule[] = [
+  {
+    id: 'visit-priya-06',
+    date: '2026-06-06',
+    day: '06',
+    weekday: 'Sat',
+    tenantName: 'Priya Gopal',
+    phone: '+91 98765 43210',
+    avatar: 'https://i.pravatar.cc/96?img=47',
+    time: '10:30 AM',
+    status: 'Confirmed',
+    note: 'Wants to inspect parking and balcony view.',
+  },
+  {
+    id: 'visit-arjun-06',
+    date: '2026-06-06',
+    day: '06',
+    weekday: 'Sat',
+    tenantName: 'Arjun Menon',
+    phone: '+91 99887 77665',
+    avatar: 'https://i.pravatar.cc/96?img=12',
+    time: '3:00 PM',
+    status: 'Pending',
+    note: 'Asked for semi-furnished inventory details.',
+  },
+  {
+    id: 'visit-nisha-08',
+    date: '2026-06-08',
+    day: '08',
+    weekday: 'Mon',
+    tenantName: 'Nisha Varma',
+    phone: '+91 91234 56780',
+    avatar: 'https://i.pravatar.cc/96?img=32',
+    time: '11:00 AM',
+    status: 'Confirmed',
+    note: 'Family visit, prefers morning slot.',
+  },
+  {
+    id: 'visit-rahul-10',
+    date: '2026-06-10',
+    day: '10',
+    weekday: 'Wed',
+    tenantName: 'Rahul Das',
+    phone: '+91 90123 45678',
+    avatar: 'https://i.pravatar.cc/96?img=5',
+    time: '5:30 PM',
+    status: 'Confirmed',
+    note: 'Requested to review lease start date flexibility.',
+  },
+]
+
+const calendarDays = [
+  { date: '2026-06-06', day: '06', weekday: 'Sat' },
+  { date: '2026-06-07', day: '07', weekday: 'Sun' },
+  { date: '2026-06-08', day: '08', weekday: 'Mon' },
+  { date: '2026-06-09', day: '09', weekday: 'Tue' },
+  { date: '2026-06-10', day: '10', weekday: 'Wed' },
+  { date: '2026-06-11', day: '11', weekday: 'Thu' },
+]
+
+const interestedLeads: InterestedLead[] = [
+  {
+    id: 'lead-meera',
+    tenantName: 'Meera Iyer',
+    phone: '+91 93456 78901',
+    avatar: 'https://i.pravatar.cc/96?img=45',
+    profile: 'Family tenant, verified KYC',
+    budget: '$4,500 - $4,800',
+    clickedAt: '12 mins ago',
+  },
+  {
+    id: 'lead-sanjay',
+    tenantName: 'Sanjay Rao',
+    phone: '+91 90909 12345',
+    avatar: 'https://i.pravatar.cc/96?img=15',
+    profile: 'Corporate lease prospect',
+    budget: '$4,300 - $4,600',
+    clickedAt: '1 hour ago',
+  },
+  {
+    id: 'lead-aisha',
+    tenantName: 'Aisha Khan',
+    phone: '+91 98989 45678',
+    avatar: 'https://i.pravatar.cc/96?img=25',
+    profile: 'Couple, immediate move-in',
+    budget: '$4,500',
+    clickedAt: 'Yesterday',
+  },
+]
+
+const visitStatusStyles: Record<VisitStatus, string> = {
+  Confirmed: 'bg-green-50 text-green-700',
+  Pending: 'bg-amber-50 text-amber-700',
+  Completed: 'bg-slate-100 text-slate-600',
+}
+
 export function OwnerPropertyDetail() {
-  const navigate = useNavigate()
   const [schedulerOpen, setSchedulerOpen] = useState(false)
-  const [visitDate, setVisitDate] = useState('')
-  const [visitTime, setVisitTime] = useState('10:00')
-  const [scheduleStatus, setScheduleStatus] = useState('')
+  const [leadsOpen, setLeadsOpen] = useState(false)
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState(calendarDays[0].date)
+  const [activeContact, setActiveContact] = useState<ContactTarget | null>(null)
+  const [chatDraft, setChatDraft] = useState('')
+  const [callStatus, setCallStatus] = useState('')
+  const [chatMessages, setChatMessages] = useState<Record<string, string[]>>({})
 
-  const scheduleVisit = () => {
-    if (!visitDate || !visitTime) {
-      setScheduleStatus('Choose a date and time to schedule the visit.')
-      return
-    }
+  const selectedDayVisits = useMemo(
+    () => visitSchedules.filter((visit) => visit.date === selectedScheduleDate),
+    [selectedScheduleDate]
+  )
 
-    setScheduleStatus(`Visit scheduled for ${visitDate} at ${visitTime}.`)
+  const openChat = (target: ContactTarget) => {
+    setActiveContact(target)
+    setChatDraft('')
+    setCallStatus('')
+    setChatMessages((current) => ({
+      ...current,
+      [target.id]: current[target.id] ?? [`Hi ${target.name}, this is the owner of The Opus Tower, 14B.`],
+    }))
+  }
+
+  const handleCall = (target: ContactTarget) => {
+    setCallStatus(`Calling ${target.name} at ${target.phone}...`)
+    window.setTimeout(() => {
+      setCallStatus(`Call request logged for ${target.name}.`)
+    }, 900)
+  }
+
+  const handleSendMessage = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!activeContact || !chatDraft.trim()) return
+
+    setChatMessages((current) => ({
+      ...current,
+      [activeContact.id]: [...(current[activeContact.id] ?? []), chatDraft.trim()],
+    }))
+    setChatDraft('')
   }
 
   return (
@@ -101,6 +312,102 @@ export function OwnerPropertyDetail() {
                   Residents enjoy exclusive access to world-class amenities, ensuring a lifestyle of
                   comfort and sophistication.
                 </p>
+              </div>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {overviewSpecs.map((spec) => {
+                  const Icon = spec.icon
+                  return (
+                    <div key={spec.label} className="flex items-center gap-4 rounded-button bg-canvas-alt px-4 py-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-button bg-primary-50 text-navy">
+                        <Icon size={18} />
+                      </div>
+                      <div>
+                        <p className="text-filter-label uppercase text-text-muted">{spec.label}</p>
+                        <p className="mt-1 text-label font-bold text-text-primary">{spec.value}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-card border border-outline bg-white p-8 shadow-surface">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-heading-3 font-bold text-navy">Property Features</h2>
+                  <p className="mt-2 text-label text-text-muted">
+                    Complete feature list visible to tenants and useful for owner review.
+                  </p>
+                </div>
+                <span className="w-fit rounded-pill bg-primary-50 px-3 py-1 text-badge font-bold uppercase text-primary">
+                  {propertyFeatures.length} active features
+                </span>
+              </div>
+
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                {propertyFeatures.map((feature) => {
+                  const Icon = feature.icon
+                  return (
+                    <div key={feature.label} className="flex gap-4 rounded-button border border-outline bg-white p-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-button bg-primary-50 text-navy">
+                        <Icon size={19} />
+                      </div>
+                      <div>
+                        <p className="text-body font-bold text-text-primary">{feature.label}</p>
+                        <p className="mt-1 text-label leading-5 text-text-muted">{feature.detail}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+
+            <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-card border border-outline bg-white p-8 shadow-surface">
+                <h2 className="text-heading-3 font-bold text-navy">Property Rules</h2>
+                <div className="mt-6 overflow-hidden rounded-button border border-outline">
+                  <table className="w-full border-collapse text-left">
+                    <thead>
+                      <tr className="bg-canvas-alt">
+                        <th className="px-4 py-3 text-filter-label font-bold uppercase text-text-muted">
+                          Rule
+                        </th>
+                        <th className="px-4 py-3 text-filter-label font-bold uppercase text-text-muted">
+                          Category
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline">
+                      {propertyRules.map((rule) => (
+                        <tr key={rule.rule}>
+                          <td className="px-4 py-3 text-label font-medium text-text-primary">
+                            {rule.rule}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="rounded-pill bg-primary-50 px-2.5 py-1 text-badge font-bold text-primary">
+                              {rule.category}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="rounded-card border border-outline bg-white p-8 shadow-surface">
+                <h2 className="text-heading-3 font-bold text-navy">Nearby Highlights</h2>
+                <div className="mt-6 space-y-3">
+                  {nearbyHighlights.map((place) => (
+                    <div key={place.name} className="flex items-baseline justify-between gap-4 border-b border-outline pb-3 last:border-0 last:pb-0">
+                      <div>
+                        <p className="text-label font-bold text-text-primary">{place.name}</p>
+                        <p className="mt-0.5 text-filter-label uppercase text-text-muted">{place.time}</p>
+                      </div>
+                      <span className="shrink-0 text-label font-semibold text-navy">{place.distance}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
 
@@ -156,65 +463,199 @@ export function OwnerPropertyDetail() {
                   type="button"
                   onClick={() => {
                     setSchedulerOpen((isOpen) => !isOpen)
-                    setScheduleStatus('')
+                    setLeadsOpen(false)
+                    setCallStatus('')
                   }}
                   className="flex w-full items-center justify-center gap-2 rounded-button bg-navy px-4 py-3 text-body font-semibold text-white transition-colors duration-200 hover:bg-slate-800"
                   aria-expanded={schedulerOpen}
                 >
                   <CalendarDays size={16} />
-                  Schedule Visit
+                  Upcoming Schedules
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate(ROUTES.OWNER.MESSAGES)}
+                  onClick={() => {
+                    setLeadsOpen((isOpen) => !isOpen)
+                    setSchedulerOpen(false)
+                    setCallStatus('')
+                  }}
                   className="flex w-full items-center justify-center gap-2 rounded-button bg-slate-200 px-4 py-3 text-body font-bold text-navy transition-colors duration-200 hover:bg-slate-300"
+                  aria-expanded={leadsOpen}
                 >
                   <MessageSquare size={16} />
-                  I'm Interested
+                  View Interested Tenants
                 </button>
               </div>
 
               {schedulerOpen && (
                 <div className="mt-4 rounded-card border border-outline bg-slate-50 p-4">
-                  <p className="text-label font-bold uppercase text-text-muted">Schedule Visit</p>
-                  <div className="mt-3 space-y-3">
-                    <label className="block">
-                      <span className="text-label font-semibold text-text-primary">Visit Date</span>
-                      <input
-                        type="date"
-                        value={visitDate}
-                        min="2026-05-27"
-                        onChange={(event) => {
-                          setVisitDate(event.target.value)
-                          setScheduleStatus('')
-                        }}
-                        className="mt-2 w-full rounded-input border border-outline bg-white px-3 py-2 text-body text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="text-label font-semibold text-text-primary">Visit Time</span>
-                      <input
-                        type="time"
-                        value={visitTime}
-                        onChange={(event) => {
-                          setVisitTime(event.target.value)
-                          setScheduleStatus('')
-                        }}
-                        className="mt-2 w-full rounded-input border border-outline bg-white px-3 py-2 text-body text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={scheduleVisit}
-                      className="w-full rounded-button bg-primary px-4 py-2 text-label font-bold text-white transition-colors duration-200 hover:bg-primary-700"
-                    >
-                      Confirm Visit
-                    </button>
-                    {scheduleStatus && (
-                      <p className="text-label font-semibold text-primary">{scheduleStatus}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-label font-bold uppercase tracking-widest text-text-muted">Upcoming Schedules</p>
+                      <p className="mt-1 text-label text-text-muted">Tap a day to view tenants.</p>
+                    </div>
+                    <span className="rounded-pill bg-white px-2.5 py-1 text-badge font-bold text-navy">
+                      {visitSchedules.length} visits
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {calendarDays.map((day) => {
+                      const visitsForDay = visitSchedules.filter((visit) => visit.date === day.date)
+                      const isSelected = day.date === selectedScheduleDate
+
+                      return (
+                        <button
+                          type="button"
+                          key={day.date}
+                          onClick={() => setSelectedScheduleDate(day.date)}
+                          className={cn(
+                            'rounded-button border px-2 py-3 text-center transition-colors',
+                            isSelected
+                              ? 'border-navy bg-navy text-white'
+                              : 'border-outline bg-white text-text-primary hover:border-navy'
+                          )}
+                        >
+                          <span className="block text-[11px] font-bold uppercase tracking-widest opacity-80">{day.weekday}</span>
+                          <span className="mt-1 block text-body-lg font-extrabold">{day.day}</span>
+                          <span
+                            className={cn(
+                              'mx-auto mt-1 block h-1.5 w-1.5 rounded-full',
+                              visitsForDay.length > 0 ? 'bg-primary' : 'bg-transparent',
+                              isSelected && visitsForDay.length > 0 && 'bg-white'
+                            )}
+                          />
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {selectedDayVisits.length > 0 ? (
+                      selectedDayVisits.map((visit) => {
+                        const target: ContactTarget = {
+                          id: `visit-${visit.id}`,
+                          name: visit.tenantName,
+                          phone: visit.phone,
+                          avatar: visit.avatar,
+                          context: `${visit.time} visit on ${visit.weekday}, June ${visit.day}`,
+                        }
+
+                        return (
+                          <div key={visit.id} className="rounded-button border border-outline bg-white p-3">
+                            <div className="flex gap-3">
+                              <img src={visit.avatar} alt={visit.tenantName} className="h-10 w-10 rounded-full object-cover" />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <p className="truncate text-label font-bold text-text-primary">{visit.tenantName}</p>
+                                    <p className="mt-0.5 inline-flex items-center gap-1 text-label text-text-muted">
+                                      <Clock3 size={13} />
+                                      {visit.time}
+                                    </p>
+                                  </div>
+                                  <span className={cn('rounded-pill px-2 py-0.5 text-[10px] font-bold', visitStatusStyles[visit.status])}>
+                                    {visit.status}
+                                  </span>
+                                </div>
+                                <p className="mt-2 line-clamp-2 text-label text-text-muted">{visit.note}</p>
+                                <div className="mt-3 flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => openChat(target)}
+                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-button border border-outline bg-white px-3 py-2 text-label font-bold text-navy transition-colors hover:bg-hover-light"
+                                  >
+                                    <MessageSquare size={14} />
+                                    Chat
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCall(target)}
+                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-button bg-navy px-3 py-2 text-label font-bold text-white transition-colors hover:bg-slate-800"
+                                  >
+                                    <Phone size={14} />
+                                    Call
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="rounded-button border border-dashed border-outline bg-white px-3 py-5 text-center">
+                        <CalendarDays size={24} className="mx-auto text-text-muted" />
+                        <p className="mt-2 text-label font-semibold text-text-muted">No visits scheduled for this day.</p>
+                      </div>
                     )}
                   </div>
                 </div>
+              )}
+
+              {leadsOpen && (
+                <div className="mt-4 rounded-card border border-outline bg-slate-50 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-label font-bold uppercase tracking-widest text-text-muted">Interested Tenant Leads</p>
+                      <p className="mt-1 text-label text-text-muted">Tenants who clicked the interest button.</p>
+                    </div>
+                    <span className="rounded-pill bg-white px-2.5 py-1 text-badge font-bold text-navy">
+                      {interestedLeads.length} leads
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {interestedLeads.map((lead) => {
+                      const target: ContactTarget = {
+                        id: `lead-${lead.id}`,
+                        name: lead.tenantName,
+                        phone: lead.phone,
+                        avatar: lead.avatar,
+                        context: `Interested lead - ${lead.clickedAt}`,
+                      }
+
+                      return (
+                        <div key={lead.id} className="rounded-button border border-outline bg-white p-3">
+                          <div className="flex items-start gap-3">
+                            <img src={lead.avatar} alt={lead.tenantName} className="h-10 w-10 rounded-full object-cover" />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="truncate text-label font-bold text-text-primary">{lead.tenantName}</p>
+                                  <p className="mt-0.5 text-label text-text-muted">{lead.profile}</p>
+                                </div>
+                                <span className="shrink-0 text-[10px] font-bold uppercase text-text-muted">{lead.clickedAt}</span>
+                              </div>
+                              <p className="mt-2 text-label font-semibold text-navy">Budget: {lead.budget}</p>
+                              <button
+                                type="button"
+                                onClick={() => openChat(target)}
+                                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-button bg-navy px-3 py-2 text-label font-bold text-white transition-colors hover:bg-slate-800"
+                              >
+                                <MessageSquare size={14} />
+                                Chat
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCall(target)}
+                                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-button border border-outline bg-white px-3 py-2 text-label font-bold text-navy transition-colors hover:bg-hover-light"
+                              >
+                                <Phone size={14} />
+                                Call
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {callStatus && (
+                <p className="mt-4 rounded-button bg-primary-100 px-3 py-2 text-label font-semibold text-primary">
+                  {callStatus}
+                </p>
               )}
 
               <div className="mt-8 grid grid-cols-3 divide-x divide-outline rounded-button bg-slate-50">
@@ -228,6 +669,100 @@ export function OwnerPropertyDetail() {
             </div>
           </aside>
         </div>
+
+        {activeContact && (
+          <div className="fixed inset-0 z-[90] flex items-center justify-center px-4">
+            <button
+              type="button"
+              className="absolute inset-0 bg-navy/40 backdrop-blur-sm"
+              onClick={() => setActiveContact(null)}
+              aria-label="Close chat overlay"
+            />
+            <section className="relative z-[91] flex max-h-[86vh] w-full max-w-md flex-col overflow-hidden rounded-card border border-outline bg-white shadow-modal">
+              <header className="flex items-start justify-between gap-4 border-b border-outline px-5 py-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  {activeContact.avatar ? (
+                    <img src={activeContact.avatar} alt={activeContact.name} className="h-11 w-11 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-100 text-primary">
+                      <UserRound size={20} />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <h2 className="truncate text-body-lg font-bold text-navy">{activeContact.name}</h2>
+                    <p className="truncate text-label text-text-muted">{activeContact.context}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveContact(null)}
+                  className="rounded-button p-2 text-text-muted transition-colors hover:bg-hover-light hover:text-navy"
+                  aria-label="Close chat"
+                >
+                  <X size={18} />
+                </button>
+              </header>
+
+              <div className="flex-1 space-y-3 overflow-y-auto bg-canvas-alt px-5 py-4">
+                <div className="flex justify-start">
+                  <div className="max-w-[82%] rounded-2xl rounded-bl-sm bg-white px-4 py-3 text-body text-text-primary shadow-sm">
+                    <p>I saw your activity on The Opus Tower, 14B. How can I help with your visit or questions?</p>
+                    <p className="mt-1 text-[11px] font-semibold text-text-muted">Owner prompt</p>
+                  </div>
+                </div>
+                {(chatMessages[activeContact.id] ?? []).map((message, index) => (
+                  <div key={`${activeContact.id}-${index}`} className="flex justify-end">
+                    <div className="max-w-[82%] rounded-2xl rounded-br-sm bg-navy px-4 py-3 text-body text-white shadow-sm">
+                      <p>{message}</p>
+                      <p className="mt-1 text-[11px] font-semibold text-white/70">Sent now</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-outline p-4">
+                <div className="mb-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleCall(activeContact)}
+                    className="inline-flex items-center justify-center gap-2 rounded-button border border-outline bg-white px-3 py-2 text-label font-bold text-navy transition-colors hover:bg-hover-light"
+                  >
+                    <Phone size={14} />
+                    Call Tenant
+                  </button>
+                  <a
+                    href={`sms:${activeContact.phone}`}
+                    className="inline-flex items-center justify-center gap-2 rounded-button border border-outline bg-white px-3 py-2 text-label font-bold text-navy transition-colors hover:bg-hover-light"
+                  >
+                    <MessageSquare size={14} />
+                    SMS
+                  </a>
+                </div>
+                <form onSubmit={handleSendMessage} className="flex items-center gap-2 rounded-input border border-outline bg-white px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-100">
+                  <input
+                    value={chatDraft}
+                    onChange={(event) => setChatDraft(event.target.value)}
+                    placeholder="Type a message..."
+                    className="h-9 min-w-0 flex-1 border-0 bg-transparent text-body text-text-primary outline-none placeholder:text-text-muted"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!chatDraft.trim()}
+                    className={cn(
+                      'flex h-9 w-9 items-center justify-center rounded-full transition-colors',
+                      chatDraft.trim()
+                        ? 'bg-navy text-white hover:bg-slate-800'
+                        : 'cursor-not-allowed bg-slate-100 text-text-muted'
+                    )}
+                    aria-label="Send message"
+                  >
+                    <Send size={16} />
+                  </button>
+                </form>
+              </div>
+            </section>
+          </div>
+        )}
 
         <footer className="mt-16 flex flex-col gap-4 border-t border-outline py-8 text-filter-label font-semibold uppercase tracking-wider text-text-muted sm:flex-row sm:items-center sm:justify-between">
           <p>(c) 2024 RENTILO. The Curated Estate.</p>

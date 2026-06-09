@@ -12,6 +12,7 @@ import {
   Settings,
   Users,
   UserCog,
+  Wrench,
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -39,6 +40,7 @@ const mainNavItems: AdminNavItem[] = [
   },
   { label: 'Broker Management', href: ROUTES.ADMIN.BROKER_MANAGEMENT, icon: UserCog },
   { label: 'Listing Management', href: ROUTES.ADMIN.LISTING_MANAGEMENT, icon: FileText },
+  { label: 'Maintenance Tickets', href: ROUTES.ADMIN.MAINTENANCE_TICKETS, icon: Wrench },
   { label: 'User Management', href: ROUTES.ADMIN.USER_MANAGEMENT, icon: Users },
   { label: 'Finance & Payments', href: ROUTES.ADMIN.FINANCE_PAYMENTS, icon: CreditCard },
   { label: 'Platform Configuration', href: ROUTES.ADMIN.PLATFORM_CONFIGURATION, icon: Settings },

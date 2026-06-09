@@ -10,14 +10,11 @@ import {
   Calendar,
   CalendarDays,
   TrendingUp,
-  TrendingDown,
   Download,
-  ChevronRight,
   FileText,
   X,
 } from 'lucide-react'
 import skylineImg from '@/assets/images/skyline_heights.png'
-import marketImg from '@/assets/images/market_insights.png'
 
 /* ─────────────────────────────────────────────
    Stat Card
@@ -525,58 +522,6 @@ export function BrokerDashboard() {
               Schedule Visit
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* ── Market Insights ── */}
-      <div className="relative rounded-2xl overflow-hidden shadow-card min-h-[260px]">
-        {/* Background image (right side) */}
-        <img
-          src={marketImg}
-          alt="Market Insights"
-          className="absolute right-0 top-0 h-full w-[60%] object-cover"
-        />
-        {/* gradient left overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent" />
-
-        <div className="relative z-10 p-8 max-w-[400px]">
-          <h2 className="text-[26px] font-bold text-[#0f172a] leading-tight">
-            Market<br />Insights
-          </h2>
-          <p className="text-body text-text-muted mt-3 leading-relaxed">
-            Residential property values in your sector have increased by 4.2% this quarter.
-            High demand for lofts continues.
-          </p>
-
-          {/* Market stats chips — overlay on image side */}
-          <div className="flex gap-2 mt-4 flex-wrap">
-            <div className="bg-[#0f172a] rounded-lg px-3 py-2 min-w-[90px]">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Avg Rent</p>
-              <p className="text-base font-bold text-white mt-0.5">$3,200</p>
-              <p className="text-[10px] font-semibold text-green-400 mt-0.5 inline-flex items-center gap-0.5">
-                <TrendingUp size={9} /> +1.2%
-              </p>
-            </div>
-            <div className="bg-[#0f172a] rounded-lg px-3 py-2 min-w-[90px]">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Occupancy</p>
-              <p className="text-base font-bold text-white mt-0.5">94%</p>
-              <p className="text-[10px] font-semibold text-red-400 mt-0.5 inline-flex items-center gap-0.5">
-                <TrendingDown size={9} /> -0.5%
-              </p>
-            </div>
-            <div className="bg-[#0f172a] rounded-lg px-3 py-2 min-w-[90px]">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Days on Market</p>
-              <p className="text-base font-bold text-white mt-0.5">18</p>
-              <p className="text-[10px] font-semibold text-green-400 mt-0.5 inline-flex items-center gap-0.5">
-                <TrendingUp size={9} /> -4 days
-              </p>
-            </div>
-          </div>
-
-          <button className="mt-6 inline-flex items-center gap-1.5 text-[13px] font-bold text-[#0f172a] hover:text-primary transition-colors">
-            View Detailed Report
-            <ChevronRight size={15} />
-          </button>
         </div>
       </div>
 

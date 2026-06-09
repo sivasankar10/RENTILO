@@ -2,9 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, TrendingUp, CheckCircle2, BadgeCheck, ChevronRight } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
+import {
+  BROKER_ASSIGNED_PROPERTIES,
+  getBrokerPropertyById,
+  type BrokerAssignedProperty,
+} from '../constants/assignedProperties'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
-import skylinePlazaImg from '@/assets/images/skyline_plaza.png'
-import harborResidencesImg from '@/assets/images/harbor_residences.png'
 import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 
 /* ─────────────────────────────────────────────
@@ -122,47 +126,49 @@ function StatCard({ label, value, icon, badge, dark }: StatCardProps) {
    Property Card
 ───────────────────────────────────────────── */
 interface PropertyCardProps {
-  image: string
-  type: string
-  name: string
-  location: string
-  value: string
-  leasePercent: number
-  leased: boolean
-  onClick: () => void
+  property: BrokerAssignedProperty
+  active: boolean
+  onSelect: () => void
 }
 
-function PropertyCard({ image, type, name, location, value, leasePercent, leased, onClick }: PropertyCardProps) {
+function PropertyCard({ property, active, onSelect }: PropertyCardProps) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="block w-full text-left bg-white border border-outline rounded-xl overflow-hidden shadow-ambient hover:shadow-card-hover focus:outline-none focus:ring-2 focus:ring-primary transition-shadow duration-200"
+      onClick={onSelect}
+      className={`block w-full overflow-hidden rounded-xl border bg-white text-left shadow-ambient transition-shadow duration-200 hover:shadow-card-hover focus:outline-none focus:ring-2 focus:ring-primary ${
+        active ? 'border-primary ring-2 ring-primary/15' : 'border-outline'
+      }`}
     >
       <div className="relative">
-        <img src={image} alt={name} className="w-full h-44 object-cover" />
+        <img src={property.image} alt={property.name} className="w-full h-44 object-cover" />
         <span className="absolute top-3 left-3 px-2 py-0.5 rounded text-[10px] font-bold bg-white/90 text-[#0f172a] backdrop-blur-sm">
-          {type}
+          {property.type}
         </span>
+        {active && (
+          <span className="absolute right-3 top-3 rounded-full bg-[#0f172a] px-2.5 py-1 text-[10px] font-bold text-white">
+            Selected
+          </span>
+        )}
       </div>
       <div className="p-4">
-        <h3 className="text-[16px] font-bold text-[#0f172a]">{name}</h3>
+        <h3 className="text-[16px] font-bold text-[#0f172a]">{property.name}</h3>
         <div className="flex items-center gap-1 mt-1 text-label text-text-muted">
           <MapPin size={11} />
-          <span>{location}</span>
+          <span>{property.location}</span>
         </div>
         <div className="flex items-center gap-3 mt-3">
-          <span className="text-[15px] font-bold text-[#0f172a]">{value}</span>
+          <span className="text-[15px] font-bold text-[#0f172a]">{property.value}</span>
           <span
             className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-              leased ? 'text-status-success-text bg-status-success-bg' : 'text-status-warning-text bg-status-warning-bg'
+              property.leased ? 'text-status-success-text bg-status-success-bg' : 'text-status-warning-text bg-status-warning-bg'
             }`}
             style={{
-              color: leasePercent >= 95 ? '#15803d' : '#b45309',
-              background: leasePercent >= 95 ? '#f0fdf4' : '#fffbeb',
+              color: property.leasePercent >= 95 ? '#15803d' : '#b45309',
+              background: property.leasePercent >= 95 ? '#f0fdf4' : '#fffbeb',
             }}
           >
-            {leasePercent}% LEASED
+            {property.leasePercent}% LEASED
           </span>
         </div>
       </div>
@@ -176,6 +182,10 @@ function PropertyCard({ image, type, name, location, value, leasePercent, leased
 export function BrokerPortfolio() {
   const [chartMode, setChartMode] = useState<'volume' | 'revenue'>('revenue')
   const navigate = useNavigate()
+  const portfolioProperties = BROKER_ASSIGNED_PROPERTIES.slice(0, 2)
+  const defaultPortfolioProperty = portfolioProperties[0] ?? BROKER_ASSIGNED_PROPERTIES[0]!
+  const [selectedPropertyId, setSelectedPropertyId] = useState(defaultPortfolioProperty.id)
+  const selectedProperty = getBrokerPropertyById(selectedPropertyId) ?? defaultPortfolioProperty
 
   return (
     <div className="space-y-6 pb-10">
@@ -326,25 +336,31 @@ export function BrokerPortfolio() {
           </button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <PropertyCard
-            image={skylinePlazaImg}
-            type="Commercial"
-            name="Skyline Plaza"
-            location="Financial District, NYC"
-            value="$42,000,000"
-            leasePercent={100}
-            leased={true}
-            onClick={() => navigate(ROUTES.BROKER.PROPERTY('skyline-plaza'))}
-          />
-          <PropertyCard
-            image={harborResidencesImg}
-            type="Mixed-Use"
-            name="Harbor Residences"
-            location="Seaport Area, NYC"
-            value="$68,500,000"
-            leasePercent={92}
-            leased={false}
-            onClick={() => navigate(ROUTES.BROKER.PROPERTY('harbor-residences'))}
+          {portfolioProperties.map((property) => (
+            <PropertyCard
+              key={property.id}
+              property={property}
+              active={selectedProperty.id === property.id}
+              onSelect={() => setSelectedPropertyId(property.id)}
+            />
+          ))}
+        </div>
+
+        <div className="mt-5 flex justify-end">
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.BROKER.PROPERTY(selectedProperty.id))}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#0f172a] px-4 py-2 text-[13px] font-bold text-white hover:bg-navy/80"
+          >
+            Open Full Property Page
+            <ChevronRight size={15} />
+          </button>
+        </div>
+
+        <div className="mt-6">
+          <BrokerPropertyIntel
+            property={selectedProperty}
+            heading={`${selectedProperty.name} Details`}
           />
         </div>
       </div>

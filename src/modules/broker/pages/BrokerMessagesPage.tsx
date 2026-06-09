@@ -1,19 +1,28 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
-import { BROKER_CONVERSATIONS } from '../constants/conversations'
-import { ConversationSidebar } from '@modules/tenant/components/chat/ConversationSidebar'
+import { useBrokerChatStore } from '../store/chatStore'
+import { BrokerPropertyConversationSidebar } from '../components/BrokerPropertyConversationSidebar'
 import { ChatWindow } from '@modules/tenant/components/chat/ChatWindow'
 
 export function BrokerMessagesPage() {
   const navigate = useNavigate()
-  const [activeId, setActiveId] = useState(BROKER_CONVERSATIONS[0]?.id ?? '')
+  const conversations = useBrokerChatStore((state) => state.conversations)
+  const sendMessage = useBrokerChatStore((state) => state.sendMessage)
+  const markConversationRead = useBrokerChatStore((state) => state.markConversationRead)
+  const [activeId, setActiveId] = useState(conversations[0]?.id ?? '')
 
   const activeConversation = useMemo(
-    () => BROKER_CONVERSATIONS.find((c) => c.id === activeId) ?? BROKER_CONVERSATIONS[0],
-    [activeId],
+    () => conversations.find((c) => c.id === activeId) ?? conversations[0],
+    [activeId, conversations],
   )
+
+  useEffect(() => {
+    if (activeConversation) {
+      markConversationRead(activeConversation.id)
+    }
+  }, [activeConversation?.id, markConversationRead])
 
   if (!activeConversation) {
     return null
@@ -33,12 +42,12 @@ export function BrokerMessagesPage() {
       </div>
 
       <div className="flex flex-1 min-h-0">
-      <ConversationSidebar
-        conversations={BROKER_CONVERSATIONS}
+      <BrokerPropertyConversationSidebar
+        conversations={conversations}
         activeId={activeConversation.id}
         onSelect={setActiveId}
       />
-      <ChatWindow conversation={activeConversation} />
+      <ChatWindow conversation={activeConversation} onSendMessage={sendMessage} />
       </div>
     </div>
   )

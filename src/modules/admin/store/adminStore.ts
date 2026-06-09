@@ -41,12 +41,34 @@ export interface AdminListing {
   slug: string
   segment: 'enterprise' | 'non-enterprise'
   image: string
+  propertyTitle?: string
+  propertyType?: string
   owner: string
   location: string
   rent: string
   status: ListingStatus
   postedDate: string
   updated: string
+  streetAddress?: string
+  unit?: string
+  postalCode?: string
+  city?: string
+  neighborhood?: string
+  residentialZoning?: boolean
+  mixedUse?: boolean
+  description?: string
+  bedrooms?: string
+  bathrooms?: string
+  furnishing?: string
+  parking?: string
+  tenantPreference?: string
+  builtUpArea?: string
+  amenities?: string[]
+  mediaUrls?: string[]
+  deposit?: string
+  leaseTerm?: string
+  availableFrom?: string
+  maintenanceCharges?: string
 }
 
 export type UserRoleTag = 'OWNER' | 'TENANT' | 'BROKER'
@@ -166,6 +188,7 @@ interface AdminState {
   // Listings
   listings: AdminListing[]
   setListingStatus: (id: string, status: ListingStatus) => void
+  updateListing: (id: string, patch: Partial<AdminListing>) => void
   removeListing: (id: string) => void
   addListing: (listing: AdminListing) => void
 
@@ -230,6 +253,13 @@ export const useAdminStore = create<AdminState>((set) => ({
   setListingStatus: (id, status) =>
     set((s) => ({
       listings: s.listings.map((l) => (l.id === id ? { ...l, status, updated: 'Just now' } : l)),
+    })),
+
+  updateListing: (id, patch) =>
+    set((s) => ({
+      listings: s.listings.map((l) =>
+        l.id === id ? { ...l, ...patch, updated: 'Just now' } : l
+      ),
     })),
 
   removeListing: (id) =>

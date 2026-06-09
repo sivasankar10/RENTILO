@@ -4,6 +4,7 @@ import { OwnerPortfolio } from '../pages/OwnerPortfolio'
 import { OwnerProperties } from '../pages/OwnerProperties'
 import { OwnerPropertyDetail } from '../pages/OwnerPropertyDetail'
 import { OwnerRegisterProperty } from '../pages/OwnerRegisterProperty'
+import { OwnerMaintenanceTickets } from '../pages/OwnerMaintenanceTickets'
 import { OwnerLeases } from '../pages/OwnerLeases'
 import { OwnerTenants } from '../pages/OwnerTenants'
 import { OwnerAnalytics } from '../pages/OwnerAnalytics'
@@ -11,6 +12,7 @@ import { OwnerPlansRules } from '../pages/OwnerPlansRules'
 import { OwnerSettings } from '../pages/OwnerSettings'
 import { OwnerNotifications } from '../pages/OwnerNotifications'
 import { OwnerMessages } from '../pages/OwnerMessages'
+import { OwnerPremiumPaymentPage } from '../pages/OwnerPremiumPaymentPage'
 
 export const ownerRoutes: RouteObject[] = [
   { index: true, element: <OwnerDashboard /> },
@@ -19,10 +21,12 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'properties', element: <OwnerProperties /> },
   { path: 'properties/register', element: <OwnerRegisterProperty /> },
   { path: 'properties/:propertyId', element: <OwnerPropertyDetail /> },
+  { path: 'maintenance', element: <OwnerMaintenanceTickets /> },
   { path: 'leases', element: <OwnerLeases /> },
   { path: 'tenants', element: <OwnerTenants /> },
   { path: 'analytics', element: <OwnerAnalytics /> },
   { path: 'plans-rules', element: <OwnerPlansRules /> },
+  { path: 'premium-payment', element: <OwnerPremiumPaymentPage /> },
   { path: 'settings', element: <OwnerSettings /> },
   { path: 'notifications', element: <OwnerNotifications /> },
   { path: 'messages', element: <OwnerMessages /> },

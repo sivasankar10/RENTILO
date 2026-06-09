@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   Bath,
   BedDouble,
@@ -17,11 +18,12 @@ import {
   Tag,
   Waves,
 } from 'lucide-react'
-import alpineExteriorImg from '@/assets/images/alpine_terrace_exterior.png'
-import bathImg from '@/assets/images/property_interior_bath.png'
-import virtualTourImg from '@/assets/images/property_virtual_tour.png'
+import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
+import {
+  BROKER_ASSIGNED_PROPERTIES,
+  getBrokerPropertyById,
+} from '../constants/assignedProperties'
 import locationAerialImg from '@/assets/images/property_location_aerial.png'
-import skylineHeightsImg from '@/assets/images/skyline_heights.png'
 import julianVaneImg from '@/assets/images/julian_vane_owner.png'
 import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
@@ -65,6 +67,10 @@ const featureTiles = [
 ]
 
 export function BrokerPropertyDetails() {
+  const { propertyId } = useParams<{ propertyId: string }>()
+  const property = getBrokerPropertyById(propertyId) ?? BROKER_ASSIGNED_PROPERTIES[0]!
+  const gallery = property.gallery.length ? property.gallery : [property.image]
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 })
   }, [])
@@ -74,9 +80,9 @@ export function BrokerPropertyDetails() {
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-[clamp(30px,4vw,42px)] font-extrabold leading-none text-[#050505]">
-            1248 Alpine Terrace
+            {property.name}
           </h1>
-          <p className="mt-2 text-[15px] text-text-muted">Aspen Ridge Estates, CO 81611</p>
+          <p className="mt-2 text-[15px] text-text-muted">{property.fullAddress}</p>
         </div>
         <div className="flex items-center gap-3">
           <button className="inline-flex h-11 items-center gap-2 rounded-lg border border-outline bg-white px-4 text-[14px] font-semibold text-[#0f172a] hover:bg-hover-light">
@@ -95,8 +101,8 @@ export function BrokerPropertyDetails() {
           <section className="grid grid-cols-1 md:grid-cols-[1fr_152px] gap-3">
             <div className="relative min-h-[340px] overflow-hidden rounded-lg border border-outline bg-white md:min-h-[510px]">
               <img
-                src={alpineExteriorImg}
-                alt="1248 Alpine Terrace exterior"
+                src={gallery[0]}
+                alt={`${property.name} exterior`}
                 className="h-full w-full object-cover"
               />
               <span className="absolute bottom-6 left-6 rounded-full bg-black px-5 py-2 text-[12px] font-bold text-white">
@@ -105,10 +111,18 @@ export function BrokerPropertyDetails() {
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
               <div className="overflow-hidden rounded-lg border border-outline bg-white">
-                <img src={bathImg} alt="Kitchen detail" className="h-full min-h-[160px] w-full object-cover md:min-h-[246px]" />
+                <img
+                  src={gallery[1] ?? gallery[0]}
+                  alt={`${property.name} kitchen detail`}
+                  className="h-full min-h-[160px] w-full object-cover md:min-h-[246px]"
+                />
               </div>
               <div className="relative overflow-hidden rounded-lg border border-outline bg-white">
-                <img src={virtualTourImg} alt="Bedroom suite" className="h-full min-h-[160px] w-full object-cover md:min-h-[246px]" />
+                <img
+                  src={gallery[2] ?? gallery[0]}
+                  alt={`${property.name} bedroom suite`}
+                  className="h-full min-h-[160px] w-full object-cover md:min-h-[246px]"
+                />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/10 text-white">
                   <div className="text-center">
                     <ImageIcon size={25} className="mx-auto mb-1" />
@@ -122,39 +136,40 @@ export function BrokerPropertyDetails() {
           <section className="grid grid-cols-2 divide-x divide-outline rounded-lg border border-outline bg-white p-6 sm:grid-cols-4">
             <div className="px-4 py-2">
               <p className="text-[15px] text-text-muted">Listing Price</p>
-              <p className="mt-2 text-[25px] font-extrabold leading-tight text-black">$1,850,000</p>
+              <p className="mt-2 text-[25px] font-extrabold leading-tight text-black">{property.price}</p>
             </div>
             <div className="px-4 py-2">
               <p className="text-[15px] text-text-muted">Bedrooms</p>
               <p className="mt-4 flex items-end gap-3 text-[25px] font-extrabold text-black">
                 <BedDouble size={21} className="mb-1 text-slate-600" />
-                3 <span>Beds</span>
+                {property.beds} <span>Beds</span>
               </p>
             </div>
             <div className="px-4 py-2">
               <p className="text-[15px] text-text-muted">Bathrooms</p>
               <p className="mt-4 flex items-end gap-3 text-[25px] font-extrabold text-black">
                 <Bath size={21} className="mb-1 text-slate-600" />
-                2.5 <span>Baths</span>
+                {property.baths} <span>Baths</span>
               </p>
             </div>
             <div className="px-4 py-2">
               <p className="text-[15px] text-text-muted">Total Area</p>
               <p className="mt-4 flex items-end gap-3 text-[25px] font-extrabold text-black">
                 <Ruler size={21} className="mb-1 text-slate-600" />
-                2450 <span>sqft</span>
+                {property.sqft} <span>sqft</span>
               </p>
             </div>
           </section>
 
           <section className="rounded-lg border border-outline bg-white p-8">
             <h2 className="text-[16px] font-semibold text-black">Asset Description</h2>
-            <p className="mt-7 max-w-2xl text-[15px] leading-7 text-text-muted">
-              This contemporary mountain retreat offers unparalleled views and modern elegance. Designed
-              by renowned architects, 1248 Alpine Terrace seamlessly blends industrial materials with
-              natural textures. The open-plan living space features 20ft ceilings and a double-sided
-              fireplace, perfect for both grand entertaining and quiet evenings.
-            </p>
+            <div className="mt-7 max-w-2xl space-y-3">
+              {property.overview.map((paragraph) => (
+                <p key={paragraph} className="text-[15px] leading-7 text-text-muted">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
             <div className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {featureTiles.map((feature) => {
                 const Icon = feature.icon
@@ -168,13 +183,18 @@ export function BrokerPropertyDetails() {
             </div>
           </section>
 
+          <BrokerPropertyIntel
+            property={property}
+            heading="Tenant-Visible Details"
+          />
+
           <section className="pt-20">
             <h2 className="mb-7 text-[16px] font-semibold text-black">Virtual Tour &amp; Media</h2>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               {[
-                { src: skylineHeightsImg, alt: 'Private office view', icon: ImageIcon },
-                { src: bathImg, alt: 'Spa bathroom', icon: PlayCircle },
-                { src: locationAerialImg, alt: 'Evening terrace view', icon: Camera },
+                { src: gallery[1] ?? gallery[0], alt: `${property.name} private office view`, icon: ImageIcon },
+                { src: gallery[2] ?? gallery[0], alt: `${property.name} media tour`, icon: PlayCircle },
+                { src: gallery[3] ?? locationAerialImg, alt: `${property.name} evening terrace view`, icon: Camera },
               ].map((item) => {
                 const Icon = item.icon
                 return (
@@ -194,9 +214,9 @@ export function BrokerPropertyDetails() {
           <section className="rounded-lg border border-outline bg-white p-6">
             <p className="text-[14px] uppercase text-text-muted">Primary Owner</p>
             <div className="mt-7 flex items-center gap-4">
-              <img src={julianVaneImg} alt="Julian Vane" className="h-16 w-16 rounded-lg object-cover" />
+              <img src={julianVaneImg} alt={property.ownerName} className="h-16 w-16 rounded-lg object-cover" />
               <div>
-                <h2 className="text-[20px] font-extrabold leading-tight text-black">Julian Vane</h2>
+                <h2 className="text-[20px] font-extrabold leading-tight text-black">{property.ownerName}</h2>
                 <span className="mt-1 inline-flex rounded bg-primary-100 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
                   Primary Owner
                 </span>

@@ -7,6 +7,7 @@ import {
   FileText,
   Megaphone,
   ShieldAlert,
+  Star,
   UserPlus,
   Wrench,
 } from 'lucide-react'
@@ -178,6 +179,23 @@ export function AdminNotifications() {
     toast.success('Marked all as read', `${unreadCount} notifications cleared.`)
   }
 
+  const toggleImportant = (id: string) => {
+    setItems((current) =>
+      current.map((item) =>
+        item.id === id ? { ...item, important: !item.important } : item
+      )
+    )
+  }
+
+  const handleToggleImportant = (notification: AdminNotification, e: React.MouseEvent) => {
+    e.stopPropagation()
+    toggleImportant(notification.id)
+    toast.info(
+      notification.important ? 'Removed from important' : 'Marked important',
+      notification.title
+    )
+  }
+
   const handleAction = (notification: AdminNotification, e: React.MouseEvent) => {
     e.stopPropagation()
     markAsRead(notification.id)
@@ -263,10 +281,17 @@ export function AdminNotifications() {
             visibleItems.map((notification) => {
               const Icon = notification.icon
               return (
-                <button
-                  type="button"
+                <article
                   key={notification.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleNotificationClick(notification)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      handleNotificationClick(notification)
+                    }
+                  }}
                   className={cn(
                     'flex w-full items-start gap-5 rounded-card border bg-white px-5 py-4 text-left shadow-sm transition-all duration-200 hover:shadow-surface',
                     notification.unread ? 'border-primary/30' : 'border-outline',
@@ -315,10 +340,31 @@ export function AdminNotifications() {
                     )}
                   </div>
 
-                  <span className="shrink-0 text-filter-label uppercase text-text-muted">
-                    {notification.time}
-                  </span>
-                </button>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="text-filter-label uppercase text-text-muted">
+                      {notification.time}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleToggleImportant(notification, e)}
+                      aria-pressed={notification.important}
+                      title={
+                        notification.important ? 'Remove from important' : 'Mark as important'
+                      }
+                      className={cn(
+                        'rounded-button p-2 transition-colors',
+                        notification.important
+                          ? 'text-status-warning-text hover:bg-status-warning-bg'
+                          : 'text-text-muted hover:bg-status-warning-bg hover:text-status-warning-text'
+                      )}
+                    >
+                      <Star
+                        size={18}
+                        fill={notification.important ? 'currentColor' : 'none'}
+                      />
+                    </button>
+                  </div>
+                </article>
               )
             })
           )}

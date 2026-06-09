@@ -6,7 +6,9 @@ import {
   ChevronRight,
   Clock,
   CreditCard,
+  FileCheck2,
   Globe,
+  Landmark,
   Lock,
   LogOut,
   Mail,
@@ -19,6 +21,7 @@ import {
   Smartphone,
   Sun,
   Trash2,
+  Upload,
   User,
   Zap,
 } from 'lucide-react'
@@ -128,23 +131,27 @@ function ToggleRow({
 /* ─────────────────────────────────────────────
    Settings sections
 ───────────────────────────────────────────── */
-type SettingsTab =
+export type SettingsTab =
   | 'account'
   | 'notifications'
   | 'security'
   | 'preferences'
   | 'billing'
+  | 'bank'
+  | 'kyc'
 
-const settingsTabs: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
+export const settingsTabs: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { key: 'account', label: 'Account', icon: <User size={15} /> },
   { key: 'notifications', label: 'Notifications', icon: <Bell size={15} /> },
   { key: 'security', label: 'Security', icon: <Lock size={15} /> },
   { key: 'preferences', label: 'Preferences', icon: <Settings size={15} /> },
   { key: 'billing', label: 'Billing', icon: <CreditCard size={15} /> },
+  { key: 'bank', label: 'Bank Details', icon: <Landmark size={15} /> },
+  { key: 'kyc', label: 'KYC Verification', icon: <FileCheck2 size={15} /> },
 ]
 
 /* ── Account ── */
-function AccountSection() {
+export function AccountSection() {
   const { user } = useAuth()
   const [name, setName] = useState(
     user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'Agent Smith' : 'Agent Smith',
@@ -321,7 +328,7 @@ function AccountSection() {
 }
 
 /* ── Notifications ── */
-function NotificationsSection() {
+export function NotificationsSection() {
   const [emailLeads, setEmailLeads] = useState(true)
   const [smsLeads, setSmsLeads] = useState(false)
   const [pushLeads, setPushLeads] = useState(true)
@@ -435,7 +442,7 @@ function NotificationsSection() {
 }
 
 /* ── Security ── */
-function SecuritySection() {
+export function SecuritySection() {
   const [currentPw, setCurrentPw] = useState('')
   const [newPw, setNewPw] = useState('')
   const [confirmPw, setConfirmPw] = useState('')
@@ -576,7 +583,7 @@ function SecuritySection() {
 }
 
 /* ── Preferences ── */
-function PreferencesSection() {
+export function PreferencesSection() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light')
   const [compactView, setCompactView] = useState(false)
   const [autoAssign, setAutoAssign] = useState(true)
@@ -677,7 +684,7 @@ function PreferencesSection() {
 }
 
 /* ── Billing ── */
-function BillingSection() {
+export function BillingSection() {
   return (
     <div className="space-y-5">
       {/* Current plan */}
@@ -772,6 +779,205 @@ function BillingSection() {
 /* ─────────────────────────────────────────────
    Main Settings Page
 ───────────────────────────────────────────── */
+export function BankDetailsSection() {
+  const [accountHolder, setAccountHolder] = useState('Agent Smith')
+  const [bankName, setBankName] = useState('HDFC Bank')
+  const [accountNumber, setAccountNumber] = useState('9876543210')
+  const [routingCode, setRoutingCode] = useState('HDFC0002145')
+  const [accountType, setAccountType] = useState('Current Account')
+  const [payoutSchedule, setPayoutSchedule] = useState('Monthly')
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2500)
+  }
+
+  return (
+    <form onSubmit={handleSave} className="space-y-5">
+      <SectionCard
+        title="Commission Payout Account"
+        subtitle="Bank account used for broker commission settlements"
+        icon={<Landmark size={16} />}
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label htmlFor="bank-holder" className={labelCls}>Account Holder Name</label>
+            <input id="bank-holder" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="bank-name" className={labelCls}>Bank Name</label>
+            <input id="bank-name" value={bankName} onChange={(e) => setBankName(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="bank-account" className={labelCls}>Account Number</label>
+            <input id="bank-account" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="bank-routing" className={labelCls}>IFSC / Routing Code</label>
+            <input id="bank-routing" value={routingCode} onChange={(e) => setRoutingCode(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="bank-type" className={labelCls}>Account Type</label>
+            <select id="bank-type" value={accountType} onChange={(e) => setAccountType(e.target.value)} className={inputCls}>
+              {['Savings Account', 'Current Account', 'Business Account'].map((type) => (
+                <option key={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="bank-payout" className={labelCls}>Payout Schedule</label>
+            <select id="bank-payout" value={payoutSchedule} onChange={(e) => setPayoutSchedule(e.target.value)} className={inputCls}>
+              {['Weekly', 'Monthly', 'After every closed deal'].map((schedule) => (
+                <option key={schedule}>{schedule}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+          <p className="flex items-center gap-2 text-[13px] font-bold text-green-800">
+            <CheckCircle2 size={15} />
+            Primary payout account
+          </p>
+          <p className="mt-1 text-[12px] leading-5 text-green-700">
+            Commission payouts will be settled to this account after the finance team confirms the deal.
+          </p>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-outline pt-4">
+          <button type="submit" className="flex items-center gap-2 rounded-lg bg-[#0f172a] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-navy/80">
+            <Save size={14} /> Save Bank Details
+          </button>
+          {saved && (
+            <span className="flex items-center gap-1.5 rounded-lg bg-green-50 px-3 py-2 text-[13px] font-bold text-green-700">
+              <CheckCircle2 size={14} /> Bank details saved
+            </span>
+          )}
+        </div>
+      </SectionCard>
+    </form>
+  )
+}
+
+export function KycVerificationSection() {
+  const [documentType, setDocumentType] = useState('Aadhaar / National ID')
+  const [documentNumber, setDocumentNumber] = useState('XXXX-XXXX-1234')
+  const [addressProof, setAddressProof] = useState('Utility Bill')
+  const [consent, setConsent] = useState(true)
+  const [status, setStatus] = useState<'verified' | 'under_review'>('verified')
+
+  const handleSubmit = () => {
+    if (!consent) return
+    setStatus('under_review')
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          { label: 'Identity Check', value: status === 'verified' ? 'Verified' : 'Under Review' },
+          { label: 'Address Proof', value: 'Verified' },
+          { label: 'Broker License', value: 'Active' },
+        ].map((item) => (
+          <div key={item.label} className="rounded-xl border border-outline bg-white p-5 shadow-ambient">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">{item.label}</p>
+            <p className="mt-2 flex items-center gap-2 text-[16px] font-extrabold text-[#0f172a]">
+              <CheckCircle2 size={17} className="text-green-600" />
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <SectionCard
+        title="KYC Verification"
+        subtitle="Identity and compliance details required for broker payouts"
+        icon={<FileCheck2 size={16} />}
+      >
+        <div className="mb-5 rounded-xl bg-[#0f172a] p-5 text-white">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Verification Status</p>
+          <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[26px] font-extrabold">
+                {status === 'verified' ? 'KYC Verified' : 'Submitted for Review'}
+              </p>
+              <p className="mt-1 text-[13px] text-slate-300">
+                {status === 'verified'
+                  ? 'Your broker profile is eligible for verified leads and commission payouts.'
+                  : 'Compliance team review usually completes within 24 to 48 hours.'}
+              </p>
+            </div>
+            <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-blue-100">
+              BRK-KYC-24019
+            </span>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label htmlFor="kyc-doc-type" className={labelCls}>Identity Document</label>
+            <select id="kyc-doc-type" value={documentType} onChange={(e) => setDocumentType(e.target.value)} className={inputCls}>
+              {['Aadhaar / National ID', 'Passport', 'Driving License', 'Broker License'].map((type) => (
+                <option key={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="kyc-doc-number" className={labelCls}>Document Number</label>
+            <input id="kyc-doc-number" value={documentNumber} onChange={(e) => setDocumentNumber(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label htmlFor="kyc-address-proof" className={labelCls}>Address Proof</label>
+            <select id="kyc-address-proof" value={addressProof} onChange={(e) => setAddressProof(e.target.value)} className={inputCls}>
+              {['Utility Bill', 'Bank Statement', 'Rental Agreement', 'Tax Receipt'].map((proof) => (
+                <option key={proof}>{proof}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <p className={labelCls}>Upload Documents</p>
+            <button type="button" className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-outline bg-slate-50 text-[13px] font-bold text-[#0f172a] hover:bg-hover-light">
+              <Upload size={15} />
+              Upload ID / Address Proof
+            </button>
+          </div>
+        </div>
+
+        <label className="mt-5 flex items-start gap-3 rounded-lg bg-slate-50 px-4 py-3">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-outline text-primary focus:ring-primary"
+          />
+          <span className="text-[12px] leading-5 text-text-muted">
+            I confirm that the uploaded documents are valid and authorize RENTILO to verify them for broker onboarding, leads, and payouts.
+          </span>
+        </label>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-outline pt-4">
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!consent}
+            className="flex items-center gap-2 rounded-lg bg-[#0f172a] px-5 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-navy/80 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            <FileCheck2 size={14} />
+            Submit KYC
+          </button>
+          {status === 'under_review' && (
+            <span className="rounded-lg bg-amber-50 px-3 py-2 text-[13px] font-bold text-amber-700">
+              KYC sent for review
+            </span>
+          )}
+        </div>
+      </SectionCard>
+    </div>
+  )
+}
+
 export function BrokerSettings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('account')
   const logout = useAuthStore((s) => s.logout)
@@ -783,6 +989,8 @@ export function BrokerSettings() {
     security: <SecuritySection />,
     preferences: <PreferencesSection />,
     billing: <BillingSection />,
+    bank: <BankDetailsSection />,
+    kyc: <KycVerificationSection />,
   }
 
   return (
