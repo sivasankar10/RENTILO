@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   Building2,
@@ -25,7 +26,7 @@ interface Tenant {
   flat: string
   leaseStart: string
   leaseEnd: string
-  paymentStatus: 'PAID' | 'PENDING' | 'OVERDUE'
+  paymentStatus: PaymentStatus
 }
 
 interface FloorDetail {
@@ -36,13 +37,51 @@ interface FloorDetail {
   availableFlats: string
 }
 
-const tenants: Tenant[] = [
+interface EnterpriseStats {
+  propertyEvaluation: {
+    value: string
+    trend: string
+    verifiedOn: string
+  }
+  totalCommission: {
+    value: string
+    period: string
+    structure: string
+  }
+  brokersAssigned: {
+    value: string
+    tier: string
+  }
+}
+
+type EditableStatCard = keyof EnterpriseStats
+type PaymentStatus = 'PAID' | 'PENDING' | 'OVERDUE'
+type TenantStatusFilter = PaymentStatus | 'ALL'
+
+interface StructuralParameters {
+  blocks: string
+  blockDetail: string
+  floors: string
+  units: string
+  occupancyPercent: string
+  totalUnitCount: string
+}
+
+const emptyTenant: Tenant = {
+  name: '',
+  flat: '',
+  leaseStart: '',
+  leaseEnd: '',
+  paymentStatus: 'PENDING',
+}
+
+const initialTenants: Tenant[] = [
   { name: 'Rajesh Malhotra', flat: 'A-1801', leaseStart: '15 Jan 2023', leaseEnd: '14 Jan 2025', paymentStatus: 'PAID' },
   { name: 'Sarah Jenkins', flat: 'C-1204', leaseStart: '01 Mar 2023', leaseEnd: '28 Feb 2024', paymentStatus: 'PENDING' },
   { name: 'TechSprint Solutions Ltd', flat: 'B-0402', leaseStart: '12 Nov 2022', leaseEnd: '11 Nov 2025', paymentStatus: 'OVERDUE' },
 ]
 
-const floorDetails: FloorDetail[] = [
+const initialFloorDetails: FloorDetail[] = [
   { level: 'Penthouse (18)', config: '4 BHK Luxury', avgArea: '4,200', availability: '2 / 8', availableFlats: '1011-2' },
   { level: 'Executive (12-17)', config: '3 BHK Premium', avgArea: '2,850', availability: '14 / 48', availableFlats: '1011-2' },
   { level: 'Standard (1-11)', config: '2 & 3 BHK', avgArea: '1,800', availability: '0 / 88', availableFlats: '1011-2' },
@@ -54,6 +93,32 @@ const paymentStatusColors: Record<string, string> = {
   OVERDUE: 'bg-status-error-bg text-status-error-text',
 }
 
+const initialEnterpriseStats: EnterpriseStats = {
+  propertyEvaluation: {
+    value: '\u20b945.8Cr',
+    trend: '+2.4% vs LY',
+    verifiedOn: '12 Oct, 2023',
+  },
+  totalCommission: {
+    value: '\u20b91.12Cr',
+    period: 'Projected FY24',
+    structure: 'Corporate Flat',
+  },
+  brokersAssigned: {
+    value: '12',
+    tier: 'TOP TIER',
+  },
+}
+
+const initialStructuralParameters: StructuralParameters = {
+  blocks: '04',
+  blockDetail: 'A, B, C, D',
+  floors: '18',
+  units: '08',
+  occupancyPercent: '82',
+  totalUnitCount: '576',
+}
+
 type ReportExportRow = {
   section: string
   field: string
@@ -61,7 +126,12 @@ type ReportExportRow = {
   detail: string
 }
 
-function buildEnterprisePropertyReportRows(): ReportExportRow[] {
+function buildEnterprisePropertyReportRows(
+  stats: EnterpriseStats,
+  structure: StructuralParameters,
+  tenants: Tenant[],
+  floorDetails: FloorDetail[],
+): ReportExportRow[] {
   const overviewRows: ReportExportRow[] = [
     { section: 'Overview', field: 'Property Name', value: 'Skyline Heights', detail: '' },
     { section: 'Overview', field: 'Building Name', value: 'Skyline Heights Phase II', detail: '' },
@@ -76,13 +146,33 @@ function buildEnterprisePropertyReportRows(): ReportExportRow[] {
   ]
 
   const statsRows: ReportExportRow[] = [
-    { section: 'Financials', field: 'Property Evaluation', value: '₹45.8Cr', detail: '+2.4% vs LY | Verified on 12 Oct, 2023' },
-    { section: 'Financials', field: 'Total Commission', value: '₹1.12Cr', detail: 'Projected FY24 | Structure: Corporate Flat' },
-    { section: 'Operations', field: 'Brokers Assigned', value: '12', detail: 'TOP TIER' },
-    { section: 'Structure', field: 'Blocks', value: '04', detail: 'A, B, C, D' },
-    { section: 'Structure', field: 'Floors', value: '18', detail: '' },
-    { section: 'Structure', field: 'Units', value: '08', detail: '' },
-    { section: 'Structure', field: 'Inventory Occupancy', value: '82%', detail: '576 units across complex' },
+    {
+      section: 'Financials',
+      field: 'Property Evaluation',
+      value: stats.propertyEvaluation.value,
+      detail: `${stats.propertyEvaluation.trend} | Verified on ${stats.propertyEvaluation.verifiedOn}`,
+    },
+    {
+      section: 'Financials',
+      field: 'Total Commission',
+      value: stats.totalCommission.value,
+      detail: `${stats.totalCommission.period} | Structure: ${stats.totalCommission.structure}`,
+    },
+    {
+      section: 'Operations',
+      field: 'Brokers Assigned',
+      value: stats.brokersAssigned.value,
+      detail: stats.brokersAssigned.tier,
+    },
+    { section: 'Structure', field: 'Blocks', value: structure.blocks, detail: structure.blockDetail },
+    { section: 'Structure', field: 'Floors', value: structure.floors, detail: '' },
+    { section: 'Structure', field: 'Units', value: structure.units, detail: '' },
+    {
+      section: 'Structure',
+      field: 'Inventory Occupancy',
+      value: `${structure.occupancyPercent}%`,
+      detail: `${structure.totalUnitCount} units across complex`,
+    },
   ]
 
   const tenantRows: ReportExportRow[] = tenants.map((tenant) => ({
@@ -105,13 +195,165 @@ function buildEnterprisePropertyReportRows(): ReportExportRow[] {
 export function AdminEnterprisePropertyDetail() {
   const navigate = useNavigate()
   const { propertyId } = useParams()
+  const [stats, setStats] = useState<EnterpriseStats>(initialEnterpriseStats)
+  const [draftStats, setDraftStats] = useState<EnterpriseStats>(initialEnterpriseStats)
+  const [editingCard, setEditingCard] = useState<EditableStatCard | null>(null)
+  const [structure, setStructure] = useState<StructuralParameters>(initialStructuralParameters)
+  const [draftStructure, setDraftStructure] = useState<StructuralParameters>(initialStructuralParameters)
+  const [editingStructure, setEditingStructure] = useState(false)
+  const [savedTenants, setSavedTenants] = useState<Tenant[]>(initialTenants)
+  const [draftTenants, setDraftTenants] = useState<Tenant[]>(initialTenants)
+  const [tenantStatusFilter, setTenantStatusFilter] = useState<TenantStatusFilter>('ALL')
+  const [showTenantFilter, setShowTenantFilter] = useState(false)
+  const [showAddTenantForm, setShowAddTenantForm] = useState(false)
+  const [newTenant, setNewTenant] = useState<Tenant>(emptyTenant)
+  const [editingTenantIndex, setEditingTenantIndex] = useState<number | null>(null)
+  const [savedFloorDetails, setSavedFloorDetails] = useState<FloorDetail[]>(initialFloorDetails)
+  const [draftFloorDetails, setDraftFloorDetails] = useState<FloorDetail[]>(initialFloorDetails)
+  const [editingFloorIndex, setEditingFloorIndex] = useState<number | null>(null)
+
+  const brokerCount = Number.parseInt(draftStats.brokersAssigned.value, 10)
+  const extraBrokerCount = Number.isFinite(brokerCount) ? Math.max(brokerCount - 3, 0) : 0
+  const occupancyWidth = `${Math.min(Math.max(Number.parseInt(draftStructure.occupancyPercent, 10) || 0, 0), 100)}%`
+  const filteredTenants = draftTenants
+    .map((tenant, index) => ({ tenant, index }))
+    .filter(({ tenant }) => tenantStatusFilter === 'ALL' || tenant.paymentStatus === tenantStatusFilter)
+
+  const handleEditStat = (card: EditableStatCard) => {
+    setEditingCard(card)
+  }
+
+  const handleCancelStatEdit = () => {
+    setDraftStats(stats)
+    setEditingCard(null)
+  }
+
+  const handleFinishStatEdit = () => {
+    setEditingCard(null)
+  }
+
+  const handleSaveChanges = () => {
+    if (
+      editingCard ||
+      editingStructure ||
+      editingTenantIndex !== null ||
+      editingFloorIndex !== null ||
+      showAddTenantForm
+    ) {
+      toast.info('Finish editing first', 'Click Done in the open editor, then save the page changes.')
+      return
+    }
+
+    setStats(draftStats)
+    setStructure(draftStructure)
+    setSavedTenants(draftTenants)
+    setSavedFloorDetails(draftFloorDetails)
+    toast.success('Enterprise property updated', 'All page changes have been saved.')
+  }
+
+  const setDraftStat = <
+    Card extends EditableStatCard,
+    Field extends keyof EnterpriseStats[Card],
+  >(
+    card: Card,
+    field: Field,
+    value: EnterpriseStats[Card][Field],
+  ) => {
+    setDraftStats((current) => ({
+      ...current,
+      [card]: {
+        ...current[card],
+        [field]: value,
+      },
+    }))
+  }
+
+  const handleCancelStructureEdit = () => {
+    setDraftStructure(structure)
+    setEditingStructure(false)
+  }
+
+  const setDraftStructureField = <Field extends keyof StructuralParameters>(
+    field: Field,
+    value: StructuralParameters[Field],
+  ) => {
+    setDraftStructure((current) => ({ ...current, [field]: value }))
+  }
+
+  const setTenantField = <Field extends keyof Tenant>(
+    index: number,
+    field: Field,
+    value: Tenant[Field],
+  ) => {
+    setDraftTenants((current) =>
+      current.map((tenant, tenantIndex) =>
+        tenantIndex === index ? { ...tenant, [field]: value } : tenant
+      )
+    )
+  }
+
+  const setNewTenantField = <Field extends keyof Tenant>(field: Field, value: Tenant[Field]) => {
+    setNewTenant((current) => ({ ...current, [field]: value }))
+  }
+
+  const handleAddTenant = () => {
+    if (!newTenant.name.trim() || !newTenant.flat.trim()) {
+      toast.error('Tenant details missing', 'Add a tenant name and flat number before saving the row.')
+      return
+    }
+
+    setDraftTenants((current) => [...current, newTenant])
+    setNewTenant(emptyTenant)
+    setShowAddTenantForm(false)
+    toast.info('Tenant added to draft', 'Click Save Changes when the page edits are complete.')
+  }
+
+  const handleCancelTenantEdit = (index: number) => {
+    const savedTenant = savedTenants[index]
+    setDraftTenants((current) =>
+      savedTenant
+        ? current.map((tenant, tenantIndex) => (tenantIndex === index ? savedTenant : tenant))
+        : current.filter((_, tenantIndex) => tenantIndex !== index)
+    )
+    setEditingTenantIndex(null)
+  }
+
+  const handleDeleteTenant = (index: number) => {
+    setDraftTenants((current) => current.filter((_, tenantIndex) => tenantIndex !== index))
+    if (editingTenantIndex === index) {
+      setEditingTenantIndex(null)
+    }
+    toast.info('Tenant removed from draft', 'Click Save Changes to finalize the deletion.')
+  }
+
+  const setFloorField = <Field extends keyof FloorDetail>(
+    index: number,
+    field: Field,
+    value: FloorDetail[Field],
+  ) => {
+    setDraftFloorDetails((current) =>
+      current.map((floor, floorIndex) =>
+        floorIndex === index ? { ...floor, [field]: value } : floor
+      )
+    )
+  }
+
+  const handleCancelFloorEdit = (index: number) => {
+    const savedFloor = savedFloorDetails[index]
+    if (savedFloor) {
+      setDraftFloorDetails((current) =>
+        current.map((floor, floorIndex) => (floorIndex === index ? savedFloor : floor))
+      )
+    }
+    setEditingFloorIndex(null)
+  }
 
   const handleExportReport = () => {
     const filename = propertyId
       ? `enterprise-property-${propertyId}-report.csv`
       : 'enterprise-property-report.csv'
 
-    exportToCsv(filename, buildEnterprisePropertyReportRows(), [
+    exportToCsv(filename, buildEnterprisePropertyReportRows(stats, structure, savedTenants, savedFloorDetails), [
       { key: 'section', label: 'Section' },
       { key: 'field', label: 'Field' },
       { key: 'value', label: 'Value' },
@@ -152,6 +394,7 @@ export function AdminEnterprisePropertyDetail() {
             </button>
             <button
               type="button"
+              onClick={handleSaveChanges}
               className="inline-flex items-center gap-2 rounded-button bg-primary px-4 py-2.5 text-body font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
             >
               Save Changes
@@ -169,13 +412,74 @@ export function AdminEnterprisePropertyDetail() {
               </p>
               <Building2 size={16} className="text-text-muted" />
             </div>
-            <p className="mt-3 text-heading-2 font-bold text-text-primary">₹45.8Cr</p>
-            <p className="mt-1 text-label text-status-success">+2.4% vs LY</p>
+            {editingCard === 'propertyEvaluation' ? (
+              <div className="mt-3 space-y-2">
+                <label className="block">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Evaluation Value</span>
+                  <input
+                    type="text"
+                    value={draftStats.propertyEvaluation.value}
+                    onChange={(event) => setDraftStat('propertyEvaluation', 'value', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-heading-3 font-bold text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Yearly Change</span>
+                  <input
+                    type="text"
+                    value={draftStats.propertyEvaluation.trend}
+                    onChange={(event) => setDraftStat('propertyEvaluation', 'trend', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-label text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+              </div>
+            ) : (
+              <>
+                <p className="mt-3 text-heading-2 font-bold text-text-primary">{draftStats.propertyEvaluation.value}</p>
+                <p className="mt-1 text-label text-status-success">{draftStats.propertyEvaluation.trend}</p>
+              </>
+            )}
             <div className="mt-3 flex items-center justify-between">
-              <p className="text-label text-text-muted">Verified on 12 Oct, 2023</p>
-              <button type="button" className="p-1 text-text-muted hover:text-primary transition-colors">
-                <Pencil size={14} />
-              </button>
+              {editingCard === 'propertyEvaluation' ? (
+                <label className="block min-w-0 flex-1">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Verified Date</span>
+                  <input
+                    type="text"
+                    value={draftStats.propertyEvaluation.verifiedOn}
+                    onChange={(event) => setDraftStat('propertyEvaluation', 'verifiedOn', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-label text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+              ) : (
+                <p className="text-label text-text-muted">Verified on {draftStats.propertyEvaluation.verifiedOn}</p>
+              )}
+              {editingCard === 'propertyEvaluation' ? (
+                <div className="ml-2 flex items-center gap-2 self-end pb-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelStatEdit}
+                    className="text-label font-semibold text-text-muted hover:text-primary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinishStatEdit}
+                    className="rounded-button bg-primary px-3 py-1.5 text-label font-semibold text-white hover:bg-primary-700 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleEditStat('propertyEvaluation')}
+                  className="p-1 text-text-muted hover:text-primary transition-colors"
+                  aria-label="Edit property evaluation"
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -187,13 +491,74 @@ export function AdminEnterprisePropertyDetail() {
               </p>
               <span className="text-body text-text-muted">%</span>
             </div>
-            <p className="mt-3 text-heading-2 font-bold text-text-primary">₹1.12Cr</p>
-            <p className="mt-1 text-label text-text-muted">Projected FY24</p>
+            {editingCard === 'totalCommission' ? (
+              <div className="mt-3 space-y-2">
+                <label className="block">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Commission Value</span>
+                  <input
+                    type="text"
+                    value={draftStats.totalCommission.value}
+                    onChange={(event) => setDraftStat('totalCommission', 'value', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-heading-3 font-bold text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Projection Period</span>
+                  <input
+                    type="text"
+                    value={draftStats.totalCommission.period}
+                    onChange={(event) => setDraftStat('totalCommission', 'period', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-label text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+              </div>
+            ) : (
+              <>
+                <p className="mt-3 text-heading-2 font-bold text-text-primary">{draftStats.totalCommission.value}</p>
+                <p className="mt-1 text-label text-text-muted">{draftStats.totalCommission.period}</p>
+              </>
+            )}
             <div className="mt-3 flex items-center justify-between">
-              <p className="text-label text-text-muted">Structure: Corporate Flat</p>
-              <button type="button" className="p-1 text-text-muted hover:text-primary transition-colors">
-                <Pencil size={14} />
-              </button>
+              {editingCard === 'totalCommission' ? (
+                <label className="block min-w-0 flex-1">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Commission Structure</span>
+                  <input
+                    type="text"
+                    value={draftStats.totalCommission.structure}
+                    onChange={(event) => setDraftStat('totalCommission', 'structure', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-label text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+              ) : (
+                <p className="text-label text-text-muted">Structure: {draftStats.totalCommission.structure}</p>
+              )}
+              {editingCard === 'totalCommission' ? (
+                <div className="ml-2 flex items-center gap-2 self-end pb-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelStatEdit}
+                    className="text-label font-semibold text-text-muted hover:text-primary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinishStatEdit}
+                    className="rounded-button bg-primary px-3 py-1.5 text-label font-semibold text-white hover:bg-primary-700 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleEditStat('totalCommission')}
+                  className="p-1 text-text-muted hover:text-primary transition-colors"
+                  aria-label="Edit total commission"
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -205,12 +570,36 @@ export function AdminEnterprisePropertyDetail() {
               </p>
               <Users size={16} className="text-text-muted" />
             </div>
-            <div className="mt-3 flex items-center gap-3">
-              <p className="text-heading-2 font-bold text-text-primary">12</p>
-              <span className="rounded-pill bg-status-error-bg px-2.5 py-0.5 text-badge font-bold text-status-error-text">
-                TOP TIER
-              </span>
-            </div>
+            {editingCard === 'brokersAssigned' ? (
+              <div className="mt-3 grid grid-cols-[90px_1fr] gap-2">
+                <label className="block">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Count</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={draftStats.brokersAssigned.value}
+                    onChange={(event) => setDraftStat('brokersAssigned', 'value', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-heading-3 font-bold text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Broker Tier</span>
+                  <input
+                    type="text"
+                    value={draftStats.brokersAssigned.tier}
+                    onChange={(event) => setDraftStat('brokersAssigned', 'tier', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-label font-bold text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="mt-3 flex items-center gap-3">
+                <p className="text-heading-2 font-bold text-text-primary">{draftStats.brokersAssigned.value}</p>
+                <span className="rounded-pill bg-status-error-bg px-2.5 py-0.5 text-badge font-bold text-status-error-text">
+                  {draftStats.brokersAssigned.tier}
+                </span>
+              </div>
+            )}
             <div className="mt-3 flex items-center justify-between">
               <div className="flex -space-x-2">
                 {[1, 2, 3].map((i) => (
@@ -221,13 +610,39 @@ export function AdminEnterprisePropertyDetail() {
                     {i}
                   </div>
                 ))}
-                <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-[9px] font-bold text-slate-500">
-                  +9
-                </div>
+                {extraBrokerCount > 0 && (
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-[9px] font-bold text-slate-500">
+                    +{extraBrokerCount}
+                  </div>
+                )}
               </div>
-              <button type="button" className="p-1 text-text-muted hover:text-primary transition-colors">
-                <Pencil size={14} />
-              </button>
+              {editingCard === 'brokersAssigned' ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelStatEdit}
+                    className="text-label font-semibold text-text-muted hover:text-primary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFinishStatEdit}
+                    className="rounded-button bg-primary px-3 py-1.5 text-label font-semibold text-white hover:bg-primary-700 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleEditStat('brokersAssigned')}
+                  className="p-1 text-text-muted hover:text-primary transition-colors"
+                  aria-label="Edit brokers assigned"
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -281,42 +696,131 @@ export function AdminEnterprisePropertyDetail() {
           <div className="rounded-card border border-outline bg-white p-6 shadow-surface">
             <div className="flex items-center justify-between">
               <h2 className="text-heading-3 font-bold text-text-primary">Structural Parameters</h2>
-              <button type="button" className="p-1.5 text-text-muted hover:text-primary transition-colors">
-                <Edit size={16} />
-              </button>
+              {editingStructure ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelStructureEdit}
+                    className="text-label font-semibold text-text-muted hover:text-primary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingStructure(false)}
+                    className="rounded-button bg-primary px-3 py-1.5 text-label font-semibold text-white hover:bg-primary-700 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditingStructure(true)}
+                  className="p-1.5 text-text-muted hover:text-primary transition-colors"
+                  aria-label="Edit structural parameters"
+                >
+                  <Edit size={16} />
+                </button>
+              )}
             </div>
 
-            <div className="mt-6 space-y-5">
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-button bg-canvas-alt">
-                  <Building2 size={18} className="text-text-primary" />
+            {editingStructure ? (
+              <div className="mt-6 space-y-3">
+                <label className="block">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Blocks</span>
+                  <input
+                    type="text"
+                    value={draftStructure.blocks}
+                    onChange={(event) => setDraftStructureField('blocks', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Block Names</span>
+                  <input
+                    type="text"
+                    value={draftStructure.blockDetail}
+                    onChange={(event) => setDraftStructureField('blockDetail', event.target.value)}
+                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body text-text-primary focus:border-primary focus:outline-none"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-filter-label uppercase tracking-wider text-text-muted">Floors</span>
+                    <input
+                      type="text"
+                      value={draftStructure.floors}
+                      onChange={(event) => setDraftStructureField('floors', event.target.value)}
+                      className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-filter-label uppercase tracking-wider text-text-muted">Units</span>
+                    <input
+                      type="text"
+                      value={draftStructure.units}
+                      onChange={(event) => setDraftStructureField('units', event.target.value)}
+                      className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
+                    />
+                  </label>
                 </div>
-                <div>
-                  <p className="text-heading-3 font-bold text-text-primary">04</p>
-                  <p className="text-label text-text-muted">Blocks (A, B, C, D)</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="text-filter-label uppercase tracking-wider text-text-muted">Occupancy %</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={draftStructure.occupancyPercent}
+                      onChange={(event) => setDraftStructureField('occupancyPercent', event.target.value)}
+                      className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-filter-label uppercase tracking-wider text-text-muted">Total Units</span>
+                    <input
+                      type="text"
+                      value={draftStructure.totalUnitCount}
+                      onChange={(event) => setDraftStructureField('totalUnitCount', event.target.value)}
+                      className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
+                    />
+                  </label>
                 </div>
               </div>
+            ) : (
+              <div className="mt-6 space-y-5">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-button bg-canvas-alt">
+                    <Building2 size={18} className="text-text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-heading-3 font-bold text-text-primary">{draftStructure.blocks}</p>
+                    <p className="text-label text-text-muted">Blocks ({draftStructure.blockDetail})</p>
+                  </div>
+                </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-button bg-canvas-alt">
-                  <Layers size={18} className="text-text-primary" />
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-button bg-canvas-alt">
+                    <Layers size={18} className="text-text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-heading-3 font-bold text-text-primary">{draftStructure.floors}</p>
+                    <p className="text-label text-text-muted">Floors</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-heading-3 font-bold text-text-primary">18</p>
-                  <p className="text-label text-text-muted">Floors</p>
-                </div>
-              </div>
 
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-button bg-canvas-alt">
-                  <Grid3X3 size={18} className="text-text-primary" />
-                </div>
-                <div>
-                  <p className="text-heading-3 font-bold text-text-primary">08</p>
-                  <p className="text-label text-text-muted">Units</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-button bg-canvas-alt">
+                    <Grid3X3 size={18} className="text-text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-heading-3 font-bold text-text-primary">{draftStructure.units}</p>
+                    <p className="text-label text-text-muted">Units</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Inventory Occupancy */}
             <div className="mt-6 border-t border-outline pt-5">
@@ -324,13 +828,13 @@ export function AdminEnterprisePropertyDetail() {
                 <p className="text-filter-label uppercase tracking-wider text-text-muted">
                   Inventory Occupancy
                 </p>
-                <p className="text-body font-bold text-primary">82%</p>
+                <p className="text-body font-bold text-primary">{draftStructure.occupancyPercent}%</p>
               </div>
               <div className="mt-2 h-2 rounded-pill bg-slate-100">
-                <div className="h-full w-[82%] rounded-pill bg-primary" />
+                <div className="h-full rounded-pill bg-primary" style={{ width: occupancyWidth }} />
               </div>
               <p className="mt-3 text-label text-text-muted">
-                Total unit count: 576 units across complex.
+                Total unit count: {draftStructure.totalUnitCount} units across complex.
               </p>
             </div>
           </div>
@@ -343,13 +847,18 @@ export function AdminEnterprisePropertyDetail() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
+                onClick={() => setShowTenantFilter((current) => !current)}
                 className="inline-flex items-center gap-1.5 rounded-button border border-outline px-3 py-2 text-label font-medium text-text-muted hover:bg-hover-light transition-colors"
               >
                 <Filter size={14} />
-                Filter
+                {tenantStatusFilter === 'ALL' ? 'Filter' : tenantStatusFilter}
               </button>
               <button
                 type="button"
+                onClick={() => {
+                  setShowAddTenantForm(true)
+                  setEditingTenantIndex(null)
+                }}
                 className="inline-flex items-center gap-1.5 rounded-button bg-navy px-3 py-2 text-label font-semibold text-white hover:bg-slate-800 transition-colors"
               >
                 <UserPlus size={14} />
@@ -357,6 +866,85 @@ export function AdminEnterprisePropertyDetail() {
               </button>
             </div>
           </div>
+          {showTenantFilter && (
+            <div className="flex flex-wrap items-center gap-2 border-b border-outline bg-canvas-alt px-6 py-3">
+              {(['ALL', 'PAID', 'PENDING', 'OVERDUE'] as TenantStatusFilter[]).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setTenantStatusFilter(status)}
+                  className={cn(
+                    'rounded-button border px-3 py-1.5 text-label font-semibold transition-colors',
+                    tenantStatusFilter === status
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-outline bg-white text-text-muted hover:bg-hover-light',
+                  )}
+                >
+                  {status === 'ALL' ? 'All Statuses' : status}
+                </button>
+              ))}
+            </div>
+          )}
+          {showAddTenantForm && (
+            <div className="grid gap-3 border-b border-outline bg-canvas-alt px-6 py-4 md:grid-cols-[1.4fr_0.8fr_0.9fr_0.9fr_0.9fr_auto]">
+              <input
+                type="text"
+                value={newTenant.name}
+                onChange={(event) => setNewTenantField('name', event.target.value)}
+                placeholder="Tenant name"
+                className="rounded-button border border-outline px-3 py-2 text-body text-text-primary focus:border-primary focus:outline-none"
+              />
+              <input
+                type="text"
+                value={newTenant.flat}
+                onChange={(event) => setNewTenantField('flat', event.target.value)}
+                placeholder="Flat no."
+                className="rounded-button border border-outline px-3 py-2 text-body text-text-primary focus:border-primary focus:outline-none"
+              />
+              <input
+                type="text"
+                value={newTenant.leaseStart}
+                onChange={(event) => setNewTenantField('leaseStart', event.target.value)}
+                placeholder="Lease start"
+                className="rounded-button border border-outline px-3 py-2 text-body text-text-primary focus:border-primary focus:outline-none"
+              />
+              <input
+                type="text"
+                value={newTenant.leaseEnd}
+                onChange={(event) => setNewTenantField('leaseEnd', event.target.value)}
+                placeholder="Lease end"
+                className="rounded-button border border-outline px-3 py-2 text-body text-text-primary focus:border-primary focus:outline-none"
+              />
+              <select
+                value={newTenant.paymentStatus}
+                onChange={(event) => setNewTenantField('paymentStatus', event.target.value as PaymentStatus)}
+                className="rounded-button border border-outline px-3 py-2 text-body text-text-primary focus:border-primary focus:outline-none"
+              >
+                <option value="PAID">PAID</option>
+                <option value="PENDING">PENDING</option>
+                <option value="OVERDUE">OVERDUE</option>
+              </select>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewTenant(emptyTenant)
+                    setShowAddTenantForm(false)
+                  }}
+                  className="text-label font-semibold text-text-muted hover:text-primary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddTenant}
+                  className="rounded-button bg-primary px-3 py-2 text-label font-semibold text-white hover:bg-primary-700 transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -383,52 +971,124 @@ export function AdminEnterprisePropertyDetail() {
                 </tr>
               </thead>
               <tbody>
-                {tenants.map((tenant) => (
+                {filteredTenants.map(({ tenant, index }) => (
                   <tr
-                    key={tenant.flat}
+                    key={`${tenant.flat}-${index}`}
                     className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors"
                   >
                     <td className="px-6 py-4">
-                      <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body font-medium text-text-primary">
-                        {tenant.name}
-                      </span>
+                      {editingTenantIndex === index ? (
+                        <input
+                          type="text"
+                          value={tenant.name}
+                          onChange={(event) => setTenantField(index, 'name', event.target.value)}
+                          className="w-full min-w-44 rounded-button border border-outline px-3 py-1.5 text-body font-medium text-text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body font-medium text-text-primary">
+                          {tenant.name}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
-                        {tenant.flat}
-                      </span>
+                      {editingTenantIndex === index ? (
+                        <input
+                          type="text"
+                          value={tenant.flat}
+                          onChange={(event) => setTenantField(index, 'flat', event.target.value)}
+                          className="w-28 rounded-button border border-outline px-3 py-1.5 text-body text-text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
+                          {tenant.flat}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-label text-text-primary">
-                        {tenant.leaseStart}
-                      </span>
+                      {editingTenantIndex === index ? (
+                        <input
+                          type="text"
+                          value={tenant.leaseStart}
+                          onChange={(event) => setTenantField(index, 'leaseStart', event.target.value)}
+                          className="w-32 rounded-button border border-outline px-3 py-1.5 text-label text-text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-label text-text-primary">
+                          {tenant.leaseStart}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-label text-text-primary">
-                        {tenant.leaseEnd}
-                      </span>
+                      {editingTenantIndex === index ? (
+                        <input
+                          type="text"
+                          value={tenant.leaseEnd}
+                          onChange={(event) => setTenantField(index, 'leaseEnd', event.target.value)}
+                          className="w-32 rounded-button border border-outline px-3 py-1.5 text-label text-text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-label text-text-primary">
+                          {tenant.leaseEnd}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <span
-                        className={cn(
-                          'inline-block rounded-pill px-3 py-1 text-badge font-bold',
-                          paymentStatusColors[tenant.paymentStatus],
-                        )}
-                      >
-                        {tenant.paymentStatus}
-                      </span>
+                      {editingTenantIndex === index ? (
+                        <select
+                          value={tenant.paymentStatus}
+                          onChange={(event) => setTenantField(index, 'paymentStatus', event.target.value as PaymentStatus)}
+                          className="rounded-button border border-outline px-3 py-1.5 text-label font-semibold text-text-primary focus:border-primary focus:outline-none"
+                        >
+                          <option value="PAID">PAID</option>
+                          <option value="PENDING">PENDING</option>
+                          <option value="OVERDUE">OVERDUE</option>
+                        </select>
+                      ) : (
+                        <span
+                          className={cn(
+                            'inline-block rounded-pill px-3 py-1 text-badge font-bold',
+                            paymentStatusColors[tenant.paymentStatus],
+                          )}
+                        >
+                          {tenant.paymentStatus}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">
+                        {editingTenantIndex === index ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelTenantEdit(index)}
+                              className="text-label font-semibold text-text-muted hover:text-primary transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingTenantIndex(null)}
+                              className="rounded-button bg-primary px-3 py-1.5 text-label font-semibold text-white hover:bg-primary-700 transition-colors"
+                            >
+                              Done
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingTenantIndex(index)
+                              setShowAddTenantForm(false)
+                            }}
+                            className="p-1.5 rounded-button text-text-muted hover:text-primary hover:bg-hover-light transition-colors"
+                            aria-label={`Edit ${tenant.name}`}
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        )}
                         <button
                           type="button"
-                          className="p-1.5 rounded-button text-text-muted hover:text-primary hover:bg-hover-light transition-colors"
-                          aria-label={`Edit ${tenant.name}`}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          type="button"
+                          onClick={() => handleDeleteTenant(index)}
                           className="p-1.5 rounded-button text-text-muted hover:text-status-error hover:bg-status-error-bg transition-colors"
                           aria-label={`Delete ${tenant.name}`}
                         >
@@ -443,7 +1103,9 @@ export function AdminEnterprisePropertyDetail() {
           </div>
 
           <div className="flex items-center justify-between border-t border-outline px-6 py-4">
-            <p className="text-label text-text-muted">Showing 3 of 472 tenants</p>
+            <p className="text-label text-text-muted">
+              Showing {filteredTenants.length} of {draftTenants.length} tenants
+            </p>
             <div className="flex items-center gap-1">
               <button
                 type="button"
@@ -500,44 +1162,109 @@ export function AdminEnterprisePropertyDetail() {
                 </tr>
               </thead>
               <tbody>
-                {floorDetails.map((floor) => (
+                {draftFloorDetails.map((floor, index) => (
                   <tr
-                    key={floor.level}
+                    key={`${floor.level}-${index}`}
                     className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors"
                   >
                     <td className="px-6 py-4">
-                      <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body font-medium text-text-primary">
-                        {floor.level}
-                      </span>
+                      {editingFloorIndex === index ? (
+                        <input
+                          type="text"
+                          value={floor.level}
+                          onChange={(event) => setFloorField(index, 'level', event.target.value)}
+                          className="w-full min-w-40 rounded-button border border-outline px-3 py-1.5 text-body font-medium text-text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body font-medium text-text-primary">
+                          {floor.level}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
-                        {floor.config}
-                      </span>
+                      {editingFloorIndex === index ? (
+                        <input
+                          type="text"
+                          value={floor.config}
+                          onChange={(event) => setFloorField(index, 'config', event.target.value)}
+                          className="w-full min-w-36 rounded-button border border-outline px-3 py-1.5 text-body text-text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
+                          {floor.config}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
-                        {floor.avgArea}
-                      </span>
+                      {editingFloorIndex === index ? (
+                        <input
+                          type="text"
+                          value={floor.avgArea}
+                          onChange={(event) => setFloorField(index, 'avgArea', event.target.value)}
+                          className="w-28 rounded-button border border-outline px-3 py-1.5 text-body text-text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
+                          {floor.avgArea}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
-                        {floor.availability}
-                      </span>
+                      {editingFloorIndex === index ? (
+                        <input
+                          type="text"
+                          value={floor.availability}
+                          onChange={(event) => setFloorField(index, 'availability', event.target.value)}
+                          className="w-28 rounded-button border border-outline px-3 py-1.5 text-body text-text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
+                          {floor.availability}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
-                        {floor.availableFlats}
-                      </span>
+                      {editingFloorIndex === index ? (
+                        <input
+                          type="text"
+                          value={floor.availableFlats}
+                          onChange={(event) => setFloorField(index, 'availableFlats', event.target.value)}
+                          className="w-32 rounded-button border border-outline px-3 py-1.5 text-body text-text-primary focus:border-primary focus:outline-none"
+                        />
+                      ) : (
+                        <span className="inline-block rounded-button border border-outline px-3 py-1.5 text-body text-text-primary">
+                          {floor.availableFlats}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <button
-                        type="button"
-                        className="p-1.5 rounded-button text-text-muted hover:text-primary hover:bg-hover-light transition-colors"
-                        aria-label={`Edit ${floor.level}`}
-                      >
-                        <Pencil size={14} />
-                      </button>
+                      {editingFloorIndex === index ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleCancelFloorEdit(index)}
+                            className="text-label font-semibold text-text-muted hover:text-primary transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingFloorIndex(null)}
+                            className="rounded-button bg-primary px-3 py-1.5 text-label font-semibold text-white hover:bg-primary-700 transition-colors"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setEditingFloorIndex(index)}
+                          className="p-1.5 rounded-button text-text-muted hover:text-primary hover:bg-hover-light transition-colors"
+                          aria-label={`Edit ${floor.level}`}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
