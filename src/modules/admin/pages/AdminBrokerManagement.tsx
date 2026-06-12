@@ -1,0 +1,507 @@
+import { useState } from 'react'
+import { AlertCircle, Ban, Eye, Mail, Search, Trash2, TrendingUp, UserCheck } from 'lucide-react'
+import { cn } from '@shared/utils/cn'
+import { useAdminStore } from '../store/adminStore'
+import type { AdminBroker } from '../store/adminStore'
+import { ActionMenu } from '../components/ActionMenu'
+import { confirm } from '../components/ConfirmDialog'
+import { toast } from '../components/Toast'
+import { exportToCsv } from '../utils/exportCsv'
+
+type TabFilter = 'All' | 'Active' | 'Banned'
+type EnterpriseTab = 'Enterprise' | 'Non-Enterprise'
+type SortKey = 'success' | 'deals' | 'name'
+
+export function AdminBrokerManagement() {
+  const brokers = useAdminStore((s) => s.brokers)
+  const enterpriseBrokers = useAdminStore((s) => s.enterpriseBrokers)
+  const queue = useAdminStore((s) => s.assignmentQueue)
+  const setBrokerStatus = useAdminStore((s) => s.setBrokerStatus)
+  const removeBroker = useAdminStore((s) => s.removeBroker)
+  const removeEnterpriseBroker = useAdminStore((s) => s.removeEnterpriseBroker)
+  const assignQueueItem = useAdminStore((s) => s.assignQueueItem)
+  const assignAllQueueItems = useAdminStore((s) => s.assignAllQueueItems)
+
+  const [activeTab, setActiveTab] = useState<TabFilter>('All')
+  const [enterpriseTab, setEnterpriseTab] = useState<EnterpriseTab>('Enterprise')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortKey, setSortKey] = useState<SortKey>('success')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const filteredBrokers = brokers
+    .filter((broker) => {
+      if (activeTab === 'Active') return broker.status === 'ACTIVE'
+      if (activeTab === 'Banned') return broker.status === 'BANNED'
+      return true
+    })
+    .filter((broker) => broker.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      if (sortKey === 'success') return b.successRate - a.successRate
+      if (sortKey === 'deals') return b.dealsClosed - a.dealsClosed
+      return a.name.localeCompare(b.name)
+    })
+
+  const handleViewDetails = (broker: AdminBroker) => {
+    toast.info(`Viewing ${broker.name}`, `Broker ID ${broker.brokerId}`)
+  }
+
+  const handleSendMessage = (broker: AdminBroker) => {
+    toast.success('Message drafted', `New conversation with ${broker.name}`)
+  }
+
+  const handleToggleBan = (broker: AdminBroker) => {
+    const isBanning = broker.status === 'ACTIVE'
+    confirm({
+      title: isBanning ? 'Ban broker?' : 'Reinstate broker?',
+      description: isBanning
+        ? `${broker.name} will lose access to active deals and won't receive new assignments.`
+        : `${broker.name} will regain platform access immediately.`,
+      confirmLabel: isBanning ? 'Ban broker' : 'Reinstate',
+      variant: isBanning ? 'danger' : 'default',
+      onConfirm: () => {
+        setBrokerStatus(broker.id, isBanning ? 'BANNED' : 'ACTIVE')
+        toast.success(
+          isBanning ? 'Broker banned' : 'Broker reinstated',
+          `${broker.name} is now ${isBanning ? 'banned' : 'active'}.`,
+        )
+      },
+    })
+  }
+
+  const handleRemoveBroker = (broker: AdminBroker) => {
+    confirm({
+      title: 'Remove broker permanently?',
+      description: `${broker.name} (${broker.brokerId}) will be removed from the platform. This cannot be undone.`,
+      confirmLabel: 'Remove',
+      variant: 'danger',
+      onConfirm: () => {
+        removeBroker(broker.id)
+        toast.success('Broker removed', `${broker.name} no longer appears in the directory.`)
+      },
+    })
+  }
+
+  const handleAssignQueue = (id: string, name: string) => {
+    assignQueueItem(id)
+    toast.success('Assignment dispatched', `${name} has been routed to the next broker.`)
+  }
+
+  const handleAssignAll = () => {
+    if (queue.every((q) => q.assigned)) {
+      toast.info('Queue is empty', 'All listings are already assigned.')
+      return
+    }
+    confirm({
+      title: 'Assign all pending listings?',
+      description: `${queue.filter((q) => !q.assigned).length} listings will be auto-routed to top brokers.`,
+      confirmLabel: 'Assign all',
+      onConfirm: () => {
+        assignAllQueueItems()
+        toast.success('All listings assigned', 'Brokers have been notified.')
+      },
+    })
+  }
+
+  return (
+    <div className="min-h-screen bg-canvas-alt px-2 py-8 sm:px-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <h1 className="text-heading-1 font-bold tracking-tight text-text-primary">
+          Broker Management
+        </h1>
+
+        {/* Alert Cards */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <AlertCard
+            tone="error"
+            title="Attention Required"
+            value="3 Expiring Deal Windows"
+            description="Review active windows before automatic termination."
+            onClick={() => toast.info('Review queue opened', 'Showing 3 deals nearing expiry.')}
+          />
+          <AlertCard
+            tone="error"
+            title="System Alert"
+            value="2 Failed Deals"
+            description="Transactions flagged for non-compliance or timeout."
+            onClick={() => toast.info('Compliance log opened', 'Routing to investigation panel.')}
+          />
+          <AlertCard
+            tone="success"
+            title="Performance"
+            value="94.2% Success Rate"
+            description="Avg broker performance is up 2.4% this month."
+            onClick={() => toast.info('Performance details', 'Opening detailed analytics view.')}
+          />
+        </div>
+
+        {/* Broker Table Section */}
+        <div className="rounded-card border border-outline bg-white shadow-surface">
+          {/* Filters Row */}
+          <div className="flex flex-col gap-4 border-b border-outline px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-1">
+              {(['All', 'Active', 'Banned'] as TabFilter[]).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => { setActiveTab(tab); setCurrentPage(1) }}
+                  className={cn(
+                    'rounded-button px-4 py-2 text-body font-medium transition-colors',
+                    activeTab === tab
+                      ? 'bg-navy text-white'
+                      : 'text-text-muted hover:bg-hover-light hover:text-text-primary',
+                  )}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Search brokers..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-9 w-56 rounded-input border border-outline bg-white pl-9 pr-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="h-9 rounded-input border border-outline bg-white px-3 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
+              >
+                <option value="success">Sort: Success Rate</option>
+                <option value="deals">Sort: Deals Closed</option>
+                <option value="name">Sort: Name A-Z</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-outline">
+                  <th className="px-6 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Broker Name</th>
+                  <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Broker ID</th>
+                  <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Status</th>
+                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Active Deals</th>
+                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Deals Closed</th>
+                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Success Rate</th>
+                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Avg Time</th>
+                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBrokers.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-10 text-center text-body text-text-muted">
+                      No brokers match the current filters.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredBrokers.map((broker) => (
+                    <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-badge font-bold text-text-primary">
+                            {broker.avatar}
+                          </div>
+                          <div>
+                            <p className="text-body font-semibold text-text-primary">{broker.name}</p>
+                            <p className="text-label text-text-muted">{broker.role}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-body text-text-primary">{broker.brokerId}</td>
+                      <td className="px-4 py-4">
+                        <span className={cn('text-badge font-bold uppercase', broker.status === 'ACTIVE' ? 'text-status-success' : 'text-status-error')}>
+                          {broker.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-center text-body text-text-primary">{broker.activeDeals}</td>
+                      <td className="px-4 py-4 text-center text-body text-text-primary">{broker.dealsClosed}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex justify-center">
+                          <SuccessRateBar rate={broker.successRate} banned={broker.status === 'BANNED'} />
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-center text-body text-text-muted">{broker.avgTime}</td>
+                      <td className="px-4 py-4 text-center">
+                        <ActionMenu
+                          ariaLabel={`Actions for ${broker.name}`}
+                          items={[
+                            { label: 'View profile', icon: Eye, onClick: () => handleViewDetails(broker) },
+                            { label: 'Send message', icon: Mail, onClick: () => handleSendMessage(broker) },
+                            {
+                              label: broker.status === 'ACTIVE' ? 'Ban broker' : 'Reinstate',
+                              icon: broker.status === 'ACTIVE' ? Ban : UserCheck,
+                              variant: broker.status === 'ACTIVE' ? 'danger' : 'default',
+                              onClick: () => handleToggleBan(broker),
+                            },
+                            { label: 'Remove', icon: Trash2, variant: 'danger', onClick: () => handleRemoveBroker(broker) },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-outline px-6 py-4">
+            <p className="text-label text-text-muted">
+              Showing {filteredBrokers.length} of {brokers.length} brokers
+            </p>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="rounded-button px-3 py-1.5 text-label font-medium text-text-muted hover:bg-hover-light transition-colors">Previous</button>
+              {[1, 2, 3].map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={cn('h-8 w-8 rounded-button text-label font-medium transition-colors', currentPage === page ? 'bg-primary text-white' : 'text-text-muted hover:bg-hover-light')}
+                >
+                  {page}
+                </button>
+              ))}
+              <button type="button" onClick={() => setCurrentPage((p) => Math.min(3, p + 1))} className="rounded-button px-3 py-1.5 text-label font-medium text-text-muted hover:bg-hover-light transition-colors">Next</button>
+            </div>
+          </div>
+        </div>
+
+        {/* Enterprise / Non-Enterprise Section */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          <div>
+            <div className="flex border-b border-outline">
+              {(['Enterprise', 'Non-Enterprise'] as EnterpriseTab[]).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setEnterpriseTab(tab)}
+                  className={cn(
+                    'px-8 py-4 text-heading-3 font-bold transition-colors border-b-2',
+                    enterpriseTab === tab ? 'border-navy text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary',
+                  )}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            <div className="rounded-b-card border border-t-0 border-outline bg-white shadow-sm">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-outline">
+                    <th className="px-6 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Broker Name</th>
+                    <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Commission</th>
+                    <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Property</th>
+                    <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Valuation (In Lakhs)</th>
+                    <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Status</th>
+                    <th className="w-10 px-2 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {enterpriseBrokers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-body text-text-muted">
+                        No enterprise brokers to display.
+                      </td>
+                    </tr>
+                  ) : (
+                    enterpriseBrokers.map((broker) => (
+                      <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-badge font-bold text-text-primary">
+                              {broker.avatar}
+                            </div>
+                            <div>
+                              <p className="text-body font-semibold text-text-primary">{broker.name}</p>
+                              <p className="text-label text-text-muted">{broker.role}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <span className="rounded-pill bg-teal-50 px-2.5 py-1 text-badge font-bold text-teal-700">
+                            {broker.commission}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-body text-text-primary">{broker.property}</td>
+                        <td className="px-4 py-4 text-center text-body text-text-primary">{broker.valuation}</td>
+                        <td className="px-4 py-4 text-center text-body font-semibold text-text-primary">
+                          {broker.status}
+                        </td>
+                        <td className="px-2 py-4 text-center">
+                          <ActionMenu
+                            ariaLabel={`Actions for ${broker.name}`}
+                            items={[
+                              { label: 'View deal', icon: Eye, onClick: () => toast.info('Deal opened', `Showing details for ${broker.property}.`) },
+                              { label: 'Send message', icon: Mail, onClick: () => toast.success('Message sent', `Notified ${broker.name}.`) },
+                              {
+                                label: 'Remove from deal',
+                                icon: Trash2,
+                                variant: 'danger',
+                                onClick: () => confirm({
+                                  title: 'Remove from deal?',
+                                  description: `${broker.name} will be unassigned from ${broker.property}.`,
+                                  confirmLabel: 'Remove',
+                                  variant: 'danger',
+                                  onConfirm: () => {
+                                    removeEnterpriseBroker(broker.id)
+                                    toast.success('Broker removed from deal')
+                                  },
+                                }),
+                              },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Assignment Queue Sidebar */}
+          <div className="rounded-card border border-outline bg-white p-6 shadow-surface h-fit">
+            <h3 className="text-heading-3 font-bold text-text-primary">Assignment Queue</h3>
+            <p className="mt-1 text-label text-text-muted">
+              Unassigned high-value listings awaiting broker deployment.
+            </p>
+
+            <div className="mt-5 space-y-4">
+              {queue.map((item) => (
+                <div key={item.id} className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-button bg-slate-100">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-text-muted">
+                        <path d="M2 14V6l6-4 6 4v8H2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                        <path d="M6 14v-4h4v4" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-body font-semibold text-text-primary truncate">{item.name}</p>
+                      <p className="text-label text-text-muted truncate">{item.location}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={item.assigned}
+                    onClick={() => handleAssignQueue(item.id, item.name)}
+                    className={cn(
+                      'rounded-button px-3 py-1.5 text-badge font-bold transition-colors',
+                      item.assigned
+                        ? 'bg-status-success-bg text-status-success-text cursor-default'
+                        : 'bg-primary text-white hover:bg-primary-700',
+                    )}
+                  >
+                    {item.assigned ? 'Assigned' : 'Assign'}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAssignAll}
+              className="mt-5 w-full rounded-button border border-outline py-2.5 text-body font-medium text-text-muted hover:bg-hover-light hover:text-text-primary transition-colors"
+            >
+              View All Queue ({queue.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                exportToCsv('broker-list.csv', brokers, [
+                  { key: 'brokerId', label: 'Broker ID' },
+                  { key: 'name', label: 'Name' },
+                  { key: 'role', label: 'Role' },
+                  { key: 'status', label: 'Status' },
+                  { key: 'activeDeals', label: 'Active Deals' },
+                  { key: 'dealsClosed', label: 'Deals Closed' },
+                  { key: 'successRate', label: 'Success Rate (%)' },
+                  { key: 'avgTime', label: 'Avg Time' },
+                ])
+                toast.success('Export started', 'Broker list downloaded as CSV.')
+              }}
+              className="mt-2 w-full rounded-button bg-navy py-2.5 text-body font-semibold text-white hover:bg-slate-800 transition-colors"
+            >
+              Export Broker List
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AlertCard({
+  tone,
+  title,
+  value,
+  description,
+  onClick,
+}: {
+  tone: 'error' | 'success'
+  title: string
+  value: string
+  description: string
+  onClick: () => void
+}) {
+  const Icon = tone === 'success' ? TrendingUp : AlertCircle
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left rounded-card border border-outline bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+            tone === 'success' ? 'bg-teal-50' : 'bg-status-error-bg',
+          )}
+        >
+          <Icon size={20} className={tone === 'success' ? 'text-teal-600' : 'text-status-error'} />
+        </div>
+        <div>
+          <p className="text-filter-label uppercase tracking-wider text-text-muted">{title}</p>
+          <p className="mt-1 text-body font-bold text-text-primary">{value}</p>
+          <p className="mt-0.5 text-label text-text-muted">{description}</p>
+        </div>
+      </div>
+    </button>
+  )
+}
+
+function SuccessRateBar({ rate, banned }: { rate: number; banned?: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-2 w-16 overflow-hidden rounded-pill bg-slate-100">
+        <div
+          className={cn(
+            'h-full rounded-pill transition-all',
+            banned ? 'bg-status-error' : rate >= 90 ? 'bg-teal-500' : rate >= 70 ? 'bg-status-warning' : 'bg-status-error',
+          )}
+          style={{ width: `${rate}%` }}
+        />
+      </div>
+      <span
+        className={cn(
+          'rounded-pill px-2 py-0.5 text-badge font-bold',
+          banned ? 'bg-status-error-bg text-status-error-text' : rate >= 90 ? 'bg-teal-50 text-teal-700' : rate >= 70 ? 'bg-status-warning-bg text-status-warning-text' : 'bg-status-error-bg text-status-error-text',
+        )}
+      >
+        {rate}%
+      </span>
+    </div>
+  )
+}

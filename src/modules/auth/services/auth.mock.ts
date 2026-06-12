@@ -23,6 +23,12 @@ const MOCK_ACCOUNTS: Record<
     lastName: 'Enterprise',
     email: 'enterprise@rentilo.com',
   },
+  '9000000006': {
+    roles: ['admin'],
+    firstName: 'Test',
+    lastName: 'Admin',
+    email: 'admin@rentilo.com',
+  },
 }
 
 const otpSessions = new Map<string, { phone: string; createdAt: number }>()

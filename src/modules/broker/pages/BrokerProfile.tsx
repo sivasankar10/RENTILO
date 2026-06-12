@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Award,
@@ -12,7 +13,19 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { cn } from '@shared/utils/cn'
 import { useAuth } from '@shared/hooks/useAuth'
+import {
+  AccountSection,
+  BankDetailsSection,
+  BillingSection,
+  KycVerificationSection,
+  NotificationsSection,
+  PreferencesSection,
+  SecuritySection,
+  settingsTabs,
+  type SettingsTab,
+} from './BrokerSettings'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 
 const recentWins = [
@@ -23,11 +36,21 @@ const recentWins = [
 
 export function BrokerProfile() {
   const { user } = useAuth()
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>('account')
   const fullName =
     user && `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
       ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
       : 'Agent Smith'
   const email = user?.email ?? 'agent.smith@rentilo.com'
+  const settingsSectionMap: Record<SettingsTab, ReactNode> = {
+    account: <AccountSection />,
+    notifications: <NotificationsSection />,
+    security: <SecuritySection />,
+    preferences: <PreferencesSection />,
+    billing: <BillingSection />,
+    bank: <BankDetailsSection />,
+    kyc: <KycVerificationSection />,
+  }
 
   return (
     <div className="space-y-6 pb-10">
@@ -145,6 +168,39 @@ export function BrokerProfile() {
               Weekdays, 10:00 AM to 6:00 PM. Priority slots held for hot leads.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-[20px] font-extrabold tracking-tight text-[#0f172a]">
+            Profile Settings
+          </h2>
+          <p className="mt-1 text-[13px] text-text-muted">
+            Manage account preferences, security, billing, bank details, and KYC from your profile.
+          </p>
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-outline bg-white shadow-ambient">
+          <div className="flex gap-2 overflow-x-auto border-b border-outline bg-slate-50 p-3">
+            {settingsTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveSettingsTab(tab.key)}
+                className={cn(
+                  'inline-flex h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-[13px] font-bold transition-colors',
+                  activeSettingsTab === tab.key
+                    ? 'bg-[#0f172a] text-white shadow-ambient'
+                    : 'text-text-muted hover:bg-white hover:text-[#0f172a]',
+                )}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="p-5">{settingsSectionMap[activeSettingsTab]}</div>
         </div>
       </section>
     </div>

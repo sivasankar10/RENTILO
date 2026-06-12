@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
@@ -11,7 +11,6 @@ import {
   Menu,
   MessageSquare,
   Search,
-  Settings,
   Users,
   X,
 } from 'lucide-react'
@@ -20,6 +19,8 @@ import { useMediaQuery } from '@shared/hooks/useMediaQuery'
 import { useAuth } from '@shared/hooks/useAuth'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
+import { useAuthStore } from '@app/store/authStore'
+import { BROKER_ASSIGNED_PROPERTIES } from '@modules/broker/constants/assignedProperties'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 
 type BrokerNavItem = {
@@ -45,7 +46,6 @@ const mainNavItems: BrokerNavItem[] = [
 ]
 
 const footerNavItems: BrokerNavItem[] = [
-  { label: 'Settings', href: '#settings', icon: Settings },
   { label: 'Support', href: '#support', icon: CircleHelp },
 ]
 
@@ -116,12 +116,50 @@ function NavItemLink({
  */
 export function BrokerDashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [propertySearch, setPropertySearch] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
   const isMobile = useMediaQuery('(max-width: 1024px)')
   const navigate = useNavigate()
   const { logout } = useAuth()
   const { pathname } = useLocation()
   const isMessagesPage = pathname.startsWith(ROUTES.BROKER.MESSAGES)
   const messagesActive = isMessagesPage
+  const isNotificationsPage = pathname.startsWith(ROUTES.BROKER.NOTIFICATIONS)
+  const logout = useAuthStore((s) => s.logout)
+  const propertyResults = useMemo(() => {
+    const query = propertySearch.trim().toLowerCase()
+    if (!query) {
+      return []
+    }
+
+    return BROKER_ASSIGNED_PROPERTIES.filter((property) =>
+      [
+        property.name,
+        property.type,
+        property.location,
+        property.fullAddress,
+        property.ownerName,
+        property.price,
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query),
+    )
+  }, [propertySearch])
+
+  const showPropertyResults = searchOpen && propertySearch.trim().length > 0
+
+  const handlePropertySelect = (propertyId: string) => {
+    setPropertySearch('')
+    setSearchOpen(false)
+    navigate(ROUTES.BROKER.PROPERTY(propertyId))
+  }
+
+  const handleSearchSubmit = () => {
+    if (propertyResults[0]) {
+      handlePropertySelect(propertyResults[0].id)
+    }
+  }
 
   const handleLogout = () => {
     logout()
@@ -164,9 +202,75 @@ export function BrokerDashboardLayout() {
               />
               <input
                 type="search"
+                value={propertySearch}
+                onChange={(event) => {
+                  setPropertySearch(event.target.value)
+                  setSearchOpen(true)
+                }}
+                onFocus={() => setSearchOpen(true)}
+                onBlur={() => window.setTimeout(() => setSearchOpen(false), 120)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    handleSearchSubmit()
+                  }
+                }}
                 placeholder="Search properties..."
                 className="w-full h-10 pl-11 pr-4 rounded-full bg-[#1e293b] border border-white/10 text-[14px] text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary/40 transition-all"
               />
+
+              {showPropertyResults && (
+                <div className="absolute left-0 right-0 top-12 z-[70] overflow-hidden rounded-2xl border border-white/10 bg-white text-[#0f172a] shadow-modal">
+                  <div className="border-b border-outline px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                      Matching Properties
+                    </p>
+                  </div>
+
+                  <div className="max-h-[360px] overflow-y-auto">
+                    {propertyResults.map((property) => (
+                      <button
+                        key={property.id}
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => handlePropertySelect(property.id)}
+                        className="flex w-full items-center gap-3 border-b border-outline px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-primary-50"
+                      >
+                        <img
+                          src={property.image}
+                          alt={property.name}
+                          className="h-12 w-14 rounded-lg object-cover"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[14px] font-bold text-[#0f172a]">
+                            {property.name}
+                          </span>
+                          <span className="mt-0.5 block truncate text-[12px] text-text-muted">
+                            {property.location} - {property.type}
+                          </span>
+                          <span className="mt-1 block text-[11px] font-semibold text-primary">
+                            View overview and associated leads
+                          </span>
+                        </span>
+                        <span className="shrink-0 rounded-pill bg-canvas-alt px-2.5 py-1 text-[11px] font-bold text-text-muted">
+                          {property.price}
+                        </span>
+                      </button>
+                    ))}
+
+                    {propertyResults.length === 0 && (
+                      <div className="px-4 py-8 text-center">
+                        <p className="text-[13px] font-semibold text-[#0f172a]">
+                          No matching properties
+                        </p>
+                        <p className="mt-1 text-[12px] text-text-muted">
+                          Try a property name, location, owner, or price.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -174,7 +278,14 @@ export function BrokerDashboardLayout() {
             <button
               type="button"
               onClick={() => navigate(ROUTES.BROKER.NOTIFICATIONS)}
+<<<<<<< HEAD
               className="relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
+=======
+              className={cn(
+                'relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors',
+                isNotificationsPage && 'bg-white/15 text-white',
+              )}
+>>>>>>> main
               aria-label="Notifications"
             >
               <Bell size={20} strokeWidth={1.75} />
@@ -198,13 +309,6 @@ export function BrokerDashboardLayout() {
               aria-label="Help"
             >
               <CircleHelp size={20} strokeWidth={1.75} />
-            </button>
-            <button
-              type="button"
-              className="p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
-              aria-label="Settings"
-            >
-              <Settings size={20} strokeWidth={1.75} />
             </button>
             <button
               type="button"
@@ -288,6 +392,18 @@ export function BrokerDashboardLayout() {
                 </button>
               </li>
             </ul>
+            {/* Log Out */}
+            <button
+              type="button"
+              onClick={() => {
+                logout()
+                navigate(ROUTES.AUTH.LOGIN)
+              }}
+              className="mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut size={18} strokeWidth={1.75} className="shrink-0" />
+              <span>Log Out</span>
+            </button>
           </div>
         </aside>
         )}

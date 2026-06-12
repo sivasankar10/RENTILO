@@ -11,14 +11,30 @@ const ICON_STYLES = {
 
 interface NotificationCardProps {
   notification: TenantNotification
+  onMarkRead: (id: string) => void
+  onToggleImportant: (id: string) => void
 }
 
-export function NotificationCard({ notification }: NotificationCardProps) {
+export function NotificationCard({
+  notification,
+  onMarkRead,
+  onToggleImportant,
+}: NotificationCardProps) {
   return (
     <article
+      role="button"
+      tabIndex={0}
+      onClick={() => onMarkRead(notification.id)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onMarkRead(notification.id)
+        }
+      }}
       className={cn(
-        'flex items-start gap-4 p-5 rounded-xl bg-brand-container-lowest border border-brand-outline-variant/80',
-        'shadow-sm transition-shadow hover:shadow-card'
+        'flex items-start gap-4 p-5 rounded-xl bg-brand-container-lowest border text-left cursor-pointer',
+        'shadow-sm transition-shadow hover:shadow-card focus:outline-none focus:ring-2 focus:ring-brand/20',
+        notification.unread ? 'border-brand/30' : 'border-brand-outline-variant/80'
       )}
     >
       <div
@@ -41,9 +57,28 @@ export function NotificationCard({ notification }: NotificationCardProps) {
             )}
             {notification.title}
           </h3>
-          <time className="shrink-0 font-body text-[11px] font-semibold tracking-wide text-brand-outline uppercase whitespace-nowrap pt-0.5">
-            {notification.timestamp}
-          </time>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                onToggleImportant(notification.id)
+              }}
+              aria-pressed={notification.important}
+              title={notification.important ? 'Remove from important' : 'Mark as important'}
+              className={cn(
+                'grid h-8 w-8 place-items-center rounded-full border-0 bg-transparent transition-colors',
+                notification.important
+                  ? 'text-brand-gold hover:bg-brand-gold/10'
+                  : 'text-brand-outline hover:bg-brand-container-high hover:text-brand-gold'
+              )}
+            >
+              <MaterialIcon name="star" className="!text-xl" filled={notification.important} />
+            </button>
+            <time className="font-body text-[11px] font-semibold tracking-wide text-brand-outline uppercase whitespace-nowrap pt-0.5">
+              {notification.timestamp}
+            </time>
+          </div>
         </div>
         <p className="font-body text-sm text-brand-on-surface-variant leading-relaxed pr-2">
           {notification.description}

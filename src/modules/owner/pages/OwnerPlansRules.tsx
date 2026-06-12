@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Banknote,
   Building2,
@@ -9,6 +10,7 @@ import {
   Link2,
   ShieldCheck,
 } from 'lucide-react'
+import { ROUTES } from '@shared/constants/routes'
 
 const tierFeatures = [
   'Up to 50 Properties',
@@ -18,10 +20,10 @@ const tierFeatures = [
 ]
 
 export function OwnerPlansRules() {
+  const navigate = useNavigate()
   const [identityStatus, setIdentityStatus] = useState('Not Started')
   const [businessStatus, setBusinessStatus] = useState('Pending Upload')
   const [brokersEnabled, setBrokersEnabled] = useState(false)
-  const [selectedTier, setSelectedTier] = useState('')
 
   return (
     <div className="min-h-screen bg-canvas-alt px-6 py-12">
@@ -165,16 +167,11 @@ export function OwnerPlansRules() {
 
               <button
                 type="button"
-                onClick={() => setSelectedTier('Premium selected.')}
+                onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
                 className="mt-12 w-full rounded-button border-2 border-text-primary bg-white px-4 py-3 text-body font-semibold text-text-primary transition-all duration-200 hover:bg-navy hover:text-white"
               >
                 Select Premium
               </button>
-              {selectedTier && (
-                <p className="mt-4 text-center text-label font-semibold text-status-success-text">
-                  {selectedTier}
-                </p>
-              )}
             </div>
           </section>
         </div>

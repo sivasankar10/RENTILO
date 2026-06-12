@@ -101,7 +101,7 @@ export function OwnerDashboard() {
                   <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <h2 className="text-body-lg font-semibold text-text-primary">
-                        Modern Loft in Downtown
+                        The Opus Tower, 14B
                       </h2>
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-label text-text-muted">
                         <span className="inline-flex items-center gap-1">
@@ -121,7 +121,7 @@ export function OwnerDashboard() {
 
                     <div className="text-left sm:text-right">
                       <p className="text-heading-2 font-bold tracking-tight text-primary">
-                        $3,500/mo
+                        $4,500/mo
                       </p>
                     </div>
                   </div>

@@ -25,6 +25,7 @@ export const ROUTES = {
     NOTIFICATIONS: '/tenant/notifications',
     MESSAGES: '/tenant/messages',
     SERIOUS_BUYER_BADGE: '/tenant/serious-buyer-badge',
+    SERIOUS_BUYER_PAYMENT: '/tenant/serious-buyer-badge/payment',
   },
 
   // Owner
@@ -34,10 +35,13 @@ export const ROUTES = {
     PORTFOLIO: '/owner/portfolio',
     PROPERTY_DETAIL: (id: string) => `/owner/properties/${id}`,
     PROPERTIES: '/owner/properties',
+    REGISTER_PROPERTY: '/owner/properties/register',
+    MAINTENANCE: '/owner/maintenance',
     LEASES: '/owner/leases',
     TENANTS: '/owner/tenants',
     ANALYTICS: '/owner/analytics',
     PLANS_RULES: '/owner/plans-rules',
+    PREMIUM_PAYMENT: '/owner/premium-payment',
     SETTINGS: '/owner/settings',
     NOTIFICATIONS: '/owner/notifications',
     MESSAGES: '/owner/messages',
@@ -56,6 +60,10 @@ export const ROUTES = {
     ANALYTICS: '/broker/analytics',
     MESSAGES: '/broker/messages',
     NOTIFICATIONS: '/broker/notifications',
+<<<<<<< HEAD
+=======
+    SETTINGS: '/broker/settings',
+>>>>>>> main
     PROFILE: '/broker/profile',
     EDIT_PROFILE: '/broker/profile/edit',
   },
@@ -67,5 +75,19 @@ export const ROUTES = {
     PORTFOLIO: '/enterprise/portfolio',
     TEAMS: '/enterprise/teams',
     REPORTS: '/enterprise/reports',
+  },
+
+  // Admin
+  ADMIN: {
+    ROOT: '/admin',
+    DASHBOARD: '/admin/dashboard',
+    BROKER_MANAGEMENT: '/admin/broker-management',
+    LISTING_MANAGEMENT: '/admin/listing-management',
+    USER_MANAGEMENT: '/admin/user-management',
+    FINANCE_PAYMENTS: '/admin/finance-payments',
+    PLATFORM_CONFIGURATION: '/admin/platform-configuration',
+    ASSIGNMENT_MANAGEMENT: '/admin/assignment-management',
+    MAINTENANCE_TICKETS: '/admin/maintenance-tickets',
+    NOTIFICATIONS: '/admin/notifications',
   },
 } as const

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ChevronLeft,
   CalendarDays,
@@ -7,16 +8,21 @@ import {
   Download,
   Filter,
   MapPin,
-  Plus,
+  MessageCircle,
+  MoreVertical,
+  Phone,
   Search,
   UserPlus,
 } from 'lucide-react'
+import { ROUTES } from '@shared/constants/routes'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 import julianVaneImg from '@/assets/images/julian_vane_owner.png'
 import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 import { ManagementTiersModal } from '../components/ManagementTiersModal'
 
 type LeadStatus = 'New' | 'Contacted' | 'Visit Scheduled'
+type StatusFilter = 'All' | LeadStatus
+type ReceivedFilter = 'All Time' | 'Last 30 Days' | 'Last 7 Days' | 'Today'
 
 type Lead = {
   id: string
@@ -25,7 +31,129 @@ type Lead = {
   email: string
   interestedProperty: string
   receivedDate: { date: string; meta: string }
+  daysAgo: number
   status: LeadStatus
+  conversationId: string
+}
+
+const STATUS_OPTIONS: StatusFilter[] = ['All', 'New', 'Contacted', 'Visit Scheduled']
+const RECEIVED_OPTIONS: ReceivedFilter[] = ['Last 30 Days', 'Last 7 Days', 'Today', 'All Time']
+const LEADS_PER_PAGE = 3
+
+const leadSeeds = [
+  {
+    avatar: sarahJenkinsImg,
+    name: 'Eleonor Vance',
+    email: 'e.vance@example.com',
+    interestedProperty: 'Zenith Penthouse',
+    conversationId: 'lead-eleonor-vance',
+  },
+  {
+    avatar: julianVaneImg,
+    name: 'Julian Thorne',
+    email: 'j.thorne@archeweb.com',
+    interestedProperty: 'Harbor View',
+    conversationId: 'lead-julian-thorne',
+  },
+  {
+    avatar: brokerProfileImg,
+    name: 'Marcus Chen',
+    email: 'ch.m@agency.org',
+    interestedProperty: 'Industrial Loft',
+    conversationId: 'lead-marcus-chen',
+  },
+  {
+    avatar: sarahJenkinsImg,
+    name: 'Nisha Rao',
+    email: 'n.rao@example.com',
+    interestedProperty: 'Skyline Heights 14B',
+    conversationId: 'lead-eleonor-vance',
+  },
+  {
+    avatar: julianVaneImg,
+    name: 'Arjun Patel',
+    email: 'arjun.patel@example.com',
+    interestedProperty: 'Canary Wharf',
+    conversationId: 'lead-julian-thorne',
+  },
+  {
+    avatar: brokerProfileImg,
+    name: 'Meera Iyer',
+    email: 'meera.iyer@example.com',
+    interestedProperty: 'Greenwich Modern Home',
+    conversationId: 'lead-marcus-chen',
+  },
+]
+
+function formatLeadDate(daysAgo: number) {
+  const date = new Date(2023, 9, 24)
+  date.setDate(date.getDate() - daysAgo)
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function formatLeadMeta(daysAgo: number) {
+  if (daysAgo === 0) return '2 hours ago'
+  if (daysAgo === 1) return '1 day ago'
+  return `${daysAgo} days ago`
+}
+
+const allLeads: Lead[] = Array.from({ length: 42 }, (_, index) => {
+  const seed = leadSeeds[index % leadSeeds.length]
+  const daysAgo = index < 3 ? [0, 1, 3][index] : (index * 2) % 45
+  const status: LeadStatus =
+    index % 3 === 0 ? 'New' : index % 3 === 1 ? 'Contacted' : 'Visit Scheduled'
+  const duplicateCount = Math.floor(index / leadSeeds.length)
+
+  return {
+    ...seed,
+    id: `lead-${index + 1}`,
+    name: duplicateCount ? `${seed.name} ${duplicateCount + 1}` : seed.name,
+    email: duplicateCount
+      ? seed.email.replace('@', `+${duplicateCount + 1}@`)
+      : seed.email,
+    receivedDate: {
+      date: formatLeadDate(daysAgo),
+      meta: formatLeadMeta(daysAgo),
+    },
+    daysAgo,
+    status,
+  }
+})
+
+function escapeCsvValue(value: string | number) {
+  const text = String(value)
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`
+  }
+
+  return text
+}
+
+function downloadLeadCsv(leads: Lead[]) {
+  const headers = ['Name', 'Email', 'Interested Property', 'Received Date', 'Received', 'Status']
+  const rows = leads.map((lead) => [
+    lead.name,
+    lead.email,
+    lead.interestedProperty,
+    lead.receivedDate.date,
+    lead.receivedDate.meta,
+    lead.status,
+  ])
+  const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'rentilo-broker-tenant-leads.csv'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
 }
 
 function StatusPill({ status }: { status: LeadStatus }) {
@@ -64,12 +192,20 @@ function Pagination({
   onPageChange: (next: number) => void
 }) {
   const pageNumbers = useMemo(() => {
-    // Matches screenshot pattern: 1 2 3 ... last
-    const base: (number | '...')[] = [1, 2, 3]
-    if (totalPages > 4) base.push('...', totalPages)
-    else for (let p = 4; p <= totalPages; p++) base.push(p)
-    return base
-  }, [totalPages])
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1)
+    }
+
+    const middle = Math.min(Math.max(page, 2), totalPages - 1)
+    const pages: (number | '...')[] = [1]
+
+    if (middle > 2) pages.push('...')
+    pages.push(middle)
+    if (middle < totalPages - 1) pages.push('...')
+    pages.push(totalPages)
+
+    return pages
+  }, [page, totalPages])
 
   return (
     <div className="flex items-center gap-2">
@@ -78,6 +214,7 @@ function Pagination({
         className="w-8 h-8 rounded-md border border-outline bg-white/50 hover:bg-hover-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={page === 1}
         aria-label="Previous page"
+        onClick={() => onPageChange(Math.max(1, page - 1))}
       >
         <ChevronLeft size={16} className="mx-auto text-text-muted" />
       </button>
@@ -121,47 +258,68 @@ function Pagination({
 }
 
 export function BrokerClients() {
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [plansModalOpen, setPlansModalOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
+  const [receivedFilter, setReceivedFilter] = useState<ReceivedFilter>('Last 30 Days')
+  const [openActionId, setOpenActionId] = useState<string | null>(null)
+  const [actionStatus, setActionStatus] = useState('')
 
-  const totalLeads = 42
-  const totalPages = 14
-  const leads: Lead[] = useMemo(
-    () => [
-      {
-        id: '1',
-        avatar: sarahJenkinsImg,
-        name: 'Eleonor Vance',
-        email: 'e.vance@example.com',
-        interestedProperty: 'Zenith Penthouse',
-        receivedDate: { date: 'Oct 24, 2023', meta: '2 hours ago' },
-        status: 'New',
-      },
-      {
-        id: '2',
-        avatar: julianVaneImg,
-        name: 'Julian Thorne',
-        email: 'j.thorne.archeweb.com',
-        interestedProperty: 'Harbor View',
-        receivedDate: { date: 'Oct 23, 2023', meta: '1 day ago' },
-        status: 'Contacted',
-      },
-      {
-        id: '3',
-        avatar: brokerProfileImg,
-        name: 'Marcus Chen',
-        email: 'ch.m@agency.org',
-        interestedProperty: 'Industrial Loft',
-        receivedDate: { date: 'Oct 21, 2023', meta: '3 days ago' },
-        status: 'Visit Scheduled',
-      },
-    ],
-    [],
+  const filteredLeads = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase()
+
+    return allLeads.filter((lead) => {
+      const matchesSearch =
+        !normalizedSearch ||
+        [lead.name, lead.email, lead.interestedProperty]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedSearch)
+
+      const matchesStatus = statusFilter === 'All' || lead.status === statusFilter
+
+      const matchesReceived =
+        receivedFilter === 'All Time' ||
+        (receivedFilter === 'Today' && lead.daysAgo === 0) ||
+        (receivedFilter === 'Last 7 Days' && lead.daysAgo <= 7) ||
+        (receivedFilter === 'Last 30 Days' && lead.daysAgo <= 30)
+
+      return matchesSearch && matchesStatus && matchesReceived
+    })
+  }, [search, statusFilter, receivedFilter])
+
+  const totalLeads = filteredLeads.length
+  const totalPages = Math.max(1, Math.ceil(totalLeads / LEADS_PER_PAGE))
+  const currentPage = Math.min(page, totalPages)
+  const paginatedLeads = filteredLeads.slice(
+    (currentPage - 1) * LEADS_PER_PAGE,
+    currentPage * LEADS_PER_PAGE,
   )
+  const shownFrom = totalLeads === 0 ? 0 : (currentPage - 1) * LEADS_PER_PAGE + 1
+  const shownTo = Math.min(currentPage * LEADS_PER_PAGE, totalLeads)
+  const newLeadsCount = allLeads.filter((lead) => lead.status === 'New').length
+  const visitsSetCount = allLeads.filter((lead) => lead.status === 'Visit Scheduled').length
 
-  const shownCount = 3
-  const newLeadsCount = 24
-  const visitsSetCount = 12
+  const resetToFirstPage = () => {
+    setPage(1)
+    setOpenActionId(null)
+  }
+
+  const openLeadChat = (lead: Lead) => {
+    navigate(`${ROUTES.BROKER.MESSAGES}?conversation=${encodeURIComponent(lead.conversationId)}`)
+  }
+
+  const callLead = (lead: Lead) => {
+    setActionStatus(`Calling ${lead.name} for ${lead.interestedProperty}.`)
+    setOpenActionId(null)
+  }
+
+  const exportLeads = () => {
+    downloadLeadCsv(filteredLeads)
+    setActionStatus(`Exported ${filteredLeads.length} leads.`)
+  }
 
   return (
     <div className="space-y-10 pb-10">
@@ -220,54 +378,73 @@ export function BrokerClients() {
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted"
                   />
                   <input
+                    type="search"
+                    value={search}
+                    onChange={(event) => {
+                      setSearch(event.target.value)
+                      resetToFirstPage()
+                    }}
                     className="w-[250px] pl-9 pr-4 py-2 rounded-lg bg-canvas border border-outline text-body text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                     placeholder="Search by name or property"
-                    defaultValue=""
                   />
                 </div>
 
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-outline bg-white hover:bg-hover-light transition-colors shadow-ambient"
-                >
+                <label className="relative inline-flex items-center gap-2 rounded-lg border border-outline bg-white px-4 py-2 shadow-ambient transition-colors hover:bg-hover-light">
                   <Filter size={14} className="text-text-muted" />
-                  <span className="text-label text-text-muted font-semibold">Status: All</span>
-                  <ChevronDown size={14} className="text-text-muted" />
-                </button>
+                  <span className="text-label font-semibold text-text-muted">Status:</span>
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => {
+                      setStatusFilter(event.target.value as StatusFilter)
+                      resetToFirstPage()
+                    }}
+                    className="appearance-none bg-transparent pr-6 text-label font-semibold text-text-muted outline-none"
+                  >
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} className="pointer-events-none absolute right-3 text-text-muted" />
+                </label>
               </div>
 
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-outline bg-white hover:bg-hover-light transition-colors shadow-ambient w-fit"
-              >
+              <label className="relative inline-flex w-fit items-center gap-2 rounded-lg border border-outline bg-white px-4 py-2 shadow-ambient transition-colors hover:bg-hover-light">
                 <CalendarDays size={14} className="text-text-muted" />
-                <span className="text-label text-text-muted font-semibold">
-                  Received: Last 30 Days
-                </span>
-                <ChevronDown size={14} className="text-text-muted" />
-              </button>
+                <span className="text-label font-semibold text-text-muted">Received:</span>
+                <select
+                  value={receivedFilter}
+                  onChange={(event) => {
+                    setReceivedFilter(event.target.value as ReceivedFilter)
+                    resetToFirstPage()
+                  }}
+                  className="appearance-none bg-transparent pr-6 text-label font-semibold text-text-muted outline-none"
+                >
+                  {RECEIVED_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-3 text-text-muted" />
+              </label>
             </div>
 
             <div className="flex items-center gap-3 pt-0.5">
               <button
                 type="button"
                 className="inline-flex items-center gap-2 text-label font-semibold text-text-muted hover:text-primary transition-colors"
-                onClick={() => {}}
+                onClick={exportLeads}
               >
                 <Download size={14} />
                 Export
               </button>
-
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0f172a] text-white text-label font-bold hover:bg-navy/90 transition-colors shadow-ambient"
-                onClick={() => {}}
-              >
-                <Plus size={14} />
-                Add Lead
-              </button>
             </div>
           </div>
+          {actionStatus && (
+            <p className="mt-3 text-label font-semibold text-primary">{actionStatus}</p>
+          )}
         </div>
 
         {/* Table */}
@@ -293,7 +470,7 @@ export function BrokerClients() {
               </tr>
             </thead>
             <tbody>
-              {leads.map((lead) => (
+              {paginatedLeads.map((lead) => (
                 <tr key={lead.id} className="border-b border-outline last:border-b-0">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -359,10 +536,54 @@ export function BrokerClients() {
                   </td>
 
                   <td className="px-6 py-4">
-                    <span className="text-label text-text-muted">—</span>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenActionId((current) => (current === lead.id ? null : lead.id))
+                        }
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline bg-white text-text-muted transition-colors hover:bg-hover-light hover:text-[#0f172a]"
+                        aria-label={`Open actions for ${lead.name}`}
+                        aria-expanded={openActionId === lead.id}
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+
+                      {openActionId === lead.id && (
+                        <div className="absolute right-0 top-10 z-30 w-40 overflow-hidden rounded-xl border border-outline bg-white shadow-card">
+                          <button
+                            type="button"
+                            onClick={() => openLeadChat(lead)}
+                            className="flex w-full items-center gap-2 px-4 py-3 text-left text-label font-semibold text-[#0f172a] hover:bg-primary-50"
+                          >
+                            <MessageCircle size={15} />
+                            Chat
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => callLead(lead)}
+                            className="flex w-full items-center gap-2 px-4 py-3 text-left text-label font-semibold text-[#0f172a] hover:bg-primary-50"
+                          >
+                            <Phone size={15} />
+                            Call
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
+              {paginatedLeads.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center">
+                    <Search size={32} className="mx-auto text-slate-300" />
+                    <p className="mt-3 text-[14px] font-bold text-[#0f172a]">No leads found</p>
+                    <p className="mt-1 text-label text-text-muted">
+                      Try changing the search term, status, or received date filter.
+                    </p>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -370,10 +591,10 @@ export function BrokerClients() {
         {/* Bottom: showing + pagination */}
         <div className="flex items-center justify-between px-6 py-4">
           <p className="text-label text-text-muted">
-            Showing {shownCount} of {totalLeads} leads
+            Showing {shownFrom}-{shownTo} of {totalLeads} leads
           </p>
 
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <Pagination page={currentPage} totalPages={totalPages} onPageChange={setPage} />
         </div>
       </div>
 
@@ -384,7 +605,7 @@ export function BrokerClients() {
           <button
             type="button"
             className="text-label font-semibold text-text-muted hover:text-primary transition-colors inline-flex items-center gap-1"
-            onClick={() => {}}
+            onClick={() => navigate(ROUTES.BROKER.LISTINGS)}
           >
             View All Listings <ChevronRight size={14} />
           </button>

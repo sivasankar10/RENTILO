@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import {
   Bath,
   BedDouble,
@@ -17,27 +18,130 @@ import {
   Tag,
   Waves,
 } from 'lucide-react'
-import alpineExteriorImg from '@/assets/images/alpine_terrace_exterior.png'
-import bathImg from '@/assets/images/property_interior_bath.png'
-import virtualTourImg from '@/assets/images/property_virtual_tour.png'
+import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
+import {
+  BROKER_ASSIGNED_PROPERTIES,
+  getBrokerPropertyById,
+} from '../constants/assignedProperties'
 import locationAerialImg from '@/assets/images/property_location_aerial.png'
-import skylineHeightsImg from '@/assets/images/skyline_heights.png'
 import julianVaneImg from '@/assets/images/julian_vane_owner.png'
 import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 
-const leads = [
+type PropertyLead = {
+  name: string
+  note: string
+  image: string
+  status: string
+  lastAction: string
+}
+
+const defaultAssociatedLeads: PropertyLead[] = [
   {
     name: 'Sarah Miller',
     note: 'Qualified - $1.9M Pre-approved',
     image: sarahJenkinsImg,
+    status: 'Hot lead',
+    lastAction: 'Viewing scheduled',
   },
   {
     name: 'Robert Blackstone',
     note: 'Pending ID - Cash Offer',
     image: brokerProfileImg,
+    status: 'Follow-up',
+    lastAction: 'Awaiting documents',
   },
 ]
+
+const propertyLeadMap: Record<string, PropertyLead[]> = {
+  'skyline-plaza': [
+    {
+      name: 'Sarah Miller',
+      note: 'Corporate tenant - 18 month lease interest',
+      image: sarahJenkinsImg,
+      status: 'Hot lead',
+      lastAction: 'Viewing scheduled for Friday',
+    },
+    {
+      name: 'Robert Blackstone',
+      note: 'Executive relocation - budget approved',
+      image: brokerProfileImg,
+      status: 'Qualified',
+      lastAction: 'Lease terms shared',
+    },
+    {
+      name: 'Julian Thorne',
+      note: 'Family tenant - wants concierge and parking',
+      image: julianVaneImg,
+      status: 'Follow-up',
+      lastAction: 'Call back requested',
+    },
+  ],
+  'harbor-residences': [
+    {
+      name: 'Eleonor Vance',
+      note: 'Waterfront preference - move-in within 30 days',
+      image: sarahJenkinsImg,
+      status: 'New',
+      lastAction: 'Brochure sent',
+    },
+    {
+      name: 'Marcus Chen',
+      note: 'Couple lead - asked for pet policy',
+      image: brokerProfileImg,
+      status: 'Contacted',
+      lastAction: 'Pet approval pending',
+    },
+  ],
+  'canary-wharf': [
+    {
+      name: 'Nisha Rao',
+      note: 'Professional tenant - office commute priority',
+      image: sarahJenkinsImg,
+      status: 'Qualified',
+      lastAction: 'Video tour completed',
+    },
+    {
+      name: 'Daniel Brooks',
+      note: 'Finance professional - immediate occupancy',
+      image: brokerProfileImg,
+      status: 'Hot lead',
+      lastAction: 'Deposit discussion active',
+    },
+  ],
+  'shoreditch-penthouse': [
+    {
+      name: 'Amelia Hart',
+      note: 'Creative founder - rooftop terrace preference',
+      image: sarahJenkinsImg,
+      status: 'Hot lead',
+      lastAction: 'Viewing scheduled',
+    },
+    {
+      name: 'Oscar Flynn',
+      note: 'Designer couple - needs work-from-home setup',
+      image: brokerProfileImg,
+      status: 'Follow-up',
+      lastAction: 'Awaiting availability',
+    },
+  ],
+  'greenwich-modern-home': [
+    {
+      name: 'Meera Iyer',
+      note: 'Family tenant - school proximity required',
+      image: sarahJenkinsImg,
+      status: 'Qualified',
+      lastAction: 'School details shared',
+    },
+    {
+      name: 'Arjun Patel',
+      note: 'Long-term lease interest - garage required',
+      image: brokerProfileImg,
+      status: 'Contacted',
+      lastAction: 'Follow-up call tomorrow',
+    },
+  ],
+}
 
 const timeline = [
   {
@@ -65,6 +169,11 @@ const featureTiles = [
 ]
 
 export function BrokerPropertyDetails() {
+  const { propertyId } = useParams<{ propertyId: string }>()
+  const property = getBrokerPropertyById(propertyId) ?? BROKER_ASSIGNED_PROPERTIES[0]!
+  const gallery = property.gallery.length ? property.gallery : [property.image]
+  const associatedLeads = propertyLeadMap[property.id] ?? defaultAssociatedLeads
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 })
   }, [])
@@ -74,9 +183,9 @@ export function BrokerPropertyDetails() {
       <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-[clamp(30px,4vw,42px)] font-extrabold leading-none text-[#050505]">
-            1248 Alpine Terrace
+            {property.name}
           </h1>
-          <p className="mt-2 text-[15px] text-text-muted">Aspen Ridge Estates, CO 81611</p>
+          <p className="mt-2 text-[15px] text-text-muted">{property.fullAddress}</p>
         </div>
         <div className="flex items-center gap-3">
           <button className="inline-flex h-11 items-center gap-2 rounded-lg border border-outline bg-white px-4 text-[14px] font-semibold text-[#0f172a] hover:bg-hover-light">
@@ -95,8 +204,8 @@ export function BrokerPropertyDetails() {
           <section className="grid grid-cols-1 md:grid-cols-[1fr_152px] gap-3">
             <div className="relative min-h-[340px] overflow-hidden rounded-lg border border-outline bg-white md:min-h-[510px]">
               <img
-                src={alpineExteriorImg}
-                alt="1248 Alpine Terrace exterior"
+                src={gallery[0]}
+                alt={`${property.name} exterior`}
                 className="h-full w-full object-cover"
               />
               <span className="absolute bottom-6 left-6 rounded-full bg-black px-5 py-2 text-[12px] font-bold text-white">
@@ -105,10 +214,18 @@ export function BrokerPropertyDetails() {
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
               <div className="overflow-hidden rounded-lg border border-outline bg-white">
-                <img src={bathImg} alt="Kitchen detail" className="h-full min-h-[160px] w-full object-cover md:min-h-[246px]" />
+                <img
+                  src={gallery[1] ?? gallery[0]}
+                  alt={`${property.name} kitchen detail`}
+                  className="h-full min-h-[160px] w-full object-cover md:min-h-[246px]"
+                />
               </div>
               <div className="relative overflow-hidden rounded-lg border border-outline bg-white">
-                <img src={virtualTourImg} alt="Bedroom suite" className="h-full min-h-[160px] w-full object-cover md:min-h-[246px]" />
+                <img
+                  src={gallery[2] ?? gallery[0]}
+                  alt={`${property.name} bedroom suite`}
+                  className="h-full min-h-[160px] w-full object-cover md:min-h-[246px]"
+                />
                 <div className="absolute inset-0 flex items-center justify-center bg-black/10 text-white">
                   <div className="text-center">
                     <ImageIcon size={25} className="mx-auto mb-1" />
@@ -122,39 +239,40 @@ export function BrokerPropertyDetails() {
           <section className="grid grid-cols-2 divide-x divide-outline rounded-lg border border-outline bg-white p-6 sm:grid-cols-4">
             <div className="px-4 py-2">
               <p className="text-[15px] text-text-muted">Listing Price</p>
-              <p className="mt-2 text-[25px] font-extrabold leading-tight text-black">$1,850,000</p>
+              <p className="mt-2 text-[25px] font-extrabold leading-tight text-black">{property.price}</p>
             </div>
             <div className="px-4 py-2">
               <p className="text-[15px] text-text-muted">Bedrooms</p>
               <p className="mt-4 flex items-end gap-3 text-[25px] font-extrabold text-black">
                 <BedDouble size={21} className="mb-1 text-slate-600" />
-                3 <span>Beds</span>
+                {property.beds} <span>Beds</span>
               </p>
             </div>
             <div className="px-4 py-2">
               <p className="text-[15px] text-text-muted">Bathrooms</p>
               <p className="mt-4 flex items-end gap-3 text-[25px] font-extrabold text-black">
                 <Bath size={21} className="mb-1 text-slate-600" />
-                2.5 <span>Baths</span>
+                {property.baths} <span>Baths</span>
               </p>
             </div>
             <div className="px-4 py-2">
               <p className="text-[15px] text-text-muted">Total Area</p>
               <p className="mt-4 flex items-end gap-3 text-[25px] font-extrabold text-black">
                 <Ruler size={21} className="mb-1 text-slate-600" />
-                2450 <span>sqft</span>
+                {property.sqft} <span>sqft</span>
               </p>
             </div>
           </section>
 
           <section className="rounded-lg border border-outline bg-white p-8">
             <h2 className="text-[16px] font-semibold text-black">Asset Description</h2>
-            <p className="mt-7 max-w-2xl text-[15px] leading-7 text-text-muted">
-              This contemporary mountain retreat offers unparalleled views and modern elegance. Designed
-              by renowned architects, 1248 Alpine Terrace seamlessly blends industrial materials with
-              natural textures. The open-plan living space features 20ft ceilings and a double-sided
-              fireplace, perfect for both grand entertaining and quiet evenings.
-            </p>
+            <div className="mt-7 max-w-2xl space-y-3">
+              {property.overview.map((paragraph) => (
+                <p key={paragraph} className="text-[15px] leading-7 text-text-muted">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
             <div className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {featureTiles.map((feature) => {
                 const Icon = feature.icon
@@ -168,13 +286,18 @@ export function BrokerPropertyDetails() {
             </div>
           </section>
 
+          <BrokerPropertyIntel
+            property={property}
+            heading="Tenant-Visible Details"
+          />
+
           <section className="pt-20">
             <h2 className="mb-7 text-[16px] font-semibold text-black">Virtual Tour &amp; Media</h2>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               {[
-                { src: skylineHeightsImg, alt: 'Private office view', icon: ImageIcon },
-                { src: bathImg, alt: 'Spa bathroom', icon: PlayCircle },
-                { src: locationAerialImg, alt: 'Evening terrace view', icon: Camera },
+                { src: gallery[1] ?? gallery[0], alt: `${property.name} private office view`, icon: ImageIcon },
+                { src: gallery[2] ?? gallery[0], alt: `${property.name} media tour`, icon: PlayCircle },
+                { src: gallery[3] ?? locationAerialImg, alt: `${property.name} evening terrace view`, icon: Camera },
               ].map((item) => {
                 const Icon = item.icon
                 return (
@@ -194,9 +317,9 @@ export function BrokerPropertyDetails() {
           <section className="rounded-lg border border-outline bg-white p-6">
             <p className="text-[14px] uppercase text-text-muted">Primary Owner</p>
             <div className="mt-7 flex items-center gap-4">
-              <img src={julianVaneImg} alt="Julian Vane" className="h-16 w-16 rounded-lg object-cover" />
+              <img src={julianVaneImg} alt={property.ownerName} className="h-16 w-16 rounded-lg object-cover" />
               <div>
-                <h2 className="text-[20px] font-extrabold leading-tight text-black">Julian Vane</h2>
+                <h2 className="text-[20px] font-extrabold leading-tight text-black">{property.ownerName}</h2>
                 <span className="mt-1 inline-flex rounded bg-primary-100 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
                   Primary Owner
                 </span>
@@ -214,16 +337,27 @@ export function BrokerPropertyDetails() {
 
           <section className="rounded-lg border border-outline bg-white p-6">
             <div className="flex items-start justify-between gap-4">
-              <p className="text-[14px] uppercase leading-6 text-text-muted">Interested<br />Leads</p>
+              <div>
+                <p className="text-[14px] uppercase leading-6 text-text-muted">Associated<br />Leads</p>
+                <p className="mt-1 text-[12px] font-semibold text-[#111]">
+                  {associatedLeads.length} leads for this property
+                </p>
+              </div>
               <button className="text-[12px] font-semibold text-slate-600">Manage Leads</button>
             </div>
             <div className="mt-8 space-y-7">
-              {leads.map((lead) => (
+              {associatedLeads.map((lead) => (
                 <button key={lead.name} className="flex w-full items-center gap-4 text-left">
                   <img src={lead.image} alt={lead.name} className="h-10 w-10 rounded-lg object-cover" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-[15px] font-semibold text-black">{lead.name}</span>
                     <span className="block text-[11px] leading-4 text-text-muted">{lead.note}</span>
+                    <span className="mt-1 inline-flex rounded bg-primary-50 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
+                      {lead.status}
+                    </span>
+                    <span className="mt-1 block text-[11px] leading-4 text-text-muted">
+                      {lead.lastAction}
+                    </span>
                   </span>
                   <ChevronRight size={18} className="text-slate-700" />
                 </button>

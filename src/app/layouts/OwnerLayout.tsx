@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
   Bell,
   Building2,
+  ChevronRight,
   CreditCard,
   FileText,
   HelpCircle,
@@ -13,19 +14,17 @@ import {
   Menu,
   MessageSquare,
   Settings,
+  Wrench,
   X,
   type LucideIcon,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { ROLES } from '@shared/constants/roles'
 import { useAuth } from '@shared/hooks/useAuth'
 import { useMediaQuery } from '@shared/hooks/useMediaQuery'
 import { cn } from '@shared/utils/cn'
-
-const topNavItems = [
-  { label: 'Dashboard', href: ROUTES.OWNER.DASHBOARD },
-  { label: 'Properties', href: ROUTES.OWNER.PROPERTIES },
-  { label: 'Analytics', href: ROUTES.OWNER.ANALYTICS },
-]
+import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
+import { OWNER_MANAGED_PROPERTIES, useOwnerStore } from '@modules/owner/store/ownerStore'
 
 interface OwnerSidebarItem {
   label: string
@@ -39,25 +38,160 @@ const sidebarItems: OwnerSidebarItem[] = [
   { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
   { label: 'Owner Plans & Rules', href: ROUTES.OWNER.PLANS_RULES, icon: Settings },
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
+  { label: 'Maintenance Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
   { label: 'Finances', href: ROUTES.OWNER.ANALYTICS, icon: CreditCard, disabled: true },
-  { label: 'Settings', href: ROUTES.OWNER.SETTINGS, icon: Settings },
 ]
 
 const mobileNavItems = [
   { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
+  { label: 'Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
   { label: 'Analytics', href: ROUTES.OWNER.ANALYTICS, icon: BarChart3 },
 ]
 
+const ownerPlan = {
+  name: 'Free',
+  propertyLimit: 1,
+  postedProperties: 1,
+}
+
+interface OwnerProfileMenuProps {
+  open: boolean
+  onClose: () => void
+  displayName: string
+  initials: string
+  avatar?: string
+  profileMeta: string
+  onLogout: () => void
+}
+
+function OwnerProfileMenu({
+  open,
+  onClose,
+  displayName,
+  initials,
+  avatar,
+  profileMeta,
+  onLogout,
+}: OwnerProfileMenuProps) {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        onClose()
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [open, onClose])
+
+  if (!open) return null
+
+  const handleNavigate = (href: string) => {
+    navigate(href)
+    onClose()
+  }
+
+  const settingsActive = pathname.startsWith(ROUTES.OWNER.SETTINGS)
+
+  return (
+    <div
+      ref={panelRef}
+      className="absolute right-0 top-full z-50 mt-2 flex w-[300px] overflow-hidden rounded-xl border border-brand-outline-variant bg-brand-container-lowest shadow-modal"
+      role="menu"
+      aria-label="Owner profile menu"
+    >
+      <nav className="flex w-full flex-col py-2">
+        <button
+          type="button"
+          role="menuitem"
+          className={cn(
+            'mx-2 mb-1 flex items-center gap-3 rounded-lg border-0 px-3 py-3 text-left transition-colors',
+            settingsActive
+              ? 'bg-brand-container-low text-brand'
+              : 'bg-transparent text-brand hover:bg-brand-container-low'
+          )}
+          onClick={() => handleNavigate(ROUTES.OWNER.SETTINGS)}
+        >
+          {avatar ? (
+            <img src={avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+          ) : (
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary">
+              {initials}
+            </span>
+          )}
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-bold text-brand">My Profile</span>
+            <span className="mt-0.5 block truncate text-xs font-semibold text-brand-on-surface-variant">
+              {displayName}
+            </span>
+            <span className="mt-0.5 block truncate text-[11px] font-medium text-brand-outline">
+              {profileMeta}
+            </span>
+          </span>
+          <ChevronRight size={18} className="shrink-0 text-brand-outline" />
+        </button>
+
+        <div className="my-1 h-px bg-brand-outline-variant" />
+
+        <button
+          type="button"
+          role="menuitem"
+          className="flex items-center gap-3 border-0 bg-transparent px-4 py-3 text-left text-sm font-semibold tracking-wide text-brand-outline transition-colors hover:bg-brand-container-low hover:text-brand"
+        >
+          <HelpCircle size={18} className="shrink-0" />
+          Help Center
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          onClick={onLogout}
+          className="flex items-center gap-3 border-0 bg-transparent px-4 py-3 text-left text-sm font-semibold tracking-wide text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
+        >
+          <LogOut size={18} className="shrink-0" />
+          Log out
+        </button>
+      </nav>
+    </div>
+  )
+}
+
 export function OwnerLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const isMobile = useMediaQuery('(max-width: 1024px)')
   const displayName = user ? `${user.firstName} ${user.lastName}` : 'Johnathan Smith'
   const initials = user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}` : 'JS'
+  const profileMeta = user?.email ?? user?.phone ?? 'Manage owner profile'
+  const notificationsActive = pathname.startsWith(ROUTES.OWNER.NOTIFICATIONS)
+  const messagesActive = pathname.startsWith(ROUTES.OWNER.MESSAGES)
+  const profileActive = pathname.startsWith(ROUTES.OWNER.SETTINGS)
+  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
+  const propertyLimitReached =
+    ownerPlan.name === 'Free' && ownerPlan.postedProperties >= ownerPlan.propertyLimit
+  const currentPropertyId = selectedPropertyId ?? OWNER_MANAGED_PROPERTIES[0]?.id ?? ''
+  const canSwitchMode =
+    Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
 
   const handleLogout = () => {
     logout()
@@ -66,11 +200,11 @@ export function OwnerLayout() {
 
   return (
     <div className="min-h-screen bg-canvas-alt font-manrope text-text-primary">
-      <header className="fixed inset-x-0 top-0 z-40 h-16 border-b border-primary bg-navy text-text-inverse shadow-sm">
-        <div className="flex h-full items-center gap-6 px-6">
+      <header className="fixed inset-x-0 top-0 z-40 h-16 border-b border-brand-container-low bg-brand-surface text-brand shadow-sm">
+        <div className="mx-auto flex h-full w-full items-center gap-6 px-6">
           <button
             type="button"
-            className="rounded-button p-2 text-slate-200 transition-colors duration-200 hover:bg-white/10 lg:hidden"
+            className="rounded-button p-2 text-brand transition-colors duration-200 hover:bg-brand-container-low lg:hidden"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open navigation"
           >
@@ -78,62 +212,95 @@ export function OwnerLayout() {
           </button>
 
           <NavLink to={ROUTES.OWNER.DASHBOARD} className="flex items-center gap-2">
-            <span className="text-body-lg font-extrabold tracking-tight">Rentillo</span>
+            <span className="font-display text-2xl font-black tracking-tight text-brand">RENTILO</span>
           </NavLink>
 
-          <nav className="hidden h-full items-center gap-8 md:flex">
-            {topNavItems.map((item) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                className={({ isActive }) =>
-                  cn(
-                    'flex h-full items-center border-b-2 px-1 text-label font-medium transition-colors duration-200',
-                    isActive
-                      ? 'border-primary text-white'
-                      : 'border-transparent text-slate-300 hover:text-white'
-                  )
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-
           <div className="ml-auto flex items-center gap-3">
-            <NavLink
-              to={ROUTES.OWNER.PLANS_RULES}
-              className="hidden rounded-button bg-primary px-4 py-2 text-label font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md sm:inline-flex"
+            <RoleModeSwitcher className="hidden sm:inline-flex" />
+            <button
+              type="button"
+              disabled={propertyLimitReached}
+              onClick={() => {
+                if (!propertyLimitReached) {
+                  navigate(ROUTES.OWNER.REGISTER_PROPERTY)
+                }
+              }}
+              title={
+                propertyLimitReached
+                  ? 'Free plan allows one posted property. Upgrade to add more.'
+                  : 'Post a new property'
+              }
+              className={cn(
+                'hidden rounded-button px-4 py-2 text-label font-semibold shadow-sm transition-all duration-200 sm:inline-flex',
+                propertyLimitReached
+                  ? 'cursor-not-allowed border border-brand-outline/30 bg-transparent text-brand-outline opacity-60'
+                  : 'bg-brand text-white hover:opacity-90'
+              )}
             >
-              Upgrade Plan
-            </NavLink>
+              Post New Property
+            </button>
             <NavLink
               to={ROUTES.OWNER.NOTIFICATIONS}
-              className="rounded-button p-2 text-slate-300 transition-colors duration-200 hover:bg-white/10 hover:text-white"
+              className={cn(
+                'rounded-button p-2 text-brand transition-colors duration-200 hover:bg-brand-container-low',
+                notificationsActive && 'bg-brand-container-low'
+              )}
               aria-label="Notifications"
+              aria-current={notificationsActive ? 'page' : undefined}
             >
               <Bell size={18} />
             </NavLink>
             <NavLink
               to={ROUTES.OWNER.MESSAGES}
-              className="rounded-button p-2 text-slate-300 transition-colors duration-200 hover:bg-white/10 hover:text-white"
+              className={cn(
+                'rounded-button p-2 text-brand transition-colors duration-200 hover:bg-brand-container-low',
+                messagesActive && 'bg-brand-container-low'
+              )}
               aria-label="Messages"
+              aria-current={messagesActive ? 'page' : undefined}
             >
               <MessageSquare size={18} />
             </NavLink>
-            <NavLink
-              to={ROUTES.OWNER.SETTINGS}
-              className="rounded-button p-2 text-slate-300 transition-colors duration-200 hover:bg-white/10 hover:text-white"
-              aria-label="Settings"
-            >
-              <Settings size={18} />
-            </NavLink>
-            <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-primary-100 text-label font-bold text-primary">
-              {user?.avatar ? (
-                <img src={user.avatar} alt={displayName} className="h-full w-full object-cover" />
-              ) : (
-                initials
-              )}
+            <div className="relative">
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-0 bg-primary-100 p-0 text-sm font-bold text-primary transition-shadow"
+                onClick={() => setProfileMenuOpen((open) => !open)}
+                aria-label="Account menu"
+                aria-expanded={profileMenuOpen}
+                aria-haspopup="menu"
+              >
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={displayName}
+                    className={cn(
+                      'h-full w-full rounded-full object-cover border-2 border-brand-container-low',
+                      (profileActive || profileMenuOpen) &&
+                        'border-brand shadow-[0_0_0_2px] shadow-brand-verified'
+                    )}
+                  />
+                ) : (
+                  <span
+                    className={cn(
+                      'flex h-full w-full items-center justify-center rounded-full border-2 border-brand-container-low',
+                      (profileActive || profileMenuOpen) &&
+                        'border-brand shadow-[0_0_0_2px] shadow-brand-verified'
+                    )}
+                  >
+                    {initials}
+                  </span>
+                )}
+              </button>
+              <OwnerProfileMenu
+                open={profileMenuOpen}
+                onClose={() => setProfileMenuOpen(false)}
+                displayName={displayName}
+                initials={initials}
+                avatar={user?.avatar}
+                profileMeta={profileMeta}
+                onLogout={handleLogout}
+              />
             </div>
           </div>
         </div>
@@ -157,6 +324,7 @@ export function OwnerLayout() {
         )}
       >
         <div className="border-b border-outline px-6 py-6">
+          {canSwitchMode && <RoleModeSwitcher className="mb-4 sm:hidden" />}
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-button bg-navy text-white">
               <Home size={18} />
@@ -166,10 +334,16 @@ export function OwnerLayout() {
               <p className="text-filter-label uppercase text-text-muted">Free Plan</p>
             </div>
           </div>
-          <select className="mt-4 w-full rounded-input border border-outline bg-white px-3 py-2 text-label font-medium text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100">
-            <option>Switch Property</option>
-            <option>Modern Loft in Downtown</option>
-            <option>Parkview Residences</option>
+          <select
+            value={currentPropertyId}
+            onChange={(event) => setSelectedProperty(event.target.value)}
+            className="mt-4 w-full rounded-input border border-outline bg-white px-3 py-2 text-label font-medium text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
+          >
+            {OWNER_MANAGED_PROPERTIES.map((property) => (
+              <option key={property.id} value={property.id}>
+                {property.name}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -223,24 +397,6 @@ export function OwnerLayout() {
           </ul>
         </nav>
 
-        <div className="space-y-2 border-t border-outline p-4">
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-button px-3 py-3 text-body font-medium text-text-muted transition-colors duration-200 hover:bg-hover-light hover:text-text-primary"
-          >
-            <HelpCircle size={18} />
-            <span>Help Center</span>
-          </button>
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-button px-3 py-3 text-body font-medium text-text-muted transition-colors duration-200 hover:bg-hover-light hover:text-status-error"
-            onClick={handleLogout}
-          >
-            <LogOut size={18} />
-            <span>Logout</span>
-          </button>
-        </div>
-
         {isMobile && (
           <button
             type="button"
@@ -259,7 +415,7 @@ export function OwnerLayout() {
         </div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid h-16-mobile grid-cols-4 border-t border-outline bg-white shadow-surface lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid h-16-mobile grid-cols-5 border-t border-outline bg-white shadow-surface lg:hidden">
         {mobileNavItems.map((item) => {
           const Icon = item.icon
           return (

@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@shared/hooks/useAuth'
-import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { MaterialIcon } from '../components/MaterialIcon'
 import { tenantStyles } from '../utils/tenantStyles'
@@ -14,8 +12,7 @@ const inputClass =
   'w-full px-3.5 py-3 border border-brand-outline-variant rounded-lg font-body text-[15px] text-brand-on-surface bg-brand-container-lowest outline-none focus:border-brand'
 
 export function EditProfilePage() {
-  const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const [name, setName] = useState(
     user ? `${user.firstName} ${user.lastName}`.trim() : 'Danush'
   )
@@ -34,11 +31,6 @@ export function EditProfilePage() {
     setTimeout(() => setSaved(false), 2500)
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate(ROUTES.AUTH.LOGIN)
-  }
-
   return (
     <div className="flex flex-1 flex-col bg-brand-background font-body">
       <main className="flex-1 w-full max-w-[900px] mx-auto px-8 py-8 pb-16">
@@ -46,9 +38,14 @@ export function EditProfilePage() {
           className="bg-brand-container-lowest rounded-2xl border border-brand-outline-variant shadow-card px-10 py-8 max-md:px-5"
           onSubmit={handleSubmit}
         >
-          <h1 className="font-display text-[28px] font-extrabold text-brand mb-4">
-            Edit Your Profile
-          </h1>
+          <div className="mb-7">
+            <h1 className="font-display text-[28px] font-extrabold text-brand mb-2">
+              My Profile
+            </h1>
+            <p className="font-body text-[15px] text-brand-on-surface-variant leading-relaxed">
+              Manage your account details, verification status, communication preferences, and bank information.
+            </p>
+          </div>
           <div className="h-px bg-brand-outline-variant mb-7" />
 
           <EnableOwnerModeCard />
@@ -65,7 +62,7 @@ export function EditProfilePage() {
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg border-0 bg-brand text-white font-body text-sm font-semibold cursor-pointer"
               >
                 <MaterialIcon name="edit" />
-                Edit
+                Change Photo
               </button>
               <button
                 type="button"
@@ -199,14 +196,7 @@ export function EditProfilePage() {
             )}
             <button type="submit" className={tenantStyles.brandBtn}>
               <MaterialIcon name="save" />
-              Save Profile
-            </button>
-            <button
-              type="button"
-              className="border-0 bg-transparent font-body text-sm text-brand-secondary underline cursor-pointer hover:text-brand"
-              onClick={handleLogout}
-            >
-              Log out
+              Save Changes
             </button>
           </div>
         </form>

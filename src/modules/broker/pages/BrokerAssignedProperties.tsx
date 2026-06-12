@@ -2,60 +2,17 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Filter, TrendingUp, Plus, ChevronDown } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
-import canaryWharfImg from '@/assets/images/canary_wharf.png'
-import shoreditchImg from '@/assets/images/shoreditch_penthouse.png'
-import greenwichImg from '@/assets/images/greenwich_home.png'
+import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
+import {
+  BROKER_ASSIGNED_PROPERTIES,
+  type BrokerAssignedProperty,
+  type BrokerPropertyStatus,
+} from '../constants/assignedProperties'
 
 /* ─────────────────────────────────────────────
    Types
 ───────────────────────────────────────────── */
-interface Property {
-  id: number
-  image: string
-  name: string
-  price: string
-  location: string
-  ownerName: string
-  ownerInitials: string
-  ownerBg: string
-  status: 'Active' | 'Pending' | 'Inactive'
-}
-
-const PROPERTIES: Property[] = [
-  {
-    id: 1,
-    image: canaryWharfImg,
-    name: 'Canary Wharf',
-    price: '$3,200/mo',
-    location: 'London, UK',
-    ownerName: 'James Harrington',
-    ownerInitials: 'JH',
-    ownerBg: '#dbeafe',
-    status: 'Active',
-  },
-  {
-    id: 2,
-    image: shoreditchImg,
-    name: 'Shoreditch Penthouse',
-    price: '$4,850/mo',
-    location: 'London, UK',
-    ownerName: 'Elena Rossi',
-    ownerInitials: 'ER',
-    ownerBg: '#fce7f3',
-    status: 'Active',
-  },
-  {
-    id: 3,
-    image: greenwichImg,
-    name: 'Greenwich Modern Home',
-    price: '$6,200/mo',
-    location: 'London, UK',
-    ownerName: 'Arthur Sterling',
-    ownerInitials: 'AS',
-    ownerBg: '#d1fae5',
-    status: 'Active',
-  },
-]
+const ASSIGNED_PROPERTIES = BROKER_ASSIGNED_PROPERTIES
 
 /* ─────────────────────────────────────────────
    Owner chip (matches design's document icon + name layout)
@@ -105,9 +62,17 @@ function OwnerChip({
 /* ─────────────────────────────────────────────
    Property Card
 ───────────────────────────────────────────── */
-function PropertyCard({ property }: { property: Property }) {
+function PropertyCard({
+  property,
+  active,
+  onSelect,
+}: {
+  property: BrokerAssignedProperty
+  active: boolean
+  onSelect: () => void
+}) {
   const navigate = useNavigate()
-  const statusColors: Record<Property['status'], { bg: string; text: string; dot: string }> = {
+  const statusColors: Record<BrokerPropertyStatus, { bg: string; text: string; dot: string }> = {
     Active: { bg: '#f0fdf4', text: '#15803d', dot: '#22c55e' },
     Pending: { bg: '#fffbeb', text: '#b45309', dot: '#f59e0b' },
     Inactive: { bg: '#f1f5f9', text: '#64748b', dot: '#94a3b8' },
@@ -118,14 +83,16 @@ function PropertyCard({ property }: { property: Property }) {
     <div
       role="button"
       tabIndex={0}
-      onClick={() => navigate(ROUTES.BROKER.PROPERTY(String(property.id)))}
+      onClick={onSelect}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
-          navigate(ROUTES.BROKER.PROPERTY(String(property.id)))
+          onSelect()
         }
       }}
-      className="bg-white border border-outline rounded-xl overflow-hidden shadow-ambient hover:shadow-card focus:outline-none focus:ring-2 focus:ring-primary transition-shadow duration-200 flex flex-col cursor-pointer"
+      className={`bg-white border rounded-xl overflow-hidden shadow-ambient hover:shadow-card focus:outline-none focus:ring-2 focus:ring-primary transition-shadow duration-200 flex flex-col cursor-pointer ${
+        active ? 'border-primary ring-2 ring-primary/15' : 'border-outline'
+      }`}
     >
       {/* Image */}
       <div className="relative">
@@ -145,6 +112,11 @@ function PropertyCard({ property }: { property: Property }) {
           />
           {property.status}
         </span>
+        {active && (
+          <span className="absolute right-3 top-3 rounded-full bg-[#0f172a] px-2.5 py-1 text-[10px] font-bold text-white">
+            Selected
+          </span>
+        )}
       </div>
 
       {/* Body */}
@@ -166,7 +138,7 @@ function PropertyCard({ property }: { property: Property }) {
           name={property.ownerName}
           initials={property.ownerInitials}
           bg={property.ownerBg}
-          verified={property.id !== 3}
+          verified={property.status === 'Active'}
         />
 
         {/* Action buttons */}
@@ -175,13 +147,17 @@ function PropertyCard({ property }: { property: Property }) {
             type="button"
             onClick={(event) => {
               event.stopPropagation()
-              navigate(ROUTES.BROKER.PROPERTY(String(property.id)))
+              navigate(ROUTES.BROKER.PROPERTY(property.id))
             }}
             className="flex-1 py-2 rounded-lg bg-[#0f172a] text-white text-[12px] font-bold hover:bg-navy/80 transition-colors"
           >
             View Details
           </button>
-          <button className="flex-1 py-2 rounded-lg border border-outline text-[12px] font-semibold text-[#0f172a] bg-white hover:bg-hover-light transition-colors">
+          <button
+            type="button"
+            onClick={(event) => event.stopPropagation()}
+            className="flex-1 py-2 rounded-lg border border-outline text-[12px] font-semibold text-[#0f172a] bg-white hover:bg-hover-light transition-colors"
+          >
             Contact Owner
           </button>
         </div>
@@ -196,6 +172,19 @@ function PropertyCard({ property }: { property: Property }) {
 export function BrokerAssignedProperties() {
   const [statusFilter, setStatusFilter] = useState('Active Status')
   const [sortFilter, setSortFilter] = useState('Rent: High to Low')
+  const defaultAssignedProperty = ASSIGNED_PROPERTIES[0]!
+  const [selectedPropertyId, setSelectedPropertyId] = useState(defaultAssignedProperty.id)
+  const visibleProperties = ASSIGNED_PROPERTIES.filter((property) =>
+    statusFilter === 'Active Status' ? property.status === 'Active' : true
+  ).sort((a, b) => {
+    const rentA = Number(a.price.replace(/[^0-9]/g, ''))
+    const rentB = Number(b.price.replace(/[^0-9]/g, ''))
+    return sortFilter === 'Rent: High to Low' ? rentB - rentA : rentA - rentB
+  })
+  const selectedProperty =
+    ASSIGNED_PROPERTIES.find((property) => property.id === selectedPropertyId) ??
+    visibleProperties[0] ??
+    defaultAssignedProperty
 
   return (
     <div className="space-y-6 pb-10">
@@ -231,12 +220,22 @@ export function BrokerAssignedProperties() {
 
       {/* ── Property Cards Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {PROPERTIES.map((p) => (
-          <PropertyCard key={p.id} property={p} />
+        {visibleProperties.map((p) => (
+          <PropertyCard
+            key={p.id}
+            property={p}
+            active={selectedProperty.id === p.id}
+            onSelect={() => setSelectedPropertyId(p.id)}
+          />
         ))}
       </div>
 
       {/* ── Bottom Row: Performance + CTA ── */}
+      <BrokerPropertyIntel
+        property={selectedProperty}
+        heading={`${selectedProperty.name} Full Details`}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-4">
 
         {/* Portfolio Performance — dark card */}

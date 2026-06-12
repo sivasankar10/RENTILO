@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
+  BriefcaseBusiness,
+  Home,
   MoreVertical,
   Paperclip,
   Phone,
@@ -9,94 +11,13 @@ import {
   Video,
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
-
-const initialConversations = [
-  {
-    id: 1,
-    name: 'Rajesh Kumar',
-    preview: "Sounds good. I'll send the lease over.",
-    time: '10:45 AM',
-    unread: 2,
-    avatar:
-      'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=120&q=80',
-    property: '2BHK in Chennai',
-    propertyImage:
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=180&q=80',
-    listing: 'Modern Penthouse Suite',
-    location: 'Adyar, Chennai',
-    price: 'Rs. 45,000',
-    messages: [
-      {
-        id: 1,
-        sender: 'tenant',
-        text: 'Hello! I have reviewed your request for the early move-in date. The property will be professionally cleaned and ready by the 12th.',
-        time: '10:42 AM',
-      },
-      {
-        id: 2,
-        sender: 'owner',
-        text: "That's perfect, Rajesh. Thank you for accommodating that. I'll make the security deposit payment through the portal right away.",
-        time: '10:44 AM',
-      },
-      {
-        id: 3,
-        sender: 'tenant',
-        text: "Sounds good. I'll send the lease over. You should receive a notification to digitally sign it shortly.",
-        time: '10:45 AM',
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Sarah Miller',
-    preview: 'The plumber has fixed the leak.',
-    time: 'Yesterday',
-    unread: 0,
-    avatar:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-    property: 'Studio in Velachery',
-    propertyImage:
-      'https://images.unsplash.com/photo-1560185008-b033106af5c3?auto=format&fit=crop&w=180&q=80',
-    listing: 'Compact Studio Residence',
-    location: 'Velachery, Chennai',
-    price: 'Rs. 28,000',
-    messages: [
-      {
-        id: 1,
-        sender: 'tenant',
-        text: 'The plumber has fixed the leak. I have uploaded the invoice for your approval.',
-        time: 'Yesterday',
-      },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Amit Shah',
-    preview: 'Is the security deposit received?',
-    time: 'Mon',
-    unread: 0,
-    avatar:
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
-    property: 'Villa in ECR',
-    propertyImage:
-      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=180&q=80',
-    listing: 'Seaside Villa',
-    location: 'ECR, Chennai',
-    price: 'Rs. 92,000',
-    messages: [
-      {
-        id: 1,
-        sender: 'tenant',
-        text: 'Is the security deposit received? I can share the transaction reference if needed.',
-        time: 'Mon',
-      },
-    ],
-  },
-]
+import { useOwnerChatStore } from '../store/chatStore'
 
 export function OwnerMessages() {
-  const [conversations, setConversations] = useState(initialConversations)
-  const [activeId, setActiveId] = useState(initialConversations[0].id)
+  const conversations = useOwnerChatStore((state) => state.conversations)
+  const storeSendMessage = useOwnerChatStore((state) => state.sendMessage)
+  const markConversationRead = useOwnerChatStore((state) => state.markConversationRead)
+  const [activeId, setActiveId] = useState(conversations[0]?.id ?? 0)
   const [query, setQuery] = useState('')
   const [draft, setDraft] = useState('')
   const [status, setStatus] = useState('')
@@ -104,15 +25,42 @@ export function OwnerMessages() {
   const activeConversation =
     conversations.find((conversation) => conversation.id === activeId) ?? conversations[0]
 
-  const filteredConversations = useMemo(
-    () =>
-      conversations.filter((conversation) =>
-        `${conversation.name} ${conversation.preview} ${conversation.property}`
-          .toLowerCase()
-          .includes(query.toLowerCase())
-      ),
-    [conversations, query]
-  )
+  useEffect(() => {
+    if (activeConversation) {
+      markConversationRead(activeConversation.id)
+    }
+  }, [activeConversation?.id, markConversationRead])
+
+  const groupedConversations = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase()
+    const filtered = conversations.filter((conversation) =>
+      `${conversation.name} ${conversation.role} ${conversation.preview} ${conversation.property} ${conversation.contactType}`
+        .toLowerCase()
+        .includes(normalizedQuery)
+    )
+
+    return {
+      brokers: filtered.filter((conversation) => conversation.contactType === 'broker'),
+      tenants: filtered.filter((conversation) => conversation.contactType === 'tenant'),
+    }
+  }, [conversations, query])
+
+  const conversationSections = [
+    {
+      key: 'brokers',
+      title: 'Brokers',
+      icon: BriefcaseBusiness,
+      conversations: groupedConversations.brokers,
+    },
+    {
+      key: 'tenants',
+      title: 'Tenants',
+      icon: Home,
+      conversations: groupedConversations.tenants,
+    },
+  ]
+
+  const activeContactLabel = activeConversation?.contactType === 'broker' ? 'Broker' : 'Tenant'
 
   const sendMessage = () => {
     const trimmed = draft.trim()
@@ -121,27 +69,7 @@ export function OwnerMessages() {
       return
     }
 
-    setConversations((current) =>
-      current.map((conversation) =>
-        conversation.id === activeId
-          ? {
-              ...conversation,
-              preview: trimmed,
-              time: 'Now',
-              unread: 0,
-              messages: [
-                ...conversation.messages,
-                {
-                  id: Date.now(),
-                  sender: 'owner',
-                  text: trimmed,
-                  time: 'Now',
-                },
-              ],
-            }
-          : conversation
-      )
-    )
+    storeSendMessage(activeId, trimmed)
     setDraft('')
     setStatus('Message sent.')
   }
@@ -149,11 +77,11 @@ export function OwnerMessages() {
   const selectConversation = (id: number) => {
     setActiveId(id)
     setStatus('')
-    setConversations((current) =>
-      current.map((conversation) =>
-        conversation.id === id ? { ...conversation, unread: 0 } : conversation
-      )
-    )
+    markConversationRead(id)
+  }
+
+  if (!activeConversation) {
+    return null
   }
 
   return (
@@ -176,39 +104,77 @@ export function OwnerMessages() {
             </label>
           </div>
 
-          <div className="space-y-2 px-3">
-            {filteredConversations.map((conversation) => (
-              <button
-                key={conversation.id}
-                type="button"
-                onClick={() => selectConversation(conversation.id)}
-                className={cn(
-                  'flex w-full items-start gap-3 rounded-card p-3 text-left transition-colors duration-200',
-                  conversation.id === activeId ? 'bg-primary-50' : 'hover:bg-hover-light'
-                )}
-              >
-                <div className="relative">
-                  <img
-                    src={conversation.avatar}
-                    alt={conversation.name}
-                    className="h-12 w-12 rounded-full object-cover"
-                  />
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-status-success" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-body font-bold text-text-primary">{conversation.name}</p>
-                    <span className="text-filter-label uppercase text-text-muted">{conversation.time}</span>
+          <div className="space-y-5 px-3 pb-5">
+            {conversationSections.map((section) => {
+              const SectionIcon = section.icon
+
+              return (
+                <section key={section.key}>
+                  <div className="mb-2 flex items-center justify-between px-2">
+                    <div className="flex items-center gap-2 text-filter-label font-bold uppercase tracking-normal text-text-muted">
+                      <SectionIcon size={15} />
+                      {section.title}
+                    </div>
+                    <span className="rounded-pill bg-canvas-alt px-2 py-1 text-badge font-bold text-text-muted">
+                      {section.conversations.length}
+                    </span>
                   </div>
-                  <p className="mt-1 truncate text-label text-text-primary">{conversation.preview}</p>
-                </div>
-                {conversation.unread > 0 && (
-                  <span className="mt-6 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-navy px-1.5 text-badge text-white">
-                    {conversation.unread}
-                  </span>
-                )}
-              </button>
-            ))}
+
+                  <div className="space-y-2">
+                    {section.conversations.map((conversation) => (
+                      <button
+                        key={conversation.id}
+                        type="button"
+                        onClick={() => selectConversation(conversation.id)}
+                        className={cn(
+                          'flex w-full items-start gap-3 rounded-card p-3 text-left transition-colors duration-200',
+                          conversation.id === activeId ? 'bg-primary-50' : 'hover:bg-hover-light'
+                        )}
+                      >
+                        <div className="relative">
+                          <img
+                            src={conversation.avatar}
+                            alt={conversation.name}
+                            className="h-12 w-12 rounded-full object-cover"
+                          />
+                          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-status-success" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="truncate text-body font-bold text-text-primary">
+                              {conversation.name}
+                            </p>
+                            <span className="text-filter-label uppercase text-text-muted">
+                              {conversation.time}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 truncate text-filter-label uppercase text-primary">
+                            {conversation.role}
+                          </p>
+                          <p className="mt-1 truncate text-label font-semibold text-text-primary">
+                            {conversation.property}
+                          </p>
+                          <p className="mt-1 truncate text-label text-text-muted">
+                            {conversation.preview}
+                          </p>
+                        </div>
+                        {conversation.unread > 0 && (
+                          <span className="mt-6 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-navy px-1.5 text-badge text-white">
+                            {conversation.unread}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+
+                    {section.conversations.length === 0 && (
+                      <p className="rounded-card bg-canvas-alt px-3 py-4 text-center text-label text-text-muted">
+                        No {section.title.toLowerCase()} found.
+                      </p>
+                    )}
+                  </div>
+                </section>
+              )
+            })}
           </div>
 
           <div className="mt-auto p-5">
@@ -227,7 +193,8 @@ export function OwnerMessages() {
             <div>
               <h1 className="text-heading-3 font-bold text-navy">{activeConversation.property}</h1>
               <p className="mt-1 text-label text-text-muted">
-                <span className="inline-block h-2 w-2 rounded-full bg-status-success align-middle" /> Owner:{' '}
+                <span className="inline-block h-2 w-2 rounded-full bg-status-success align-middle" />{' '}
+                {activeContactLabel}:{' '}
                 {activeConversation.name}
               </p>
             </div>
@@ -294,7 +261,7 @@ export function OwnerMessages() {
                   message.sender === 'owner' ? 'justify-end' : 'justify-start'
                 )}
               >
-                {message.sender === 'tenant' && (
+                {message.sender !== 'owner' && (
                   <img
                     src={activeConversation.avatar}
                     alt={activeConversation.name}
@@ -342,7 +309,10 @@ export function OwnerMessages() {
                   setStatus('')
                 }}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') sendMessage()
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    sendMessage()
+                  }
                 }}
                 placeholder="Type a message..."
                 className="min-w-0 flex-1 bg-transparent px-2 py-2 text-body text-text-primary outline-none placeholder:text-text-muted"
@@ -358,7 +328,8 @@ export function OwnerMessages() {
               <button
                 type="button"
                 onClick={sendMessage}
-                className="rounded-button bg-navy p-3 text-white transition-colors duration-200 hover:bg-slate-800"
+                disabled={!draft.trim()}
+                className="rounded-button bg-navy p-3 text-white transition-colors duration-200 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-45"
                 aria-label="Send message"
               >
                 <Send size={18} />

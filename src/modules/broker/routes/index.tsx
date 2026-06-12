@@ -1,4 +1,5 @@
-import type { RouteObject } from 'react-router-dom'
+import { Navigate, type RouteObject } from 'react-router-dom'
+import { ROUTES } from '@shared/constants/routes'
 import { BrokerDashboard } from '../pages/BrokerDashboard'
 import { BrokerPortfolio } from '../pages/BrokerPortfolio'
 import { BrokerAssignedProperties } from '../pages/BrokerAssignedProperties'
@@ -26,4 +27,6 @@ export const brokerRoutes: RouteObject[] = [
   { path: 'notifications', element: <BrokerNotifications /> },
   { path: 'profile', element: <BrokerProfile /> },
   { path: 'profile/edit', element: <BrokerEditProfile /> },
+  { path: 'notifications', element: <BrokerNotifications /> },
+  { path: 'settings', element: <Navigate to={ROUTES.BROKER.PROFILE} replace /> },
 ]

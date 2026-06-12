@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@shared/hooks/useAuth'
-import { MODE_SWITCHABLE_ROLES, getRoleHome } from '@shared/constants/roleHome'
+import { MODE_SWITCHABLE_ROLES, getRoleFromPath, getRoleHome } from '@shared/constants/roleHome'
 import { ROLE_LABELS, type UserRole } from '@shared/constants/roles'
 import { cn } from '@shared/utils/cn'
 
@@ -19,15 +19,19 @@ interface RoleModeSwitcherProps {
  */
 export function RoleModeSwitcher({ className, compact }: RoleModeSwitcherProps) {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { user, activeRole, setActiveRole } = useAuth()
 
   if (!user) return null
 
   const switchable = MODE_SWITCHABLE_ROLES.filter((r) => user.roles.includes(r))
   if (switchable.length < 2) return null
+  const routeRole = getRoleFromPath(pathname)
+  const currentRole =
+    routeRole && switchable.includes(routeRole) ? routeRole : activeRole
 
   const handleSwitch = (role: UserRole) => {
-    if (role === activeRole) return
+    if (role === currentRole) return
     setActiveRole(role)
     navigate(getRoleHome(role), { replace: true })
   }
@@ -42,7 +46,7 @@ export function RoleModeSwitcher({ className, compact }: RoleModeSwitcherProps) 
       aria-label="Switch account mode"
     >
       {switchable.map((role) => {
-        const isActive = activeRole === role
+        const isActive = currentRole === role
         const label = SWITCH_LABELS[role] ?? ROLE_LABELS[role]
         return (
           <button

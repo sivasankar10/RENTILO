@@ -14,6 +14,7 @@ import { TenantDocuments } from '../pages/TenantDocuments'
 import { NotificationsPage } from '../pages/NotificationsPage'
 import { MessagesPage } from '../pages/MessagesPage'
 import { SeriousBuyerBadgePage } from '../pages/SeriousBuyerBadgePage'
+import { SeriousBuyerPaymentPage } from '../pages/SeriousBuyerPaymentPage'
 
 function TenantPageShell({ children }: { children: ReactNode }) {
   return (
@@ -31,6 +32,7 @@ export const tenantRoutes: RouteObject[] = [
   { path: 'notifications', element: <NotificationsPage /> },
   { path: 'messages', element: <MessagesPage /> },
   { path: 'serious-buyer-badge', element: <SeriousBuyerBadgePage /> },
+  { path: 'serious-buyer-badge/payment', element: <SeriousBuyerPaymentPage /> },
   { path: 'profile', element: <EditProfilePage /> },
   {
     path: 'dashboard',

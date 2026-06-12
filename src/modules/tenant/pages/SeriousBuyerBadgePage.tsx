@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router-dom'
+import { ROUTES } from '@shared/constants/routes'
 import { MaterialIcon } from '../components/MaterialIcon'
 
 const PRICING_ROWS = [
@@ -29,6 +31,8 @@ const BENEFITS = [
 ] as const
 
 export function SeriousBuyerBadgePage() {
+  const navigate = useNavigate()
+
   return (
     <div className="flex flex-1 flex-col bg-gradient-to-b from-brand-container-low via-brand-background to-brand-background font-body">
       <div className="flex-1 w-full max-w-4xl mx-auto px-6 py-12 md:py-16">
@@ -108,6 +112,7 @@ export function SeriousBuyerBadgePage() {
           </p>
           <button
             type="button"
+            onClick={() => navigate(ROUTES.TENANT.SERIOUS_BUYER_PAYMENT)}
             className="inline-flex items-center justify-center min-w-[200px] px-10 py-4 rounded-xl border-0 bg-brand text-white font-body text-base font-semibold cursor-pointer shadow-md hover:opacity-92 transition-opacity"
           >
             Activate Badge
