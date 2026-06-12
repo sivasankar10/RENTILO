@@ -125,7 +125,6 @@ export function BrokerDashboardLayout() {
   const isMessagesPage = pathname.startsWith(ROUTES.BROKER.MESSAGES)
   const messagesActive = isMessagesPage
   const isNotificationsPage = pathname.startsWith(ROUTES.BROKER.NOTIFICATIONS)
-  const logout = useAuthStore((s) => s.logout)
   const propertyResults = useMemo(() => {
     const query = propertySearch.trim().toLowerCase()
     if (!query) {
@@ -278,14 +277,10 @@ export function BrokerDashboardLayout() {
             <button
               type="button"
               onClick={() => navigate(ROUTES.BROKER.NOTIFICATIONS)}
-<<<<<<< HEAD
-              className="relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
-=======
               className={cn(
                 'relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors',
                 isNotificationsPage && 'bg-white/15 text-white',
               )}
->>>>>>> main
               aria-label="Notifications"
             >
               <Bell size={20} strokeWidth={1.75} />

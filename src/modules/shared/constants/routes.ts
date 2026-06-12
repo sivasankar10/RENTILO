@@ -60,10 +60,7 @@ export const ROUTES = {
     ANALYTICS: '/broker/analytics',
     MESSAGES: '/broker/messages',
     NOTIFICATIONS: '/broker/notifications',
-<<<<<<< HEAD
-=======
     SETTINGS: '/broker/settings',
->>>>>>> main
     PROFILE: '/broker/profile',
     EDIT_PROFILE: '/broker/profile/edit',
   },
