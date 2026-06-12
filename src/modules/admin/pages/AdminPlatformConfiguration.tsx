@@ -1,62 +1,72 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Filter, Shield } from 'lucide-react'
+import { cn } from '@shared/utils/cn'
+import { useAdminStore, type ApprovalRequest } from '../store/adminStore'
+import { toast } from '../components/Toast'
 
-interface ListingRequest {
-  id: string
-  image: string
-  location: string
-  owner: string
-  type: string
+type ApprovalStatusFilter = ApprovalRequest['status'] | 'All'
+type ApprovalDecision = Exclude<ApprovalRequest['status'], 'Pending'>
+
+const approvalFilters: ApprovalStatusFilter[] = ['All', 'Pending', 'Approved', 'Rejected']
+
+const approvalStatusStyles: Record<ApprovalRequest['status'], string> = {
+  Pending: 'bg-amber-50 text-amber-700',
+  Approved: 'bg-status-success-bg text-status-success-text',
+  Rejected: 'bg-status-error-bg text-status-error-text',
 }
 
-interface PromotedRequest {
-  id: string
-  image: string
-  location: string
-  owner: string
-  tier: string
-  tierColor: string
+function getTierColor(tier: string) {
+  if (tier === 'Premium') return 'text-status-error'
+  if (tier === 'Free') return 'text-text-muted'
+  return 'text-primary'
 }
-
-const listingRequests: ListingRequest[] = [
-  {
-    id: 'RF-99210',
-    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=80&q=80',
-    location: 'Bandra West, Mumbai',
-    owner: 'Vikram Malhotra',
-    type: '1 BHK',
-  },
-  {
-    id: 'RF-88219',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=80&q=80',
-    location: 'Whitefield, Bangalore',
-    owner: 'Anjali Gupta',
-    type: '3 BHK',
-  },
-]
-
-const promotedRequests: PromotedRequest[] = [
-  {
-    id: 'RF-99210',
-    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=80&q=80',
-    location: 'Bandra West, Mumbai',
-    owner: 'Vikram Malhotra',
-    tier: 'Premium',
-    tierColor: 'text-status-error',
-  },
-  {
-    id: 'RF-88219',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=80&q=80',
-    location: 'Whitefield, Bangalore',
-    owner: 'Anjali Gupta',
-    tier: 'Free',
-    tierColor: 'text-text-muted',
-  },
-]
 
 export function AdminPlatformConfiguration() {
   const [apiClientId] = useState('********-4920-x492')
   const [secretToken] = useState('************************')
+  const listingApprovals = useAdminStore((state) => state.listingApprovals)
+  const promotedApprovals = useAdminStore((state) => state.promotedApprovals)
+  const decideListingApproval = useAdminStore((state) => state.decideListingApproval)
+  const decidePromotedApproval = useAdminStore((state) => state.decidePromotedApproval)
+  const [listingFilter, setListingFilter] = useState<ApprovalStatusFilter>('Pending')
+  const [promotedFilter, setPromotedFilter] = useState<ApprovalStatusFilter>('Pending')
+  const [showListingFilters, setShowListingFilters] = useState(false)
+  const [showPromotedFilters, setShowPromotedFilters] = useState(false)
+
+  const filteredListingApprovals = useMemo(
+    () =>
+      listingApprovals.filter((request) =>
+        listingFilter === 'All' ? true : request.status === listingFilter
+      ),
+    [listingApprovals, listingFilter],
+  )
+
+  const filteredPromotedApprovals = useMemo(
+    () =>
+      promotedApprovals.filter((request) =>
+        promotedFilter === 'All' ? true : request.status === promotedFilter
+      ),
+    [promotedApprovals, promotedFilter],
+  )
+
+  const pendingListingCount = listingApprovals.filter((request) => request.status === 'Pending').length
+  const pendingPromotedCount = promotedApprovals.filter((request) => request.status === 'Pending').length
+
+  const handleListingDecision = (request: ApprovalRequest, decision: ApprovalDecision) => {
+    decideListingApproval(request.id, decision)
+    toast.success(
+      decision === 'Approved' ? 'Listing approved' : 'Listing rejected',
+      `${request.id} has been marked ${decision.toLowerCase()}.`,
+    )
+  }
+
+  const handlePromotedDecision = (request: ApprovalRequest, decision: ApprovalDecision) => {
+    decidePromotedApproval(request.id, decision)
+    toast.success(
+      decision === 'Approved' ? 'Promotion approved' : 'Promotion rejected',
+      `${request.id} has been marked ${decision.toLowerCase()}.`,
+    )
+  }
 
   return (
     <div className="min-h-screen bg-canvas-alt px-2 py-8 sm:px-6">
@@ -125,18 +135,45 @@ export function AdminPlatformConfiguration() {
         <div className="rounded-card border border-outline bg-white shadow-surface overflow-hidden">
           <div className="border-b border-outline px-6 py-4">
             <h2 className="text-body-lg font-semibold text-text-primary">Listings Approval</h2>
-            <p className="mt-0.5 text-label text-text-muted">3 requests awaiting manual review</p>
+            <p className="mt-0.5 text-label text-text-muted">
+              {pendingListingCount} requests awaiting manual review
+            </p>
           </div>
 
           <div className="px-6 py-3 flex justify-end border-b border-outline">
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 text-label font-medium text-text-muted hover:text-text-primary transition-colors"
+              onClick={() => setShowListingFilters((current) => !current)}
+              className={cn(
+                'inline-flex items-center gap-1.5 text-label font-medium transition-colors',
+                showListingFilters || listingFilter !== 'Pending'
+                  ? 'text-primary'
+                  : 'text-text-muted hover:text-text-primary',
+              )}
             >
               <Filter size={14} />
-              Filter
+              {listingFilter === 'Pending' ? 'Filter' : listingFilter}
             </button>
           </div>
+          {showListingFilters && (
+            <div className="flex flex-wrap items-center gap-2 border-b border-outline bg-canvas-alt px-6 py-3">
+              {approvalFilters.map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setListingFilter(filter)}
+                  className={cn(
+                    'rounded-button border px-3 py-1.5 text-label font-semibold transition-colors',
+                    listingFilter === filter
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-outline bg-white text-text-muted hover:bg-hover-light',
+                  )}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -152,12 +189,15 @@ export function AdminPlatformConfiguration() {
                     Type
                   </th>
                   <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {listingRequests.map((req) => (
+                {filteredListingApprovals.map((req) => (
                   <tr
                     key={req.id}
                     className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors"
@@ -177,19 +217,43 @@ export function AdminPlatformConfiguration() {
                     </td>
                     <td className="px-4 py-4 text-body text-text-primary">{req.owner}</td>
                     <td className="px-4 py-4 text-center">
-                      <span className="text-label font-medium text-primary">{req.type}</span>
+                      <span className="text-label font-medium text-primary">{req.metaLabel}</span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span
+                        className={cn(
+                          'inline-block rounded-pill px-3 py-1 text-badge font-bold',
+                          approvalStatusStyles[req.status],
+                        )}
+                      >
+                        {req.status}
+                      </span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
-                          className="rounded-button border border-status-error px-4 py-1.5 text-badge font-bold text-status-error hover:bg-status-error-bg transition-colors"
+                          onClick={() => handleListingDecision(req, 'Rejected')}
+                          disabled={req.status !== 'Pending'}
+                          className={cn(
+                            'rounded-button border border-status-error px-4 py-1.5 text-badge font-bold transition-colors',
+                            req.status === 'Pending'
+                              ? 'text-status-error hover:bg-status-error-bg'
+                              : 'cursor-not-allowed text-text-muted opacity-50',
+                          )}
                         >
                           Reject
                         </button>
                         <button
                           type="button"
-                          className="rounded-button bg-teal-600 px-4 py-1.5 text-badge font-bold text-white hover:bg-teal-700 transition-colors"
+                          onClick={() => handleListingDecision(req, 'Approved')}
+                          disabled={req.status !== 'Pending'}
+                          className={cn(
+                            'rounded-button px-4 py-1.5 text-badge font-bold transition-colors',
+                            req.status === 'Pending'
+                              ? 'bg-teal-600 text-white hover:bg-teal-700'
+                              : 'cursor-not-allowed bg-slate-200 text-text-muted opacity-70',
+                          )}
                         >
                           Approve
                         </button>
@@ -197,6 +261,13 @@ export function AdminPlatformConfiguration() {
                     </td>
                   </tr>
                 ))}
+                {filteredListingApprovals.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-body text-text-muted">
+                      No listing approval requests match this filter.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -215,18 +286,45 @@ export function AdminPlatformConfiguration() {
         <div className="rounded-card border border-outline bg-white shadow-surface overflow-hidden">
           <div className="border-b border-outline px-6 py-4">
             <h2 className="text-body-lg font-semibold text-text-primary">Promoted Listings Approval</h2>
-            <p className="mt-0.5 text-label text-text-muted">3 requests awaiting manual review</p>
+            <p className="mt-0.5 text-label text-text-muted">
+              {pendingPromotedCount} requests awaiting manual review
+            </p>
           </div>
 
           <div className="px-6 py-3 flex justify-end border-b border-outline">
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 text-label font-medium text-text-muted hover:text-text-primary transition-colors"
+              onClick={() => setShowPromotedFilters((current) => !current)}
+              className={cn(
+                'inline-flex items-center gap-1.5 text-label font-medium transition-colors',
+                showPromotedFilters || promotedFilter !== 'Pending'
+                  ? 'text-primary'
+                  : 'text-text-muted hover:text-text-primary',
+              )}
             >
               <Filter size={14} />
-              Filter
+              {promotedFilter === 'Pending' ? 'Filter' : promotedFilter}
             </button>
           </div>
+          {showPromotedFilters && (
+            <div className="flex flex-wrap items-center gap-2 border-b border-outline bg-canvas-alt px-6 py-3">
+              {approvalFilters.map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setPromotedFilter(filter)}
+                  className={cn(
+                    'rounded-button border px-3 py-1.5 text-label font-semibold transition-colors',
+                    promotedFilter === filter
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-outline bg-white text-text-muted hover:bg-hover-light',
+                  )}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -242,12 +340,15 @@ export function AdminPlatformConfiguration() {
                     Tier
                   </th>
                   <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {promotedRequests.map((req) => (
+                {filteredPromotedApprovals.map((req) => (
                   <tr
                     key={`promoted-${req.id}`}
                     className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors"
@@ -267,19 +368,45 @@ export function AdminPlatformConfiguration() {
                     </td>
                     <td className="px-4 py-4 text-body text-text-primary">{req.owner}</td>
                     <td className="px-4 py-4 text-center">
-                      <span className={`text-label font-medium ${req.tierColor}`}>{req.tier}</span>
+                      <span className={cn('text-label font-medium', getTierColor(req.metaLabel))}>
+                        {req.metaLabel}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span
+                        className={cn(
+                          'inline-block rounded-pill px-3 py-1 text-badge font-bold',
+                          approvalStatusStyles[req.status],
+                        )}
+                      >
+                        {req.status}
+                      </span>
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           type="button"
-                          className="rounded-button border border-status-error px-4 py-1.5 text-badge font-bold text-status-error hover:bg-status-error-bg transition-colors"
+                          onClick={() => handlePromotedDecision(req, 'Rejected')}
+                          disabled={req.status !== 'Pending'}
+                          className={cn(
+                            'rounded-button border border-status-error px-4 py-1.5 text-badge font-bold transition-colors',
+                            req.status === 'Pending'
+                              ? 'text-status-error hover:bg-status-error-bg'
+                              : 'cursor-not-allowed text-text-muted opacity-50',
+                          )}
                         >
                           Reject
                         </button>
                         <button
                           type="button"
-                          className="rounded-button bg-teal-600 px-4 py-1.5 text-badge font-bold text-white hover:bg-teal-700 transition-colors"
+                          onClick={() => handlePromotedDecision(req, 'Approved')}
+                          disabled={req.status !== 'Pending'}
+                          className={cn(
+                            'rounded-button px-4 py-1.5 text-badge font-bold transition-colors',
+                            req.status === 'Pending'
+                              ? 'bg-teal-600 text-white hover:bg-teal-700'
+                              : 'cursor-not-allowed bg-slate-200 text-text-muted opacity-70',
+                          )}
                         >
                           Approve
                         </button>
@@ -287,6 +414,13 @@ export function AdminPlatformConfiguration() {
                     </td>
                   </tr>
                 ))}
+                {filteredPromotedApprovals.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-body text-text-muted">
+                      No promoted listing approval requests match this filter.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
