@@ -45,9 +45,7 @@ const mainNavItems: BrokerNavItem[] = [
   { label: 'Analytics', href: ROUTES.BROKER.ANALYTICS, icon: BarChart3 },
 ]
 
-const footerNavItems: BrokerNavItem[] = [
-  { label: 'Support', href: '#support', icon: CircleHelp },
-]
+const footerNavItems: BrokerNavItem[] = []
 
 function NavItemLink({
   item,
