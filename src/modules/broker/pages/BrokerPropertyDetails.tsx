@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
   Bath,
   BedDouble,
@@ -23,6 +23,7 @@ import {
   BROKER_ASSIGNED_PROPERTIES,
   getBrokerPropertyById,
 } from '../constants/assignedProperties'
+import { ROUTES } from '@shared/constants/routes'
 import locationAerialImg from '@/assets/images/property_location_aerial.png'
 import julianVaneImg from '@/assets/images/julian_vane_owner.png'
 import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
@@ -169,6 +170,7 @@ const featureTiles = [
 ]
 
 export function BrokerPropertyDetails() {
+  const navigate = useNavigate()
   const { propertyId } = useParams<{ propertyId: string }>()
   const property = getBrokerPropertyById(propertyId) ?? BROKER_ASSIGNED_PROPERTIES[0]!
   const gallery = property.gallery.length ? property.gallery : [property.image]
@@ -191,10 +193,6 @@ export function BrokerPropertyDetails() {
           <button className="inline-flex h-11 items-center gap-2 rounded-lg border border-outline bg-white px-4 text-[14px] font-semibold text-[#0f172a] hover:bg-hover-light">
             <Share2 size={17} />
             Share Asset
-          </button>
-          <button className="inline-flex h-11 items-center gap-2 rounded-lg bg-black px-4 text-[14px] font-bold text-white hover:bg-[#1f2937]">
-            <Pencil size={16} />
-            Edit Details
           </button>
         </div>
       </div>
@@ -326,11 +324,25 @@ export function BrokerPropertyDetails() {
                 <p className="mt-1 text-[12px] text-text-muted">Portfolio: 8 Assets</p>
               </div>
             </div>
-            <button className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-black text-[14px] font-semibold text-white">
+            <button 
+              onClick={() => {
+                // Navigate to messages with owner conversation selected
+                navigate(ROUTES.BROKER.MESSAGES, { 
+                  state: { 
+                    ownerName: property.ownerName,
+                    propertyId: property.id 
+                  } 
+                })
+              }}
+              className="mt-8 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-black text-[14px] font-semibold text-white hover:bg-[#1f2937] transition-colors"
+            >
               <Mail size={18} />
               Contact Owner
             </button>
-            <button className="mt-4 h-12 w-full rounded-lg border border-outline bg-white text-[14px] font-semibold text-[#111] hover:bg-hover-light">
+            <button 
+              onClick={() => navigate(ROUTES.OWNER.PORTFOLIO)}
+              className="mt-4 h-12 w-full rounded-lg border border-outline bg-white text-[14px] font-semibold text-[#111] hover:bg-hover-light transition-colors"
+            >
               View Owner Portfolio
             </button>
           </section>

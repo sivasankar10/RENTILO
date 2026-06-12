@@ -356,15 +356,28 @@ function RequestListingCard({
   prop,
   requested,
   onToggleRequest,
+  onViewProperty,
 }: {
   prop: SuggestedProperty
   requested: boolean
   onToggleRequest: () => void
+  onViewProperty: () => void
 }) {
   return (
     <div className="bg-white border border-outline rounded-xl overflow-hidden shadow-ambient hover:shadow-card-hover transition-all duration-200 group">
-      {/* Image */}
-      <div className="relative h-44 overflow-hidden">
+      {/* Image - Clickable */}
+      <div 
+        role="button"
+        tabIndex={0}
+        onClick={onViewProperty}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onViewProperty()
+          }
+        }}
+        className="relative h-44 overflow-hidden cursor-pointer"
+      >
         <img
           src={prop.image}
           alt={prop.name}
@@ -390,8 +403,19 @@ function RequestListingCard({
         </div>
       </div>
 
-      {/* Body */}
-      <div className="p-4">
+      {/* Body - Clickable */}
+      <div 
+        role="button"
+        tabIndex={0}
+        onClick={onViewProperty}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onViewProperty()
+          }
+        }}
+        className="p-4 cursor-pointer"
+      >
         <h3 className="text-[15px] font-bold text-[#0f172a]">{prop.name}</h3>
         <div className="flex items-center gap-1 mt-0.5 text-[12px] text-text-muted">
           <MapPin size={11} />
@@ -430,7 +454,10 @@ function RequestListingCard({
           <span className="text-[15px] font-extrabold text-[#0f172a]">{prop.price}</span>
           <button
             type="button"
-            onClick={onToggleRequest}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleRequest()
+            }}
             className={cn(
               'flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-bold transition-colors',
               requested
@@ -453,10 +480,12 @@ function RequestNewListingModal({
   requestedIds,
   onToggleRequest,
   onClose,
+  onViewProperty,
 }: {
   requestedIds: string[]
   onToggleRequest: (propertyId: string) => void
   onClose: () => void
+  onViewProperty: (propertyId: string) => void
 }) {
   return (
     <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-[#0f172a]/60 px-4 py-6 backdrop-blur-sm">
@@ -475,7 +504,7 @@ function RequestNewListingModal({
               Request New Listing
             </h2>
             <p className="mt-1 text-[13px] leading-relaxed text-text-muted">
-              Pick properties you want to request for listing access. Requested properties can be cancelled from here.
+              Click on any property to view details. Pick properties you want to request for listing access.
             </p>
           </div>
           <button
@@ -495,6 +524,7 @@ function RequestNewListingModal({
               prop={property}
               requested={requestedIds.includes(property.id)}
               onToggleRequest={() => onToggleRequest(property.id)}
+              onViewProperty={() => onViewProperty(property.propertyId)}
             />
           ))}
         </div>
@@ -757,6 +787,10 @@ export function BrokerListings() {
           requestedIds={requestedPropertyIds}
           onToggleRequest={toggleListingRequest}
           onClose={() => setRequestModalOpen(false)}
+          onViewProperty={(propertyId) => {
+            setRequestModalOpen(false)
+            navigate(ROUTES.BROKER.PROPERTY(propertyId))
+          }}
         />
       )}
 
