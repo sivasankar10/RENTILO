@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AlertCircle, Ban, Eye, Mail, Search, Trash2, TrendingUp, UserCheck } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore } from '../store/adminStore'
@@ -10,7 +10,22 @@ import { exportToCsv } from '../utils/exportCsv'
 
 type TabFilter = 'All' | 'Active' | 'Banned'
 type EnterpriseTab = 'Enterprise' | 'Non-Enterprise'
-type SortKey = 'success' | 'deals' | 'name'
+type SortKey = 'success' | 'deals' | 'active' | 'name'
+
+function compareBrokers(a: AdminBroker, b: AdminBroker, sortKey: SortKey): number {
+  switch (sortKey) {
+    case 'success':
+      return b.successRate - a.successRate
+    case 'deals':
+      return b.dealsClosed - a.dealsClosed
+    case 'active':
+      return b.activeDeals - a.activeDeals
+    case 'name':
+      return a.name.localeCompare(b.name)
+    default:
+      return 0
+  }
+}
 
 export function AdminBrokerManagement() {
   const brokers = useAdminStore((s) => s.brokers)
@@ -28,18 +43,23 @@ export function AdminBrokerManagement() {
   const [sortKey, setSortKey] = useState<SortKey>('success')
   const [currentPage, setCurrentPage] = useState(1)
 
-  const filteredBrokers = brokers
-    .filter((broker) => {
-      if (activeTab === 'Active') return broker.status === 'ACTIVE'
-      if (activeTab === 'Banned') return broker.status === 'BANNED'
+  const filteredBrokers = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+
+    const filtered = brokers.filter((broker) => {
+      if (activeTab === 'Active' && broker.status !== 'ACTIVE') return false
+      if (activeTab === 'Banned' && broker.status !== 'BANNED') return false
+      if (query && !broker.name.toLowerCase().includes(query)) return false
       return true
     })
-    .filter((broker) => broker.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => {
-      if (sortKey === 'success') return b.successRate - a.successRate
-      if (sortKey === 'deals') return b.dealsClosed - a.dealsClosed
-      return a.name.localeCompare(b.name)
-    })
+
+    return [...filtered].sort((a, b) => compareBrokers(a, b, sortKey))
+  }, [brokers, activeTab, searchQuery, sortKey])
+
+  const handleSortChange = (nextSortKey: SortKey) => {
+    setSortKey(nextSortKey)
+    setCurrentPage(1)
+  }
 
   const handleViewDetails = (broker: AdminBroker) => {
     toast.info(`Viewing ${broker.name}`, `Broker ID ${broker.brokerId}`)
@@ -166,17 +186,21 @@ export function AdminBrokerManagement() {
                   type="text"
                   placeholder="Search brokers..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setCurrentPage(1)
+                  }}
                   className="h-9 w-56 rounded-input border border-outline bg-white pl-9 pr-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
                 />
               </div>
               <select
                 value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                onChange={(e) => handleSortChange(e.target.value as SortKey)}
                 className="h-9 rounded-input border border-outline bg-white px-3 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
               >
                 <option value="success">Sort: Success Rate</option>
                 <option value="deals">Sort: Deals Closed</option>
+                <option value="active">Sort: Active Deals</option>
                 <option value="name">Sort: Name A-Z</option>
               </select>
             </div>
@@ -187,12 +211,12 @@ export function AdminBrokerManagement() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-outline">
-                  <th className="px-6 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Broker Name</th>
+                  <SortableHeader label="Broker Name" column="name" align="left" sortKey={sortKey} onSort={handleSortChange} className="px-6 py-3" />
                   <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Broker ID</th>
                   <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Status</th>
-                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Active Deals</th>
-                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Deals Closed</th>
-                  <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Success Rate</th>
+                  <SortableHeader label="Active Deals" column="active" sortKey={sortKey} onSort={handleSortChange} className="px-4 py-3" />
+                  <SortableHeader label="Deals Closed" column="deals" sortKey={sortKey} onSort={handleSortChange} className="px-4 py-3" />
+                  <SortableHeader label="Success Rate" column="success" sortKey={sortKey} onSort={handleSortChange} className="px-4 py-3" />
                   <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Avg Time</th>
                   <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Actions</th>
                 </tr>
@@ -440,6 +464,46 @@ export function AdminBrokerManagement() {
         </div>
       </div>
     </div>
+  )
+}
+
+function SortableHeader({
+  label,
+  column,
+  sortKey,
+  onSort,
+  align = 'center',
+  className,
+}: {
+  label: string
+  column: SortKey
+  sortKey: SortKey
+  onSort: (column: SortKey) => void
+  align?: 'left' | 'center'
+  className?: string
+}) {
+  const active = sortKey === column
+
+  return (
+    <th
+      className={cn(
+        className,
+        align === 'left' ? 'text-left' : 'text-center',
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className={cn(
+          'inline-flex items-center gap-1 text-filter-label uppercase tracking-wider transition-colors',
+          align === 'center' && 'mx-auto',
+          active ? 'font-bold text-primary' : 'font-semibold text-text-muted hover:text-text-primary',
+        )}
+      >
+        {label}
+        {active && <span aria-hidden="true">↓</span>}
+      </button>
+    </th>
   )
 }
 
