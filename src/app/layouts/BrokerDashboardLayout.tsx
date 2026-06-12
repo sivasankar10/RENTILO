@@ -49,12 +49,6 @@ const footerNavItems: BrokerNavItem[] = [
   { label: 'Support', href: '#support', icon: CircleHelp },
 ]
 
-const logoutItem: BrokerNavItem = {
-  label: 'Log Out',
-  href: '#logout',
-  icon: LogOut,
-}
-
 function NavItemLink({
   item,
   onNavigate,
@@ -387,18 +381,6 @@ export function BrokerDashboardLayout() {
                 </button>
               </li>
             </ul>
-            {/* Log Out */}
-            <button
-              type="button"
-              onClick={() => {
-                logout()
-                navigate(ROUTES.AUTH.LOGIN)
-              }}
-              className="mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-            >
-              <LogOut size={18} strokeWidth={1.75} className="shrink-0" />
-              <span>Log Out</span>
-            </button>
           </div>
         </aside>
         )}
