@@ -1,5 +1,7 @@
 import { Download, TrendingUp } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { toast } from '../components/Toast'
+import { exportToCsv } from '../utils/exportCsv'
 
 const topBrokers = [
   { initials: 'RK', name: 'Rajesh Kumar', deals: 141, rate: 96.2, color: 'bg-orange-500' },
@@ -20,6 +22,58 @@ const regionalData = [
   { city: 'HYDERABAD', value: '₹1.5Cr', change: '+24% vs LW', positive: true },
 ]
 
+type DashboardExportRow = {
+  section: string
+  metric: string
+  value: string
+  detail: string
+}
+
+function buildAdminDashboardExportRows(): DashboardExportRow[] {
+  const summaryRows: DashboardExportRow[] = [
+    { section: 'Summary', metric: 'Deal Closures', value: '1,482', detail: '+12.5% from last month' },
+    { section: 'Summary', metric: 'Total Revenue', value: '₹ 4.8M', detail: '+8.2% vs target' },
+    { section: 'Summary', metric: 'Active Listings', value: '12,305', detail: '+4%' },
+    { section: 'Summary', metric: 'Broker Performance', value: '88.4%', detail: '' },
+    { section: 'Summary', metric: 'KYC Rate', value: '94%', detail: 'Stable' },
+    { section: 'Summary', metric: 'Tenant Signals', value: '4.2k', detail: 'Active' },
+    { section: 'Summary', metric: 'Failed Deals', value: '42', detail: '-2%' },
+  ]
+
+  const brokerRows: DashboardExportRow[] = topBrokers.map((broker) => ({
+    section: 'Top Broker Performance',
+    metric: broker.name,
+    value: `${broker.deals} deals closed`,
+    detail: `${broker.rate}% success rate`,
+  }))
+
+  const failedDealRows: DashboardExportRow[] = failedDeals.map((deal) => ({
+    section: 'Recent Failed Deals',
+    metric: deal.id,
+    value: deal.reason,
+    detail: deal.broker,
+  }))
+
+  const regionalRows: DashboardExportRow[] = regionalData.map((region) => ({
+    section: 'Regional Performance',
+    metric: region.city,
+    value: region.value,
+    detail: region.change,
+  }))
+
+  return [...summaryRows, ...brokerRows, ...failedDealRows, ...regionalRows]
+}
+
+function handleExportData() {
+  exportToCsv('rentilo-admin-dashboard.csv', buildAdminDashboardExportRows(), [
+    { key: 'section', label: 'Section' },
+    { key: 'metric', label: 'Metric' },
+    { key: 'value', label: 'Value' },
+    { key: 'detail', label: 'Detail' },
+  ])
+  toast.success('Export started', 'Dashboard data downloaded as CSV.')
+}
+
 export function AdminDashboard() {
   return (
     <div className="min-h-screen bg-canvas-alt px-2 py-8 sm:px-6">
@@ -36,6 +90,7 @@ export function AdminDashboard() {
           </div>
           <button
             type="button"
+            onClick={handleExportData}
             className="inline-flex items-center gap-2 rounded-button bg-navy px-5 py-2.5 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-slate-800 hover:shadow-md"
           >
             <Download size={16} />
