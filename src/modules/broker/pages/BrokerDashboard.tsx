@@ -1,10 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Building2,
   Users,
   Handshake,
   DollarSign,
-  Mail,
+  MessageCircle,
   Phone,
   MapPin,
   Calendar,
@@ -14,6 +15,7 @@ import {
   FileText,
   X,
 } from 'lucide-react'
+import { ROUTES } from '@shared/constants/routes'
 import skylineImg from '@/assets/images/skyline_heights.png'
 
 /* ─────────────────────────────────────────────
@@ -109,9 +111,11 @@ interface LeadRowProps {
   name: string
   property: string
   pill: 'hot' | 'follow-up'
+  conversationId: string
+  onChat: (conversationId: string) => void
 }
 
-function LeadRow({ avatar, name, property, pill }: LeadRowProps) {
+function LeadRow({ avatar, name, property, pill, conversationId, onChat }: LeadRowProps) {
   return (
     <div className="flex items-center gap-3 py-3 border-b border-outline last:border-0">
       <img
@@ -124,10 +128,20 @@ function LeadRow({ avatar, name, property, pill }: LeadRowProps) {
         <p className="text-label text-text-muted truncate">{property}</p>
       </div>
       <LeadPill type={pill} />
-      <button className="p-1.5 rounded-full text-text-muted hover:bg-hover-light transition-colors" title="Email">
-        <Mail size={15} />
+      <button
+        type="button"
+        onClick={() => onChat(conversationId)}
+        className="p-1.5 rounded-full text-text-muted hover:bg-hover-light hover:text-primary transition-colors"
+        title="Chat"
+        aria-label={`Chat with ${name}`}
+      >
+        <MessageCircle size={15} />
       </button>
-      <button className="p-1.5 rounded-full text-text-muted hover:bg-hover-light transition-colors" title="Call">
+      <button
+        type="button"
+        className="p-1.5 rounded-full text-text-muted hover:bg-hover-light transition-colors"
+        title="Call"
+      >
         <Phone size={15} />
       </button>
     </div>
@@ -196,6 +210,104 @@ const initialVisits: Visit[] = [
 const visitProperties = ['Skyline Heights 14B', 'Harbor Residences 8C', 'Garden Lofts Apt 12']
 const visitClients = ['Julianna Smith', 'Robert King', 'Meera Iyer', 'Arjun Patel']
 
+const last30DayMetrics = [
+  { label: 'Assigned Properties', value: '8', detail: '+2 new assignments' },
+  { label: 'Active Leads', value: '12', detail: '5 hot leads, 7 follow-ups' },
+  { label: 'Visits Scheduled', value: '9', detail: '6 completed, 3 upcoming' },
+  { label: 'Closed Deals', value: '3', detail: 'Rs. 45,000 commission' },
+]
+
+const last30DayProperties = [
+  {
+    property: 'Skyline Heights 14B',
+    leads: 6,
+    visits: 3,
+    status: 'High Priority',
+    nextStep: 'Robert King site visit tomorrow',
+  },
+  {
+    property: 'Penthouse Loft A',
+    leads: 4,
+    visits: 2,
+    status: 'Hot',
+    nextStep: 'Julianna Smith private showing',
+  },
+  {
+    property: 'Harbor Residences 8C',
+    leads: 2,
+    visits: 1,
+    status: 'Follow-up',
+    nextStep: 'Owner availability confirmation',
+  },
+]
+
+const last30DayActivities = [
+  {
+    title: 'Lead conversion improved',
+    description: 'Hot lead response time reduced to 18 minutes across assigned properties.',
+  },
+  {
+    title: 'Visits scheduled',
+    description: 'Three new tenant visits were scheduled for Skyline Heights and Penthouse Loft A.',
+  },
+  {
+    title: 'Deal progress',
+    description: 'Three deals are in closing review with owner approval pending.',
+  },
+]
+
+function escapeCsvValue(value: string | number) {
+  const text = String(value)
+  if (/[",\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`
+  }
+
+  return text
+}
+
+function downloadCsv(filename: string, rows: Array<Record<string, string | number>>) {
+  if (!rows.length) return
+
+  const headers = Object.keys(rows[0])
+  const csv = [
+    headers.map(escapeCsvValue).join(','),
+    ...rows.map((row) => headers.map((header) => escapeCsvValue(row[header])).join(',')),
+  ].join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+function buildBrokerDashboardExportRows() {
+  return [
+    ...last30DayMetrics.map((metric) => ({
+      section: 'Summary',
+      item: metric.label,
+      value: metric.value,
+      detail: metric.detail,
+    })),
+    ...last30DayProperties.map((property) => ({
+      section: 'Property Performance',
+      item: property.property,
+      value: `${property.leads} leads / ${property.visits} visits`,
+      detail: `${property.status} - ${property.nextStep}`,
+    })),
+    ...last30DayActivities.map((activity) => ({
+      section: 'Activity',
+      item: activity.title,
+      value: 'Last 30 Days',
+      detail: activity.description,
+    })),
+  ]
+}
+
 /* ─────────────────────────────────────────────
    Upcoming Visit Card
 ───────────────────────────────────────────── */
@@ -214,6 +326,126 @@ function UpcomingVisitCard({ visit }: { visit: Visit }) {
           {visit.property}
         </button>
       </div>
+    </div>
+  )
+}
+
+function Last30DaysReportModal({
+  onClose,
+  onExport,
+}: {
+  onClose: () => void
+  onExport: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-[#0f172a]/60 px-4 py-6 backdrop-blur-sm">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="last-30-days-title"
+        className="w-full max-w-5xl rounded-2xl bg-white shadow-card"
+      >
+        <div className="flex flex-col gap-4 border-b border-outline px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
+              Broker Performance
+            </p>
+            <h2 id="last-30-days-title" className="mt-1 text-[24px] font-extrabold text-[#0f172a]">
+              Last 30 Days Report
+            </h2>
+            <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-text-muted">
+              Sample dashboard view for recent broker activity, property performance, lead health,
+              and upcoming follow-ups.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onExport}
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0f172a] px-4 text-[13px] font-bold text-white hover:bg-navy/90"
+            >
+              <Download size={14} />
+              Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline bg-white text-text-muted hover:bg-hover-light hover:text-[#0f172a]"
+              aria-label="Close last 30 days report"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-6 p-6">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {last30DayMetrics.map((metric) => (
+              <article key={metric.label} className="rounded-xl border border-outline bg-canvas p-4">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                  {metric.label}
+                </p>
+                <p className="mt-2 text-[28px] font-extrabold leading-none text-[#0f172a]">
+                  {metric.value}
+                </p>
+                <p className="mt-2 text-[12px] font-semibold text-primary">{metric.detail}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <section className="overflow-hidden rounded-xl border border-outline">
+              <div className="border-b border-outline bg-canvas px-5 py-4">
+                <h3 className="text-[15px] font-bold text-[#0f172a]">Property Performance</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left">
+                  <thead className="bg-white text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                    <tr>
+                      <th className="px-5 py-3">Property</th>
+                      <th className="px-5 py-3">Leads</th>
+                      <th className="px-5 py-3">Visits</th>
+                      <th className="px-5 py-3">Status</th>
+                      <th className="px-5 py-3">Next Step</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline">
+                    {last30DayProperties.map((property) => (
+                      <tr key={property.property}>
+                        <td className="px-5 py-4 text-[13px] font-bold text-[#0f172a]">
+                          {property.property}
+                        </td>
+                        <td className="px-5 py-4 text-[13px] text-text-muted">{property.leads}</td>
+                        <td className="px-5 py-4 text-[13px] text-text-muted">{property.visits}</td>
+                        <td className="px-5 py-4">
+                          <span className="rounded-pill bg-primary-100 px-2.5 py-1 text-[10px] font-bold uppercase text-primary">
+                            {property.status}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-[13px] text-text-muted">{property.nextStep}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <aside className="rounded-xl border border-outline bg-canvas p-5">
+              <h3 className="text-[15px] font-bold text-[#0f172a]">Activity Highlights</h3>
+              <div className="mt-5 space-y-4">
+                {last30DayActivities.map((activity) => (
+                  <div key={activity.title} className="rounded-lg bg-white p-4 shadow-ambient">
+                    <p className="text-[13px] font-bold text-[#0f172a]">{activity.title}</p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-text-muted">
+                      {activity.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
@@ -358,8 +590,20 @@ function ScheduleVisitModal({
    Main Dashboard
 ───────────────────────────────────────────── */
 export function BrokerDashboard() {
+  const navigate = useNavigate()
   const [visits, setVisits] = useState(initialVisits)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [exportStatus, setExportStatus] = useState('')
+
+  const openLeadChat = (conversationId: string) => {
+    navigate(`${ROUTES.BROKER.MESSAGES}?conversation=${encodeURIComponent(conversationId)}`)
+  }
+
+  const exportDashboardData = () => {
+    downloadCsv('rentilo-broker-last-30-days.csv', buildBrokerDashboardExportRows())
+    setExportStatus('Last 30 days CSV exported.')
+  }
 
   const handleScheduleVisit = (visit: Visit) => {
     setVisits((currentVisits) => [visit, ...currentVisits])
@@ -378,15 +622,31 @@ export function BrokerDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button className="inline-flex items-center gap-1.5 border border-outline rounded-lg px-3 py-2 text-label font-semibold text-text-muted bg-white hover:bg-hover-light transition-colors shadow-ambient">
+          <button
+            type="button"
+            onClick={() => {
+              setReportOpen(true)
+              setExportStatus('')
+            }}
+            className="inline-flex items-center gap-1.5 border border-outline rounded-lg px-3 py-2 text-label font-semibold text-text-muted bg-white hover:bg-hover-light transition-colors shadow-ambient"
+          >
             <CalendarDays size={13} />
             Last 30 Days
           </button>
-          <button className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-label font-bold text-white bg-[#0f172a] hover:bg-navy/90 transition-colors shadow-ambient">
+          <button
+            type="button"
+            onClick={exportDashboardData}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-label font-bold text-white bg-[#0f172a] hover:bg-navy/90 transition-colors shadow-ambient"
+          >
             <Download size={13} />
             Export Data
           </button>
         </div>
+        {exportStatus && (
+          <p className="w-full text-right text-label font-semibold text-status-success">
+            {exportStatus}
+          </p>
+        )}
       </div>
 
       {/* ── Stats Row ── */}
@@ -412,7 +672,7 @@ export function BrokerDashboard() {
         <StatCard
           icon={<DollarSign size={16} />}
           label="Monthly Earnings"
-          value="$4,500"
+          value="₹45,000"
           badge={<CurrentPeriodBadge />}
           dark
         />
@@ -432,12 +692,16 @@ export function BrokerDashboard() {
             name="Julianna Smith"
             property="Penthouse Loft A"
             pill="hot"
+            conversationId="lead-julianna-smith"
+            onChat={openLeadChat}
           />
           <LeadRow
             avatar="https://randomuser.me/api/portraits/men/32.jpg"
             name="Robert King"
             property="Skyline Heights 14B"
             pill="follow-up"
+            conversationId="lead-robert-king"
+            onChat={openLeadChat}
           />
         </div>
 
@@ -529,6 +793,13 @@ export function BrokerDashboard() {
         <ScheduleVisitModal
           onClose={() => setScheduleOpen(false)}
           onSchedule={handleScheduleVisit}
+        />
+      )}
+
+      {reportOpen && (
+        <Last30DaysReportModal
+          onClose={() => setReportOpen(false)}
+          onExport={exportDashboardData}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { useBrokerChatStore } from '../store/chatStore'
@@ -8,10 +8,16 @@ import { ChatWindow } from '@modules/tenant/components/chat/ChatWindow'
 
 export function BrokerMessagesPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const conversations = useBrokerChatStore((state) => state.conversations)
   const sendMessage = useBrokerChatStore((state) => state.sendMessage)
   const markConversationRead = useBrokerChatStore((state) => state.markConversationRead)
-  const [activeId, setActiveId] = useState(conversations[0]?.id ?? '')
+  const requestedConversationId = searchParams.get('conversation')
+  const initialActiveId =
+    conversations.find((conversation) => conversation.id === requestedConversationId)?.id ??
+    conversations[0]?.id ??
+    ''
+  const [activeId, setActiveId] = useState(initialActiveId)
 
   const activeConversation = useMemo(
     () => conversations.find((c) => c.id === activeId) ?? conversations[0],
@@ -23,6 +29,22 @@ export function BrokerMessagesPage() {
       markConversationRead(activeConversation.id)
     }
   }, [activeConversation?.id, markConversationRead])
+
+  useEffect(() => {
+    if (
+      requestedConversationId &&
+      conversations.some((conversation) => conversation.id === requestedConversationId)
+    ) {
+      setActiveId(requestedConversationId)
+    }
+  }, [requestedConversationId, conversations])
+
+  const selectConversation = (id: string) => {
+    setActiveId(id)
+    navigate(`${ROUTES.BROKER.MESSAGES}?conversation=${encodeURIComponent(id)}`, {
+      replace: true,
+    })
+  }
 
   if (!activeConversation) {
     return null
@@ -45,7 +67,7 @@ export function BrokerMessagesPage() {
       <BrokerPropertyConversationSidebar
         conversations={conversations}
         activeId={activeConversation.id}
-        onSelect={setActiveId}
+        onSelect={selectConversation}
       />
       <ChatWindow conversation={activeConversation} onSendMessage={sendMessage} />
       </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, TrendingUp, CheckCircle2, BadgeCheck, ChevronRight } from 'lucide-react'
+import { MapPin, TrendingUp, CheckCircle2, BadgeCheck, ChevronRight, Medal, Trophy } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
 import {
@@ -11,81 +11,17 @@ import {
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 
+const monthlyLeaderboard = [
+  { rank: 1, name: 'Ava Montgomery', deals: 31, leads: 42, score: 98, change: '+4' },
+  { rank: 2, name: 'Ethan Clarke', deals: 28, leads: 39, score: 94, change: '+2' },
+  { rank: 3, name: 'Jonathan Sterling', deals: 24, leads: 36, score: 91, change: '+6', current: true },
+  { rank: 4, name: 'Maya Deshpande', deals: 22, leads: 34, score: 87, change: '+1' },
+  { rank: 5, name: 'Daniel Brooks', deals: 20, leads: 31, score: 84, change: '-1' },
+]
+
 /* ─────────────────────────────────────────────
    Quarterly Performance Bar Chart (pure SVG)
 ───────────────────────────────────────────── */
-const volumeData = [
-  { quarter: 'Q1', value: 42 },
-  { quarter: 'Q2', value: 65 },
-  { quarter: 'Q3', value: 88 },
-  { quarter: 'Q4 (Proj)', value: 71 },
-]
-const revenueData = [
-  { quarter: 'Q1', value: 30 },
-  { quarter: 'Q2', value: 55 },
-  { quarter: 'Q3', value: 95 },
-  { quarter: 'Q4 (Proj)', value: 62 },
-]
-
-function QuarterlyChart({ mode }: { mode: 'volume' | 'revenue' }) {
-  const data = mode === 'volume' ? volumeData : revenueData
-  const chartH = 180
-  const barW = 80
-  const gap = 24
-  const chartW = data.length * (barW + gap) - gap
-  const maxVal = 100
-
-  return (
-    <svg
-      viewBox={`0 0 ${chartW + 20} ${chartH + 32}`}
-      className="w-full"
-      style={{ maxHeight: 240 }}
-    >
-      {data.map((d, i) => {
-        const barH = (d.value / maxVal) * chartH
-        const x = i * (barW + gap)
-        const y = chartH - barH
-        const isLast = i === data.length - 1
-        return (
-          <g key={d.quarter}>
-            {/* Shadow bar */}
-            <rect
-              x={x + 4}
-              y={y + 4}
-              width={barW}
-              height={barH}
-              rx={4}
-              fill="rgba(0,0,0,0.06)"
-            />
-            {/* Main bar */}
-            <rect
-              x={x}
-              y={y}
-              width={barW}
-              height={barH}
-              rx={4}
-              fill={isLast ? '#94a3b8' : '#0f172a'}
-              opacity={isLast ? 0.6 : 1}
-            />
-            {/* Quarter label */}
-            <text
-              x={x + barW / 2}
-              y={chartH + 22}
-              textAnchor="middle"
-              fontSize={11}
-              fill="#64748b"
-              fontFamily="Manrope, sans-serif"
-              fontWeight={500}
-            >
-              {d.quarter}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
-  )
-}
-
 /* ─────────────────────────────────────────────
    Stat Card
 ───────────────────────────────────────────── */
@@ -180,7 +116,6 @@ function PropertyCard({ property, active, onSelect }: PropertyCardProps) {
    Main Portfolio Page
 ───────────────────────────────────────────── */
 export function BrokerPortfolio() {
-  const [chartMode, setChartMode] = useState<'volume' | 'revenue'>('revenue')
   const navigate = useNavigate()
   const portfolioProperties = BROKER_ASSIGNED_PROPERTIES.slice(0, 2)
   const defaultPortfolioProperty = portfolioProperties[0] ?? BROKER_ASSIGNED_PROPERTIES[0]!
@@ -215,20 +150,20 @@ export function BrokerPortfolio() {
                 Active
               </span>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                Enterprise Tier
+                Premium Tier
               </span>
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-2 shrink-0 mt-1">
+          {/* <div className="flex items-center gap-2 shrink-0 mt-1">
             <button className="px-4 py-2 rounded-lg border border-outline text-[13px] font-semibold text-[#0f172a] bg-white hover:bg-hover-light transition-colors">
               Remove Broker
             </button>
             <button className="px-4 py-2 rounded-lg text-[13px] font-bold text-white bg-[#0f172a] hover:bg-navy/80 transition-colors">
               Reassign Broker
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -256,7 +191,7 @@ export function BrokerPortfolio() {
         />
         <StatCard
           label="Total Asset Value"
-          value="$184.5M"
+          value="₹184.5L"
           icon={
             <span className="text-[18px] font-bold text-white/30">$</span>
           }
@@ -270,35 +205,91 @@ export function BrokerPortfolio() {
       {/* ── Chart + Notes Row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
 
-        {/* Quarterly Performance Chart */}
+        {/* Monthly Broker Leaderboard */}
         <div className="bg-white border border-outline rounded-xl p-6 shadow-ambient">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-[16px] font-bold text-[#0f172a]">Quarterly Performance</h2>
-            <div className="flex items-center gap-0 border border-outline rounded-lg overflow-hidden">
-              <button
-                onClick={() => setChartMode('volume')}
-                className={`px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                  chartMode === 'volume'
-                    ? 'bg-[#0f172a] text-white'
-                    : 'bg-white text-text-muted hover:bg-hover-light'
-                }`}
-              >
-                Volume
-              </button>
-              <button
-                onClick={() => setChartMode('revenue')}
-                className={`px-3 py-1.5 text-[12px] font-semibold transition-colors ${
-                  chartMode === 'revenue'
-                    ? 'bg-[#0f172a] text-white'
-                    : 'bg-white text-text-muted hover:bg-hover-light'
-                }`}
-              >
-                Revenue
-              </button>
+          <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                June Leaderboard
+              </p>
+              <h2 className="mt-1 text-[16px] font-bold text-[#0f172a]">Broker Ranking Dashboard</h2>
+              <p className="mt-1 text-label text-text-muted">
+                Ranked by closed deals, lead response quality, and verified tenant conversions.
+              </p>
             </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#0f172a] px-3 py-1.5 text-[11px] font-bold text-white">
+              <Trophy size={13} />
+              Rank #3 this month
+            </span>
           </div>
-          <div className="px-2">
-            <QuarterlyChart mode={chartMode} />
+
+          <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+            <article className="rounded-xl bg-[#0f172a] p-5 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
+                  <Medal size={24} className="text-amber-300" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Current Rank
+                  </p>
+                  <p className="text-[36px] font-extrabold leading-none">#3</p>
+                </div>
+              </div>
+              <p className="mt-4 text-[13px] leading-6 text-slate-300">
+                Jonathan is performing better than 96% of brokers this month.
+              </p>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-white/10 p-3">
+                  <p className="text-[20px] font-bold">24</p>
+                  <p className="mt-1 text-[10px] uppercase text-slate-400">Deals</p>
+                </div>
+                <div className="rounded-lg bg-white/10 p-3">
+                  <p className="text-[20px] font-bold">91</p>
+                  <p className="mt-1 text-[10px] uppercase text-slate-400">Score</p>
+                </div>
+              </div>
+            </article>
+
+            <div className="space-y-2">
+              {monthlyLeaderboard.map((broker) => (
+                <div
+                  key={broker.rank}
+                  className={`grid grid-cols-[40px_minmax(0,1fr)_70px_72px] items-center gap-3 rounded-xl border px-4 py-3 ${
+                    broker.current
+                      ? 'border-primary bg-primary-50'
+                      : 'border-outline bg-canvas'
+                  }`}
+                >
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-[13px] font-extrabold ${
+                      broker.current ? 'bg-primary text-white' : 'bg-white text-[#0f172a]'
+                    }`}
+                  >
+                    {broker.rank}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-bold text-[#0f172a]">{broker.name}</p>
+                    <p className="mt-0.5 text-[11px] text-text-muted">
+                      {broker.deals} deals - {broker.leads} active leads
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-bold text-[#0f172a]">{broker.score}</p>
+                    <p className="text-[10px] uppercase text-text-muted">Score</p>
+                  </div>
+                  <span
+                    className={`rounded-pill px-2 py-1 text-center text-[10px] font-bold ${
+                      broker.change.startsWith('+')
+                        ? 'bg-green-50 text-green-700'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {broker.change}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

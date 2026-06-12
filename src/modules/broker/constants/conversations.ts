@@ -12,12 +12,201 @@ const NEHA_AVATAR =
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face'
 const VIKRAM_AVATAR =
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=face'
+const JULIANNA_AVATAR = 'https://randomuser.me/api/portraits/women/44.jpg'
+const ROBERT_KING_AVATAR = 'https://randomuser.me/api/portraits/men/32.jpg'
 
 const PROPERTY_IMAGE =
   'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=200&q=80'
 
 /** Mock broker conversations until chat API is ready */
 export const BROKER_CONVERSATIONS: ChatConversation[] = [
+  {
+    id: 'lead-julianna-smith',
+    contactName: 'Julianna Smith',
+    contactRole: 'tenant',
+    ownerName: 'Julian Vane',
+    avatar: JULIANNA_AVATAR,
+    lastMessage: 'Can we schedule a showing for Penthouse Loft A?',
+    timeLabel: '11:10 AM',
+    unreadCount: 1,
+    online: true,
+    propertyTitle: 'Penthouse Loft A',
+    propertySubtitle: 'Skyline Heights',
+    propertyLocation: 'Financial District, NYC',
+    propertyPrice: '$7,800/mo',
+    propertyImage: PROPERTY_IMAGE,
+    messages: [
+      {
+        id: 'lead-julianna-1',
+        sender: 'tenant',
+        text: 'Hi, I am interested in Penthouse Loft A. Is it still available for viewing this week?',
+        time: '11:05 AM',
+      },
+      {
+        id: 'lead-julianna-2',
+        sender: 'broker',
+        text: 'Yes Julianna, it is available. I can help you schedule a private showing.',
+        time: '11:08 AM',
+        read: true,
+      },
+      {
+        id: 'lead-julianna-3',
+        sender: 'tenant',
+        text: 'Can we schedule a showing for Penthouse Loft A?',
+        time: '11:10 AM',
+      },
+    ],
+  },
+  {
+    id: 'lead-robert-king',
+    contactName: 'Robert King',
+    contactRole: 'tenant',
+    ownerName: 'Julian Vane',
+    avatar: ROBERT_KING_AVATAR,
+    lastMessage: 'I can visit Skyline Heights 14B tomorrow afternoon.',
+    timeLabel: '10:55 AM',
+    unreadCount: 0,
+    online: true,
+    propertyTitle: 'Skyline Heights 14B',
+    propertySubtitle: 'Skyline Plaza',
+    propertyLocation: 'Financial District, NYC',
+    propertyPrice: '$7,800/mo',
+    propertyImage: PROPERTY_IMAGE,
+    messages: [
+      {
+        id: 'lead-robert-1',
+        sender: 'tenant',
+        text: 'I saw the Skyline Heights 14B listing and want to know if the owner is open to a quick move-in.',
+        time: '10:49 AM',
+      },
+      {
+        id: 'lead-robert-2',
+        sender: 'broker',
+        text: 'The owner is open to immediate occupancy for verified tenants. Would you like to view it?',
+        time: '10:52 AM',
+        read: true,
+      },
+      {
+        id: 'lead-robert-3',
+        sender: 'tenant',
+        text: 'I can visit Skyline Heights 14B tomorrow afternoon.',
+        time: '10:55 AM',
+      },
+    ],
+  },
+  {
+    id: 'lead-eleonor-vance',
+    contactName: 'Eleonor Vance',
+    contactRole: 'tenant',
+    ownerName: 'Julian Vane',
+    avatar: SARAH_AVATAR,
+    lastMessage: 'I want to visit Zenith Penthouse this week.',
+    timeLabel: '2 hours ago',
+    unreadCount: 1,
+    online: true,
+    propertyTitle: 'Zenith Penthouse',
+    propertySubtitle: 'Zenith Penthouse',
+    propertyLocation: 'Financial District, NYC',
+    propertyPrice: '$6,800/mo',
+    propertyImage: PROPERTY_IMAGE,
+    messages: [
+      {
+        id: 'lead-eleonor-1',
+        sender: 'tenant',
+        text: 'Hi, I liked the Zenith Penthouse listing. Is it available for viewing this week?',
+        time: '2:05 PM',
+      },
+      {
+        id: 'lead-eleonor-2',
+        sender: 'broker',
+        text: 'Yes Eleonor, I can coordinate a private viewing with the owner.',
+        time: '2:08 PM',
+        read: true,
+      },
+      {
+        id: 'lead-eleonor-3',
+        sender: 'tenant',
+        text: 'I want to visit Zenith Penthouse this week.',
+        time: '2:10 PM',
+      },
+    ],
+  },
+  {
+    id: 'lead-julian-thorne',
+    contactName: 'Julian Thorne',
+    contactRole: 'tenant',
+    ownerName: 'Sarah Jenkins',
+    avatar: RAJESH_AVATAR,
+    lastMessage: 'Please share the Harbor View visit slots.',
+    timeLabel: '1 day ago',
+    unreadCount: 0,
+    online: false,
+    propertyTitle: 'Harbor View',
+    propertySubtitle: 'Harbor Residences',
+    propertyLocation: 'Seaport Area, NYC',
+    propertyPrice: '$6,950/mo',
+    propertyImage:
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=200&q=80',
+    messages: [
+      {
+        id: 'lead-julian-1',
+        sender: 'tenant',
+        text: 'I am interested in Harbor View and want to understand the move-in timeline.',
+        time: 'Yesterday',
+      },
+      {
+        id: 'lead-julian-2',
+        sender: 'broker',
+        text: 'The owner can support a move-in within 15 days after verification.',
+        time: 'Yesterday',
+        read: true,
+      },
+      {
+        id: 'lead-julian-3',
+        sender: 'tenant',
+        text: 'Please share the Harbor View visit slots.',
+        time: 'Yesterday',
+      },
+    ],
+  },
+  {
+    id: 'lead-marcus-chen',
+    contactName: 'Marcus Chen',
+    contactRole: 'tenant',
+    ownerName: 'Elena Rossi',
+    avatar: VIKRAM_AVATAR,
+    lastMessage: 'Can we schedule the Industrial Loft tour?',
+    timeLabel: '3 days ago',
+    unreadCount: 0,
+    online: false,
+    propertyTitle: 'Industrial Loft',
+    propertySubtitle: 'Shoreditch Penthouse',
+    propertyLocation: 'London, UK',
+    propertyPrice: '$4,850/mo',
+    propertyImage:
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=200&q=80',
+    messages: [
+      {
+        id: 'lead-marcus-1',
+        sender: 'tenant',
+        text: 'The Industrial Loft looks ideal for my team. Is a virtual tour possible first?',
+        time: 'Mon',
+      },
+      {
+        id: 'lead-marcus-2',
+        sender: 'broker',
+        text: 'Yes Marcus, I can send the virtual tour and then block an in-person slot.',
+        time: 'Mon',
+        read: true,
+      },
+      {
+        id: 'lead-marcus-3',
+        sender: 'tenant',
+        text: 'Can we schedule the Industrial Loft tour?',
+        time: 'Mon',
+      },
+    ],
+  },
   {
     id: 'prop-penthouse-owner',
     contactName: 'Rajesh Kumar',

@@ -28,18 +28,120 @@ import julianVaneImg from '@/assets/images/julian_vane_owner.png'
 import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 
-const leads = [
+type PropertyLead = {
+  name: string
+  note: string
+  image: string
+  status: string
+  lastAction: string
+}
+
+const defaultAssociatedLeads: PropertyLead[] = [
   {
     name: 'Sarah Miller',
     note: 'Qualified - $1.9M Pre-approved',
     image: sarahJenkinsImg,
+    status: 'Hot lead',
+    lastAction: 'Viewing scheduled',
   },
   {
     name: 'Robert Blackstone',
     note: 'Pending ID - Cash Offer',
     image: brokerProfileImg,
+    status: 'Follow-up',
+    lastAction: 'Awaiting documents',
   },
 ]
+
+const propertyLeadMap: Record<string, PropertyLead[]> = {
+  'skyline-plaza': [
+    {
+      name: 'Sarah Miller',
+      note: 'Corporate tenant - 18 month lease interest',
+      image: sarahJenkinsImg,
+      status: 'Hot lead',
+      lastAction: 'Viewing scheduled for Friday',
+    },
+    {
+      name: 'Robert Blackstone',
+      note: 'Executive relocation - budget approved',
+      image: brokerProfileImg,
+      status: 'Qualified',
+      lastAction: 'Lease terms shared',
+    },
+    {
+      name: 'Julian Thorne',
+      note: 'Family tenant - wants concierge and parking',
+      image: julianVaneImg,
+      status: 'Follow-up',
+      lastAction: 'Call back requested',
+    },
+  ],
+  'harbor-residences': [
+    {
+      name: 'Eleonor Vance',
+      note: 'Waterfront preference - move-in within 30 days',
+      image: sarahJenkinsImg,
+      status: 'New',
+      lastAction: 'Brochure sent',
+    },
+    {
+      name: 'Marcus Chen',
+      note: 'Couple lead - asked for pet policy',
+      image: brokerProfileImg,
+      status: 'Contacted',
+      lastAction: 'Pet approval pending',
+    },
+  ],
+  'canary-wharf': [
+    {
+      name: 'Nisha Rao',
+      note: 'Professional tenant - office commute priority',
+      image: sarahJenkinsImg,
+      status: 'Qualified',
+      lastAction: 'Video tour completed',
+    },
+    {
+      name: 'Daniel Brooks',
+      note: 'Finance professional - immediate occupancy',
+      image: brokerProfileImg,
+      status: 'Hot lead',
+      lastAction: 'Deposit discussion active',
+    },
+  ],
+  'shoreditch-penthouse': [
+    {
+      name: 'Amelia Hart',
+      note: 'Creative founder - rooftop terrace preference',
+      image: sarahJenkinsImg,
+      status: 'Hot lead',
+      lastAction: 'Viewing scheduled',
+    },
+    {
+      name: 'Oscar Flynn',
+      note: 'Designer couple - needs work-from-home setup',
+      image: brokerProfileImg,
+      status: 'Follow-up',
+      lastAction: 'Awaiting availability',
+    },
+  ],
+  'greenwich-modern-home': [
+    {
+      name: 'Meera Iyer',
+      note: 'Family tenant - school proximity required',
+      image: sarahJenkinsImg,
+      status: 'Qualified',
+      lastAction: 'School details shared',
+    },
+    {
+      name: 'Arjun Patel',
+      note: 'Long-term lease interest - garage required',
+      image: brokerProfileImg,
+      status: 'Contacted',
+      lastAction: 'Follow-up call tomorrow',
+    },
+  ],
+}
 
 const timeline = [
   {
@@ -70,6 +172,7 @@ export function BrokerPropertyDetails() {
   const { propertyId } = useParams<{ propertyId: string }>()
   const property = getBrokerPropertyById(propertyId) ?? BROKER_ASSIGNED_PROPERTIES[0]!
   const gallery = property.gallery.length ? property.gallery : [property.image]
+  const associatedLeads = propertyLeadMap[property.id] ?? defaultAssociatedLeads
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 })
@@ -234,16 +337,27 @@ export function BrokerPropertyDetails() {
 
           <section className="rounded-lg border border-outline bg-white p-6">
             <div className="flex items-start justify-between gap-4">
-              <p className="text-[14px] uppercase leading-6 text-text-muted">Interested<br />Leads</p>
+              <div>
+                <p className="text-[14px] uppercase leading-6 text-text-muted">Associated<br />Leads</p>
+                <p className="mt-1 text-[12px] font-semibold text-[#111]">
+                  {associatedLeads.length} leads for this property
+                </p>
+              </div>
               <button className="text-[12px] font-semibold text-slate-600">Manage Leads</button>
             </div>
             <div className="mt-8 space-y-7">
-              {leads.map((lead) => (
+              {associatedLeads.map((lead) => (
                 <button key={lead.name} className="flex w-full items-center gap-4 text-left">
                   <img src={lead.image} alt={lead.name} className="h-10 w-10 rounded-lg object-cover" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-[15px] font-semibold text-black">{lead.name}</span>
                     <span className="block text-[11px] leading-4 text-text-muted">{lead.note}</span>
+                    <span className="mt-1 inline-flex rounded bg-primary-50 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
+                      {lead.status}
+                    </span>
+                    <span className="mt-1 block text-[11px] leading-4 text-text-muted">
+                      {lead.lastAction}
+                    </span>
                   </span>
                   <ChevronRight size={18} className="text-slate-700" />
                 </button>
