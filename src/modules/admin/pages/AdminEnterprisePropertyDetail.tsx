@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { toast } from '../components/Toast'
+import { exportToCsv } from '../utils/exportCsv'
 
 interface Tenant {
   name: string
@@ -52,9 +54,71 @@ const paymentStatusColors: Record<string, string> = {
   OVERDUE: 'bg-status-error-bg text-status-error-text',
 }
 
+type ReportExportRow = {
+  section: string
+  field: string
+  value: string
+  detail: string
+}
+
+function buildEnterprisePropertyReportRows(): ReportExportRow[] {
+  const overviewRows: ReportExportRow[] = [
+    { section: 'Overview', field: 'Property Name', value: 'Skyline Heights', detail: '' },
+    { section: 'Overview', field: 'Building Name', value: 'Skyline Heights Phase II', detail: '' },
+    { section: 'Overview', field: 'Property ID', value: 'ENT-BGL-55201', detail: '' },
+    {
+      section: 'Overview',
+      field: 'Full Address',
+      value: 'Plot No. 45-48, EPIP Zone, Whitefield Main Road',
+      detail: 'Near Prestige Shantiniketan, Indiranagar Sub-division, Bengaluru, Karnataka 560066',
+    },
+    { section: 'Overview', field: 'Listing Status', value: 'Verified Listing', detail: '' },
+  ]
+
+  const statsRows: ReportExportRow[] = [
+    { section: 'Financials', field: 'Property Evaluation', value: '₹45.8Cr', detail: '+2.4% vs LY | Verified on 12 Oct, 2023' },
+    { section: 'Financials', field: 'Total Commission', value: '₹1.12Cr', detail: 'Projected FY24 | Structure: Corporate Flat' },
+    { section: 'Operations', field: 'Brokers Assigned', value: '12', detail: 'TOP TIER' },
+    { section: 'Structure', field: 'Blocks', value: '04', detail: 'A, B, C, D' },
+    { section: 'Structure', field: 'Floors', value: '18', detail: '' },
+    { section: 'Structure', field: 'Units', value: '08', detail: '' },
+    { section: 'Structure', field: 'Inventory Occupancy', value: '82%', detail: '576 units across complex' },
+  ]
+
+  const tenantRows: ReportExportRow[] = tenants.map((tenant) => ({
+    section: 'Tenant Details',
+    field: tenant.name,
+    value: tenant.flat,
+    detail: `${tenant.leaseStart} - ${tenant.leaseEnd} | ${tenant.paymentStatus}`,
+  }))
+
+  const floorRows: ReportExportRow[] = floorDetails.map((floor) => ({
+    section: 'Floor Distribution',
+    field: floor.level,
+    value: floor.config,
+    detail: `${floor.avgArea} sq.ft | Availability ${floor.availability} | Flats ${floor.availableFlats}`,
+  }))
+
+  return [...overviewRows, ...statsRows, ...tenantRows, ...floorRows]
+}
+
 export function AdminEnterprisePropertyDetail() {
   const navigate = useNavigate()
-  useParams()
+  const { propertyId } = useParams()
+
+  const handleExportReport = () => {
+    const filename = propertyId
+      ? `enterprise-property-${propertyId}-report.csv`
+      : 'enterprise-property-report.csv'
+
+    exportToCsv(filename, buildEnterprisePropertyReportRows(), [
+      { key: 'section', label: 'Section' },
+      { key: 'field', label: 'Field' },
+      { key: 'value', label: 'Value' },
+      { key: 'detail', label: 'Detail' },
+    ])
+    toast.success('Export started', 'Property report downloaded as CSV.')
+  }
 
   return (
     <div className="min-h-screen bg-canvas-alt px-2 py-6 sm:px-6">
@@ -80,6 +144,7 @@ export function AdminEnterprisePropertyDetail() {
           <div className="flex items-center gap-3">
             <button
               type="button"
+              onClick={handleExportReport}
               className="inline-flex items-center gap-2 rounded-button border border-outline bg-white px-4 py-2.5 text-body font-medium text-text-primary shadow-sm hover:bg-hover-light transition-colors"
             >
               <Download size={16} />

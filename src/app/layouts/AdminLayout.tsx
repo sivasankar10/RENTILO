@@ -94,10 +94,11 @@ function NavItemLink({
  */
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [notifOpen, setNotifOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const isMobile = useMediaQuery('(max-width: 1024px)')
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const isNotificationsPage = pathname.startsWith(ROUTES.ADMIN.NOTIFICATIONS)
   const logout = useAuthStore((s) => s.logout)
 
   return (
@@ -131,24 +132,26 @@ export function AdminLayout() {
           <div className="flex-1" />
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => { setNotifOpen((v) => !v); setHelpOpen(false) }}
-                className="relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
-                aria-label="Notifications"
-              >
-                <Bell size={20} strokeWidth={1.75} />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
-              </button>
-              {notifOpen && (
-                <NotificationsPopover onClose={() => setNotifOpen(false)} />
+            <button
+              type="button"
+              onClick={() => {
+                navigate(ROUTES.ADMIN.NOTIFICATIONS)
+                setHelpOpen(false)
+              }}
+              className={cn(
+                'relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors',
+                isNotificationsPage && 'bg-white/15 text-white',
               )}
-            </div>
+              aria-label="Notifications"
+              aria-current={isNotificationsPage ? 'page' : undefined}
+            >
+              <Bell size={20} strokeWidth={1.75} />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
+            </button>
             <div className="relative">
               <button
                 type="button"
-                onClick={() => { setHelpOpen((v) => !v); setNotifOpen(false) }}
+                onClick={() => setHelpOpen((v) => !v)}
                 className="p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
                 aria-label="Help"
               >
@@ -244,64 +247,6 @@ export function AdminLayout() {
 
       <ToastContainer />
       <ConfirmDialog />
-    </div>
-  )
-}
-
-const mockNotifications = [
-  { title: 'New broker registration', desc: 'Aditi Sharma submitted KYC for review.', time: '2 mins ago', unread: true },
-  { title: '2 listings flagged', desc: 'Automated screening flagged listings for compliance.', time: '12 mins ago', unread: true },
-  { title: 'High volume alert', desc: 'Standard queue exceeds 450 unassigned items.', time: '1 hour ago', unread: false },
-  { title: 'Payment refund processed', desc: 'TRX-82911 refunded successfully.', time: '3 hours ago', unread: false },
-]
-
-function NotificationsPopover({ onClose }: { onClose: () => void }) {
-  const navigate = useNavigate()
-  return (
-    <div className="absolute right-0 top-full mt-2 w-80 rounded-card border border-outline bg-white shadow-modal overflow-hidden z-50">
-      <div className="flex items-center justify-between border-b border-outline px-4 py-3">
-        <p className="text-body font-bold text-text-primary">Notifications</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-label text-text-muted hover:text-text-primary transition-colors"
-        >
-          Close
-        </button>
-      </div>
-      <div className="max-h-80 overflow-y-auto divide-y divide-outline">
-        {mockNotifications.map((n) => (
-          <div key={n.title} className="px-4 py-3 hover:bg-hover-light transition-colors">
-            <div className="flex items-start gap-2">
-              {n.unread && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />}
-              <div className="flex-1 min-w-0">
-                <p className="text-body font-semibold text-text-primary">{n.title}</p>
-                <p className="text-label text-text-muted truncate">{n.desc}</p>
-                <p className="mt-1 text-label text-text-muted">{n.time}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="border-t border-outline px-4 py-2 flex items-center justify-between">
-        <button
-          type="button"
-          className="text-label font-semibold text-primary hover:text-primary-700 transition-colors"
-          onClick={onClose}
-        >
-          Mark all as read
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            onClose()
-            navigate(ROUTES.ADMIN.NOTIFICATIONS)
-          }}
-          className="text-label font-semibold text-text-primary hover:text-primary transition-colors"
-        >
-          View all →
-        </button>
-      </div>
     </div>
   )
 }

@@ -2,12 +2,15 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
+  Bell,
+  Check,
   CheckCircle2,
   CreditCard,
   FileText,
   Megaphone,
   ShieldAlert,
   Star,
+  Trash2,
   UserPlus,
   Wrench,
 } from 'lucide-react'
@@ -165,9 +168,12 @@ export function AdminNotifications() {
 
   const handleNotificationClick = (notification: AdminNotification) => {
     markAsRead(notification.id)
-    if (notification.actionRoute) {
-      navigate(notification.actionRoute)
-    }
+  }
+
+  const handleDelete = (notification: AdminNotification, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setItems((current) => current.filter((item) => item.id !== notification.id))
+    toast.info('Notification deleted', notification.title)
   }
 
   const handleMarkAllRead = () => {
@@ -249,13 +255,15 @@ export function AdminNotifications() {
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={handleMarkAllRead}
-              className="text-label font-semibold text-primary hover:text-primary-700 transition-colors"
-            >
-              Mark all as read
-            </button>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkAllRead}
+                className="text-label font-semibold text-primary hover:text-primary-700 transition-colors"
+              >
+                Mark all as read
+              </button>
+            )}
           </div>
         </div>
 
@@ -264,7 +272,7 @@ export function AdminNotifications() {
           {visibleItems.length === 0 ? (
             <div className="rounded-card border border-outline bg-white p-10 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-canvas-alt">
-                <CheckCircle2 size={22} className="text-text-muted" />
+                <Bell size={22} className="text-text-muted" />
               </div>
               <p className="mt-4 text-body font-bold text-text-primary">
                 No notifications in this view
@@ -293,7 +301,7 @@ export function AdminNotifications() {
                     }
                   }}
                   className={cn(
-                    'flex w-full items-start gap-5 rounded-card border bg-white px-5 py-4 text-left shadow-sm transition-all duration-200 hover:shadow-surface',
+                    'group flex w-full items-start gap-5 rounded-card border bg-white px-5 py-4 text-left shadow-sm transition-all duration-200 hover:bg-slate-50 hover:shadow-surface',
                     notification.unread ? 'border-primary/30' : 'border-outline',
                   )}
                 >
@@ -335,34 +343,58 @@ export function AdminNotifications() {
                         }}
                         className="mt-2 inline-block text-label font-semibold text-primary hover:text-primary-700 transition-colors cursor-pointer"
                       >
-                        {notification.actionLabel} →
+                        {notification.actionLabel}
+                        {' ->'}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-3">
+                  <div className="flex shrink-0 flex-col items-end gap-2">
                     <span className="text-filter-label uppercase text-text-muted">
                       {notification.time}
                     </span>
-                    <button
-                      type="button"
-                      onClick={(e) => handleToggleImportant(notification, e)}
-                      aria-pressed={notification.important}
-                      title={
-                        notification.important ? 'Remove from important' : 'Mark as important'
-                      }
-                      className={cn(
-                        'rounded-button p-2 transition-colors',
-                        notification.important
-                          ? 'text-status-warning-text hover:bg-status-warning-bg'
-                          : 'text-text-muted hover:bg-status-warning-bg hover:text-status-warning-text'
+                    <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleImportant(notification, e)}
+                        aria-pressed={notification.important}
+                        title={
+                          notification.important ? 'Remove from important' : 'Mark as important'
+                        }
+                        className={cn(
+                          'rounded-button p-1.5 transition-colors',
+                          notification.important
+                            ? 'text-status-warning-text hover:bg-status-warning-bg'
+                            : 'text-text-muted hover:bg-status-warning-bg hover:text-status-warning-text'
+                        )}
+                      >
+                        <Star
+                          size={15}
+                          fill={notification.important ? 'currentColor' : 'none'}
+                        />
+                      </button>
+                      {notification.unread && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            markAsRead(notification.id)
+                          }}
+                          title="Mark as read"
+                          className="rounded-button p-1.5 text-text-muted transition-colors hover:bg-primary-50 hover:text-primary"
+                        >
+                          <Check size={15} />
+                        </button>
                       )}
-                    >
-                      <Star
-                        size={18}
-                        fill={notification.important ? 'currentColor' : 'none'}
-                      />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDelete(notification, e)}
+                        title="Delete notification"
+                        className="rounded-button p-1.5 text-text-muted transition-colors hover:bg-status-error-bg hover:text-status-error"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </div>
                 </article>
               )
@@ -372,7 +404,7 @@ export function AdminNotifications() {
 
         {items.length > 0 && (
           <p className="mt-12 text-center text-filter-label uppercase tracking-wider text-text-muted">
-            Admin Console • {items.length} total notifications
+            Admin Console - {items.length} total notifications
           </p>
         )}
       </div>
