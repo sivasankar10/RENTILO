@@ -49,12 +49,6 @@ const footerNavItems: BrokerNavItem[] = [
   { label: 'Support', href: '#support', icon: CircleHelp },
 ]
 
-const logoutItem: BrokerNavItem = {
-  label: 'Log Out',
-  href: '#logout',
-  icon: LogOut,
-}
-
 function NavItemLink({
   item,
   onNavigate,
@@ -125,7 +119,6 @@ export function BrokerDashboardLayout() {
   const isMessagesPage = pathname.startsWith(ROUTES.BROKER.MESSAGES)
   const messagesActive = isMessagesPage
   const isNotificationsPage = pathname.startsWith(ROUTES.BROKER.NOTIFICATIONS)
-  const logout = useAuthStore((s) => s.logout)
   const propertyResults = useMemo(() => {
     const query = propertySearch.trim().toLowerCase()
     if (!query) {
@@ -278,14 +271,10 @@ export function BrokerDashboardLayout() {
             <button
               type="button"
               onClick={() => navigate(ROUTES.BROKER.NOTIFICATIONS)}
-<<<<<<< HEAD
-              className="relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
-=======
               className={cn(
                 'relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors',
                 isNotificationsPage && 'bg-white/15 text-white',
               )}
->>>>>>> main
               aria-label="Notifications"
             >
               <Bell size={20} strokeWidth={1.75} />
@@ -392,18 +381,6 @@ export function BrokerDashboardLayout() {
                 </button>
               </li>
             </ul>
-            {/* Log Out */}
-            <button
-              type="button"
-              onClick={() => {
-                logout()
-                navigate(ROUTES.AUTH.LOGIN)
-              }}
-              className="mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-            >
-              <LogOut size={18} strokeWidth={1.75} className="shrink-0" />
-              <span>Log Out</span>
-            </button>
           </div>
         </aside>
         )}
