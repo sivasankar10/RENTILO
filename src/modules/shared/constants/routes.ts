@@ -55,6 +55,7 @@ export const ROUTES = {
     COMMISSION: '/broker/commission',
     ANALYTICS: '/broker/analytics',
     MESSAGES: '/broker/messages',
+    NOTIFICATIONS: '/broker/notifications',
     PROFILE: '/broker/profile',
     EDIT_PROFILE: '/broker/profile/edit',
   },

@@ -7,6 +7,7 @@ import {
   CircleHelp,
   FileText,
   LayoutGrid,
+  LogOut,
   Menu,
   MessageSquare,
   Search,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useMediaQuery } from '@shared/hooks/useMediaQuery'
+import { useAuth } from '@shared/hooks/useAuth'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
@@ -46,6 +48,12 @@ const footerNavItems: BrokerNavItem[] = [
   { label: 'Settings', href: '#settings', icon: Settings },
   { label: 'Support', href: '#support', icon: CircleHelp },
 ]
+
+const logoutItem: BrokerNavItem = {
+  label: 'Log Out',
+  href: '#logout',
+  icon: LogOut,
+}
 
 function NavItemLink({
   item,
@@ -110,9 +118,15 @@ export function BrokerDashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isMobile = useMediaQuery('(max-width: 1024px)')
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const { pathname } = useLocation()
   const isMessagesPage = pathname.startsWith(ROUTES.BROKER.MESSAGES)
   const messagesActive = isMessagesPage
+
+  const handleLogout = () => {
+    logout()
+    navigate(ROUTES.AUTH.LOGIN)
+  }
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -159,6 +173,7 @@ export function BrokerDashboardLayout() {
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               type="button"
+              onClick={() => navigate(ROUTES.BROKER.NOTIFICATIONS)}
               className="relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
               aria-label="Notifications"
             >
@@ -262,6 +277,16 @@ export function BrokerDashboardLayout() {
                   <NavItemLink item={item} onNavigate={() => isMobile && setSidebarOpen(false)} />
                 </li>
               ))}
+              <li>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] font-medium text-status-error hover:bg-status-error-bg transition-colors"
+                >
+                  <LogOut size={18} strokeWidth={1.75} className="shrink-0" />
+                  <span>Log Out</span>
+                </button>
+              </li>
             </ul>
           </div>
         </aside>

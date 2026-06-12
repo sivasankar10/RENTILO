@@ -10,6 +10,7 @@ import { BrokerPropertyDetails } from '../pages/BrokerPropertyDetails'
 import { BrokerMessagesPage } from '../pages/BrokerMessagesPage'
 import { BrokerProfile } from '../pages/BrokerProfile'
 import { BrokerEditProfile } from '../pages/BrokerEditProfile'
+import { BrokerNotifications } from '../pages/BrokerNotifications'
 
 export const brokerRoutes: RouteObject[] = [
   { index: true, element: <BrokerDashboard /> },
@@ -22,6 +23,7 @@ export const brokerRoutes: RouteObject[] = [
   { path: 'commission', element: <BrokerCommission /> },
   { path: 'analytics', element: <BrokerAnalytics /> },
   { path: 'messages', element: <BrokerMessagesPage /> },
+  { path: 'notifications', element: <BrokerNotifications /> },
   { path: 'profile', element: <BrokerProfile /> },
   { path: 'profile/edit', element: <BrokerEditProfile /> },
 ]
