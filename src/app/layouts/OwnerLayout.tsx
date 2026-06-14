@@ -211,7 +211,11 @@ export function OwnerLayout() {
             <Menu size={20} />
           </button>
 
-          <NavLink to={ROUTES.OWNER.DASHBOARD} className="flex items-center gap-2">
+          <NavLink
+            to={ROUTES.OWNER.DASHBOARD}
+            className="flex items-center gap-2 no-underline hover:opacity-80"
+            aria-label="Go to owner dashboard"
+          >
             <span className="font-display text-2xl font-black tracking-tight text-brand">RENTILO</span>
           </NavLink>
 

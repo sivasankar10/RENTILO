@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Bath,
@@ -9,14 +9,19 @@ import {
   Image as ImageIcon,
   Mail,
   MapPin,
+  MessageSquare,
   ParkingCircle,
   Pencil,
+  Phone,
   PlayCircle,
+  Plus,
   Ruler,
   Share2,
   ShieldCheck,
   Tag,
+  Trash2,
   Waves,
+  X,
 } from 'lucide-react'
 import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
 import {
@@ -30,14 +35,35 @@ import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 
 type PropertyLead = {
+  id: string
+  propertyName: string
   name: string
   note: string
   image: string
   status: string
   lastAction: string
+  phone: string
+  email: string
+  conversationId: string
 }
 
-const defaultAssociatedLeads: PropertyLead[] = [
+type SeedPropertyLead = Omit<
+  PropertyLead,
+  'id' | 'propertyName' | 'phone' | 'email' | 'conversationId'
+> &
+  Partial<Pick<PropertyLead, 'phone' | 'email' | 'conversationId'>>
+
+type LeadFormState = {
+  propertyName: string
+  name: string
+  email: string
+  phone: string
+  note: string
+  status: string
+  lastAction: string
+}
+
+const defaultAssociatedLeads: SeedPropertyLead[] = [
   {
     name: 'Sarah Miller',
     note: 'Qualified - $1.9M Pre-approved',
@@ -54,7 +80,7 @@ const defaultAssociatedLeads: PropertyLead[] = [
   },
 ]
 
-const propertyLeadMap: Record<string, PropertyLead[]> = {
+const propertyLeadMap: Record<string, SeedPropertyLead[]> = {
   'skyline-plaza': [
     {
       name: 'Sarah Miller',
@@ -144,6 +170,61 @@ const propertyLeadMap: Record<string, PropertyLead[]> = {
   ],
 }
 
+const leadStatusOptions = ['Hot lead', 'Qualified', 'Follow-up', 'New', 'Contacted']
+
+const slugify = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+
+const getLeadBadgeClass = (status: string) => {
+  const normalized = status.toLowerCase()
+  if (normalized.includes('hot')) return 'bg-red-50 text-red-600'
+  if (normalized.includes('qualified')) return 'bg-emerald-50 text-emerald-700'
+  if (normalized.includes('follow')) return 'bg-primary-50 text-primary'
+  if (normalized.includes('contact')) return 'bg-amber-50 text-amber-700'
+  return 'bg-slate-100 text-slate-600'
+}
+
+const buildPropertyLeads = (
+  propertyId: string,
+  propertyName: string,
+  seedLeads: SeedPropertyLead[],
+): PropertyLead[] =>
+  seedLeads.map((lead, index) => {
+    const slug = slugify(lead.name) || `lead-${index + 1}`
+    return {
+      ...lead,
+      id: `${propertyId}-${slug}-${index + 1}`,
+      propertyName,
+      phone: lead.phone ?? `+1 212 555 01${String(index + 1).padStart(2, '0')}`,
+      email: lead.email ?? `${slug}@example.com`,
+      conversationId: lead.conversationId ?? `lead-${propertyId}-${slug}`,
+    }
+  })
+
+const createEmptyLeadForm = (propertyName: string): LeadFormState => ({
+  propertyName,
+  name: '',
+  email: '',
+  phone: '',
+  note: '',
+  status: 'New',
+  lastAction: 'Lead added manually',
+})
+
+const createLeadFormFromLead = (lead: PropertyLead): LeadFormState => ({
+  propertyName: lead.propertyName,
+  name: lead.name,
+  email: lead.email,
+  phone: lead.phone,
+  note: lead.note,
+  status: lead.status,
+  lastAction: lead.lastAction,
+})
+
 const timeline = [
   {
     icon: Eye,
@@ -169,16 +250,415 @@ const featureTiles = [
   { icon: ShieldCheck, label: 'Advanced Smart Security' },
 ]
 
+function LeadManagementModal({
+  propertyName,
+  leads,
+  onClose,
+  onEdit,
+  onRemove,
+  onChat,
+  onCall,
+}: {
+  propertyName: string
+  leads: PropertyLead[]
+  onClose: () => void
+  onEdit: (lead: PropertyLead) => void
+  onRemove: (leadId: string) => void
+  onChat: (lead: PropertyLead) => void
+  onCall: (leadId: string) => void
+}) {
+  return (
+    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-[#0f172a]/60 px-4 py-6 backdrop-blur-sm">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="manage-leads-title"
+        className="w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-card"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-outline px-6 py-5">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
+              Associated Leads
+            </p>
+            <h2 id="manage-leads-title" className="mt-1 text-[24px] font-extrabold text-[#0f172a]">
+              Manage Leads
+            </h2>
+            <p className="mt-1 text-[13px] text-text-muted">
+              {leads.length} leads linked with {propertyName}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline bg-white text-text-muted hover:bg-hover-light hover:text-[#0f172a]"
+            aria-label="Close manage leads popup"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="max-h-[68vh] overflow-y-auto p-6">
+          {leads.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-outline bg-canvas px-6 py-12 text-center">
+              <p className="text-[15px] font-bold text-[#0f172a]">No leads added yet</p>
+              <p className="mt-1 text-[13px] text-text-muted">
+                Add a new lead from the property card to start tracking interest.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-outline">
+              <div className="grid grid-cols-[1.4fr_1fr_1fr_160px] gap-4 bg-slate-50 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                <span>Lead</span>
+                <span>Property</span>
+                <span>Status</span>
+                <span className="text-right">Actions</span>
+              </div>
+              {leads.map((lead) => (
+                <div
+                  key={lead.id}
+                  className="grid grid-cols-[1.4fr_1fr_1fr_160px] items-center gap-4 border-t border-outline px-5 py-4"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <img src={lead.image} alt={lead.name} className="h-11 w-11 rounded-lg object-cover" />
+                    <div className="min-w-0">
+                      <p className="truncate text-[14px] font-bold text-[#0f172a]">{lead.name}</p>
+                      <p className="truncate text-[12px] text-text-muted">{lead.email}</p>
+                      <p className="mt-1 truncate text-[12px] text-slate-500">{lead.note}</p>
+                    </div>
+                  </div>
+                  <p className="text-[13px] font-semibold text-[#0f172a]">{lead.propertyName}</p>
+                  <div>
+                    <span
+                      className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold uppercase ${getLeadBadgeClass(lead.status)}`}
+                    >
+                      {lead.status}
+                    </span>
+                    <p className="mt-1 text-[11px] text-text-muted">{lead.lastAction}</p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onChat(lead)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline text-slate-600 hover:bg-hover-light hover:text-[#0f172a]"
+                      aria-label={`Chat with ${lead.name}`}
+                    >
+                      <MessageSquare size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onCall(lead.id)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline text-slate-600 hover:bg-hover-light hover:text-[#0f172a]"
+                      aria-label={`Call ${lead.name}`}
+                    >
+                      <Phone size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(lead)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline text-slate-600 hover:bg-hover-light hover:text-[#0f172a]"
+                      aria-label={`Edit ${lead.name}`}
+                    >
+                      <Pencil size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onRemove(lead.id)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 text-red-600 hover:bg-red-50"
+                      aria-label={`Remove ${lead.name}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function LeadFormModal({
+  mode,
+  form,
+  onChange,
+  onSubmit,
+  onClose,
+}: {
+  mode: 'add' | 'edit'
+  form: LeadFormState
+  onChange: (patch: Partial<LeadFormState>) => void
+  onSubmit: () => void
+  onClose: () => void
+}) {
+  const canSubmit = Boolean(form.name.trim() && form.email.trim() && form.phone.trim())
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-[#0f172a]/60 px-4 py-6 backdrop-blur-sm">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lead-form-title"
+        className="w-full max-w-2xl rounded-2xl bg-white shadow-card"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-outline px-6 py-5">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
+              {mode === 'add' ? 'New Lead' : 'Edit Lead'}
+            </p>
+            <h2 id="lead-form-title" className="mt-1 text-[22px] font-extrabold text-[#0f172a]">
+              {mode === 'add' ? 'Add New Lead' : 'Update Lead Details'}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline bg-white text-text-muted hover:bg-hover-light hover:text-[#0f172a]"
+            aria-label="Close lead form"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="grid gap-4 p-6 sm:grid-cols-2">
+          <label className="sm:col-span-2">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Property Name
+            </span>
+            <input
+              value={form.propertyName}
+              readOnly
+              className="h-11 w-full rounded-xl border border-outline bg-slate-50 px-4 text-[14px] font-semibold text-[#0f172a]"
+            />
+          </label>
+
+          <label>
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Lead Name
+            </span>
+            <input
+              value={form.name}
+              onChange={(event) => onChange({ name: event.target.value })}
+              placeholder="Example: Aisha Thomas"
+              className="h-11 w-full rounded-xl border border-outline bg-white px-4 text-[14px] text-[#0f172a] outline-none placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+
+          <label>
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Status
+            </span>
+            <select
+              value={form.status}
+              onChange={(event) => onChange({ status: event.target.value })}
+              className="h-11 w-full rounded-xl border border-outline bg-white px-4 text-[14px] font-semibold text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            >
+              {leadStatusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Email
+            </span>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(event) => onChange({ email: event.target.value })}
+              placeholder="lead@example.com"
+              className="h-11 w-full rounded-xl border border-outline bg-white px-4 text-[14px] text-[#0f172a] outline-none placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+
+          <label>
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Phone
+            </span>
+            <input
+              value={form.phone}
+              onChange={(event) => onChange({ phone: event.target.value })}
+              placeholder="+1 212 555 0199"
+              className="h-11 w-full rounded-xl border border-outline bg-white px-4 text-[14px] text-[#0f172a] outline-none placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+
+          <label className="sm:col-span-2">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Lead Details
+            </span>
+            <textarea
+              value={form.note}
+              onChange={(event) => onChange({ note: event.target.value })}
+              rows={3}
+              placeholder="Budget, tenant type, lease preference, document status..."
+              className="w-full resize-none rounded-xl border border-outline bg-white px-4 py-3 text-[14px] leading-relaxed text-[#0f172a] outline-none placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+
+          <label className="sm:col-span-2">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Last Action
+            </span>
+            <input
+              value={form.lastAction}
+              onChange={(event) => onChange({ lastAction: event.target.value })}
+              placeholder="Example: Viewing requested for Friday"
+              className="h-11 w-full rounded-xl border border-outline bg-white px-4 text-[14px] text-[#0f172a] outline-none placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-outline px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-10 rounded-lg border border-outline bg-white px-4 text-[13px] font-bold text-text-muted hover:bg-hover-light hover:text-[#0f172a]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={!canSubmit}
+            className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0f172a] px-4 text-[13px] font-bold text-white hover:bg-navy/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus size={16} />
+            {mode === 'add' ? 'Add Lead' : 'Save Changes'}
+          </button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 export function BrokerPropertyDetails() {
   const navigate = useNavigate()
   const { propertyId } = useParams<{ propertyId: string }>()
   const property = getBrokerPropertyById(propertyId) ?? BROKER_ASSIGNED_PROPERTIES[0]!
   const gallery = property.gallery.length ? property.gallery : [property.image]
-  const associatedLeads = propertyLeadMap[property.id] ?? defaultAssociatedLeads
+  const seedAssociatedLeads = propertyLeadMap[property.id] ?? defaultAssociatedLeads
+  const [leads, setLeads] = useState<PropertyLead[]>(() =>
+    buildPropertyLeads(property.id, property.name, seedAssociatedLeads)
+  )
+  const [openLeadActionId, setOpenLeadActionId] = useState<string | null>(null)
+  const [manageLeadsOpen, setManageLeadsOpen] = useState(false)
+  const [leadFormMode, setLeadFormMode] = useState<'add' | 'edit' | null>(null)
+  const [editingLeadId, setEditingLeadId] = useState<string | null>(null)
+  const [leadForm, setLeadForm] = useState<LeadFormState>(() =>
+    createEmptyLeadForm(property.name)
+  )
+
+  useEffect(() => {
+    setLeads(buildPropertyLeads(property.id, property.name, propertyLeadMap[property.id] ?? defaultAssociatedLeads))
+    setOpenLeadActionId(null)
+    setManageLeadsOpen(false)
+    setLeadFormMode(null)
+    setEditingLeadId(null)
+    setLeadForm(createEmptyLeadForm(property.name))
+  }, [property.id, property.name])
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 })
   }, [])
+
+  const openAddLeadForm = () => {
+    setEditingLeadId(null)
+    setLeadForm(createEmptyLeadForm(property.name))
+    setLeadFormMode('add')
+  }
+
+  const openEditLeadForm = (lead: PropertyLead) => {
+    setEditingLeadId(lead.id)
+    setLeadForm(createLeadFormFromLead(lead))
+    setLeadFormMode('edit')
+  }
+
+  const closeLeadForm = () => {
+    setLeadFormMode(null)
+    setEditingLeadId(null)
+    setLeadForm(createEmptyLeadForm(property.name))
+  }
+
+  const removeLead = (leadId: string) => {
+    setLeads((current) => current.filter((lead) => lead.id !== leadId))
+    setOpenLeadActionId((current) => (current === leadId ? null : current))
+  }
+
+  const callLead = (leadId: string) => {
+    setLeads((current) =>
+      current.map((lead) =>
+        lead.id === leadId
+          ? { ...lead, lastAction: `Call initiated at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` }
+          : lead
+      )
+    )
+    setOpenLeadActionId(null)
+  }
+
+  const chatWithLead = (lead: PropertyLead) => {
+    setOpenLeadActionId(null)
+    navigate(`${ROUTES.BROKER.MESSAGES}?conversation=${encodeURIComponent(lead.conversationId)}`, {
+      state: {
+        leadConversation: {
+          id: lead.conversationId,
+          leadName: lead.name,
+          leadAvatar: lead.image,
+          propertyId: property.id,
+          propertyName: property.name,
+          lastMessage: lead.lastAction,
+          note: lead.note,
+        },
+      },
+    })
+  }
+
+  const submitLeadForm = () => {
+    if (!leadForm.name.trim() || !leadForm.email.trim() || !leadForm.phone.trim()) {
+      return
+    }
+
+    if (leadFormMode === 'edit' && editingLeadId) {
+      setLeads((current) =>
+        current.map((lead) =>
+          lead.id === editingLeadId
+            ? {
+                ...lead,
+                propertyName: leadForm.propertyName,
+                name: leadForm.name.trim(),
+                email: leadForm.email.trim(),
+                phone: leadForm.phone.trim(),
+                note: leadForm.note.trim() || 'Lead details pending',
+                status: leadForm.status,
+                lastAction: leadForm.lastAction.trim() || 'Lead updated just now',
+              }
+            : lead
+        )
+      )
+      closeLeadForm()
+      return
+    }
+
+    const slug = slugify(leadForm.name) || `lead-${Date.now()}`
+    const newLead: PropertyLead = {
+      id: `${property.id}-${slug}-${Date.now()}`,
+      propertyName: leadForm.propertyName,
+      name: leadForm.name.trim(),
+      email: leadForm.email.trim(),
+      phone: leadForm.phone.trim(),
+      note: leadForm.note.trim() || 'Lead details pending',
+      image: brokerProfileImg,
+      status: leadForm.status,
+      lastAction: leadForm.lastAction.trim() || 'Lead added manually',
+      conversationId: `lead-${property.id}-${slug}-${Date.now()}`,
+    }
+    setLeads((current) => [...current, newLead])
+    closeLeadForm()
+  }
 
   return (
     <div className="pb-10">
@@ -352,31 +832,83 @@ export function BrokerPropertyDetails() {
               <div>
                 <p className="text-[14px] uppercase leading-6 text-text-muted">Associated<br />Leads</p>
                 <p className="mt-1 text-[12px] font-semibold text-[#111]">
-                  {associatedLeads.length} leads for this property
+                  {leads.length} leads for this property
                 </p>
               </div>
-              <button className="text-[12px] font-semibold text-slate-600">Manage Leads</button>
+              <button
+                type="button"
+                onClick={() => setManageLeadsOpen(true)}
+                className="text-[12px] font-semibold text-slate-600 hover:text-[#0f172a]"
+              >
+                Manage Leads
+              </button>
             </div>
             <div className="mt-8 space-y-7">
-              {associatedLeads.map((lead) => (
-                <button key={lead.name} className="flex w-full items-center gap-4 text-left">
-                  <img src={lead.image} alt={lead.name} className="h-10 w-10 rounded-lg object-cover" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-semibold text-black">{lead.name}</span>
-                    <span className="block text-[11px] leading-4 text-text-muted">{lead.note}</span>
-                    <span className="mt-1 inline-flex rounded bg-primary-50 px-2 py-0.5 text-[10px] font-bold uppercase text-primary">
-                      {lead.status}
-                    </span>
-                    <span className="mt-1 block text-[11px] leading-4 text-text-muted">
-                      {lead.lastAction}
-                    </span>
-                  </span>
-                  <ChevronRight size={18} className="text-slate-700" />
-                </button>
-              ))}
+              {leads.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-outline bg-slate-50 px-4 py-5 text-center">
+                  <p className="text-[12px] font-semibold text-text-muted">No leads added for this property.</p>
+                </div>
+              ) : (
+                leads.map((lead) => (
+                  <div key={lead.id} className="relative">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenLeadActionId((current) => (current === lead.id ? null : lead.id))
+                      }
+                      className="flex w-full items-center gap-4 text-left"
+                      aria-expanded={openLeadActionId === lead.id}
+                    >
+                      <img src={lead.image} alt={lead.name} className="h-10 w-10 rounded-lg object-cover" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[15px] font-semibold text-black">{lead.name}</span>
+                        <span className="block text-[11px] leading-4 text-text-muted">{lead.note}</span>
+                        <span
+                          className={`mt-1 inline-flex rounded px-2 py-0.5 text-[10px] font-bold uppercase ${getLeadBadgeClass(lead.status)}`}
+                        >
+                          {lead.status}
+                        </span>
+                        <span className="mt-1 block text-[11px] leading-4 text-text-muted">
+                          {lead.lastAction}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        size={18}
+                        className={`text-slate-700 transition-transform ${openLeadActionId === lead.id ? 'rotate-90' : ''}`}
+                      />
+                    </button>
+
+                    {openLeadActionId === lead.id && (
+                      <div className="absolute right-0 top-12 z-20 w-40 overflow-hidden rounded-xl border border-outline bg-white shadow-card">
+                        <button
+                          type="button"
+                          onClick={() => chatWithLead(lead)}
+                          className="flex w-full items-center gap-2 px-4 py-3 text-left text-[12px] font-bold text-[#0f172a] hover:bg-hover-light"
+                        >
+                          <MessageSquare size={15} />
+                          Chat
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => callLead(lead.id)}
+                          className="flex w-full items-center gap-2 border-t border-outline px-4 py-3 text-left text-[12px] font-bold text-[#0f172a] hover:bg-hover-light"
+                        >
+                          <Phone size={15} />
+                          Call
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
-            <button className="mt-8 h-9 w-full rounded bg-slate-50 text-[12px] font-semibold text-[#333] hover:bg-slate-100">
-              + Add New Lead
+            <button
+              type="button"
+              onClick={openAddLeadForm}
+              className="mt-8 inline-flex h-9 w-full items-center justify-center gap-2 rounded bg-slate-50 text-[12px] font-semibold text-[#333] hover:bg-slate-100"
+            >
+              <Plus size={14} />
+              Add New Lead
             </button>
           </section>
 
@@ -412,6 +944,28 @@ export function BrokerPropertyDetails() {
           </section>
         </aside>
       </div>
+
+      {manageLeadsOpen && (
+        <LeadManagementModal
+          propertyName={property.name}
+          leads={leads}
+          onClose={() => setManageLeadsOpen(false)}
+          onEdit={openEditLeadForm}
+          onRemove={removeLead}
+          onChat={chatWithLead}
+          onCall={callLead}
+        />
+      )}
+
+      {leadFormMode && (
+        <LeadFormModal
+          mode={leadFormMode}
+          form={leadForm}
+          onChange={(patch) => setLeadForm((current) => ({ ...current, ...patch }))}
+          onSubmit={submitLeadForm}
+          onClose={closeLeadForm}
+        />
+      )}
     </div>
   )
 }

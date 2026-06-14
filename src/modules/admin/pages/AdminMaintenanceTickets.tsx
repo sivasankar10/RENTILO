@@ -154,34 +154,6 @@ export function AdminMaintenanceTickets() {
               Monitor tenant maintenance requests across all properties, update ownership workflow, and contact tenants from one place.
             </p>
           </div>
-          <div className="flex rounded-card border border-outline bg-white p-1 shadow-sm">
-            <QuickFilter
-              label="All"
-              active={statusFilter === 'All' && priorityFilter === 'All' && propertyFilter === 'All' && categoryFilter === 'All'}
-              onClick={() => {
-                setStatusFilter('All')
-                setPriorityFilter('All')
-                setPropertyFilter('All')
-                setCategoryFilter('All')
-              }}
-            />
-            <QuickFilter
-              label="Open"
-              active={statusFilter === 'Open' && priorityFilter === 'All'}
-              onClick={() => {
-                setStatusFilter('Open')
-                setPriorityFilter('All')
-              }}
-            />
-            <QuickFilter
-              label="Urgent"
-              active={priorityFilter === 'Urgent' && statusFilter === 'All'}
-              onClick={() => {
-                setStatusFilter('All')
-                setPriorityFilter('Urgent')
-              }}
-            />
-          </div>
         </div>
 
         <section className="grid gap-4 md:grid-cols-4">
@@ -474,29 +446,6 @@ export function AdminMaintenanceTickets() {
         </section>
       </div>
     </div>
-  )
-}
-
-function QuickFilter({
-  label,
-  active,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'rounded-button px-4 py-2 text-body font-semibold transition-colors',
-        active ? 'bg-navy text-white shadow-sm' : 'text-text-muted hover:bg-hover-light hover:text-text-primary'
-      )}
-    >
-      {label}
-    </button>
   )
 }
 

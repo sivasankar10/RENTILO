@@ -21,6 +21,7 @@ export function DashboardLayout({ navItems, roleLabel }: DashboardLayoutProps) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const isMobile = useMediaQuery('(max-width: 1024px)')
+  const dashboardHref = navItems[0]?.href ?? '/'
 
   const handleLogout = () => {
     logout()
@@ -50,9 +51,14 @@ export function DashboardLayout({ navItems, roleLabel }: DashboardLayoutProps) {
         >
           {/* Sidebar Header */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-outline">
-            <h2 className="text-heading-3 text-primary font-bold tracking-tight">
+            <NavLink
+              to={dashboardHref}
+              onClick={() => isMobile && setSidebarOpen(false)}
+              className="text-heading-3 font-bold tracking-tight text-primary no-underline hover:opacity-80"
+              aria-label={`Go to ${roleLabel.toLowerCase()} dashboard`}
+            >
               Rentilo
-            </h2>
+            </NavLink>
             {isMobile && (
               <button
                 onClick={() => setSidebarOpen(false)}

@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { Building2, Download, Home, Pencil, TrendingUp, AlertTriangle, X } from 'lucide-react'
+import { AlertTriangle, Building2, CheckCircle2, Download, Home, Plus, Search, TrendingUp, UserCheck, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { useAdminStore, type AdminBroker } from '../store/adminStore'
+import { toast } from '../components/Toast'
+import { exportToCsv } from '../utils/exportCsv'
 
 interface EnterpriseProperty {
   image: string
@@ -24,12 +27,30 @@ interface StandardProperty {
   statusColor: string
 }
 
-interface AssignmentRow {
+interface EnterpriseAssignmentRow {
+  id: string
+  propertyName: string
   block: string
   floor: string
-  units: string[]
-  moreCount: number
   commission: string
+  assignedBrokerId?: string
+}
+
+interface StandardAssignmentRow {
+  id: string
+  propertyName: string
+  commission: string
+  assignedBrokerId?: string
+}
+
+interface AssignmentExportRow {
+  queue: string
+  propertyName: string
+  propertyType: string
+  organizationOrOwner: string
+  valueOrRent: string
+  location: string
+  status: string
 }
 
 const enterpriseQueue: EnterpriseProperty[] = [
@@ -88,17 +109,60 @@ const standardQueue: StandardProperty[] = [
   },
 ]
 
-const defaultAssignmentRows: AssignmentRow[] = [
-  { block: 'A1', floor: '04', units: ['402', '405', '410', '412'], moreCount: 14, commission: '50%' },
-  { block: 'A1', floor: '04', units: ['402', '405', '410', '412'], moreCount: 14, commission: '50%' },
-  { block: 'A1', floor: '04', units: ['402', '405', '410', '412'], moreCount: 14, commission: '50%' },
-]
+function createInitialEnterpriseRows(property: EnterpriseProperty): EnterpriseAssignmentRow[] {
+  return [
+    {
+      id: `${property.name}-a1-04-402`,
+      propertyName: `${property.name} - Unit 402`,
+      block: 'A1',
+      floor: '04',
+      commission: '50',
+    },
+    {
+      id: `${property.name}-a1-04-405`,
+      propertyName: `${property.name} - Unit 405`,
+      block: 'A1',
+      floor: '04',
+      commission: '50',
+    },
+    {
+      id: `${property.name}-a1-04-410`,
+      propertyName: `${property.name} - Unit 410`,
+      block: 'A1',
+      floor: '04',
+      commission: '50',
+    },
+  ]
+}
+
+function createInitialStandardRows(property: StandardProperty): StandardAssignmentRow[] {
+  return [
+    {
+      id: `${property.name}-primary`,
+      propertyName: property.name,
+      commission: '50',
+    },
+  ]
+}
 
 export function AdminAssignmentManagement() {
+  const brokers = useAdminStore((state) => state.brokers)
   const [assignModalOpen, setAssignModalOpen] = useState(false)
   const [standardAssignModalOpen, setStandardAssignModalOpen] = useState(false)
-  const [, setSelectedProperty] = useState<EnterpriseProperty | null>(null)
+  const [selectedProperty, setSelectedProperty] = useState<EnterpriseProperty | null>(null)
   const [selectedStandardProperty, setSelectedStandardProperty] = useState<StandardProperty | null>(null)
+  const [enterpriseAssignments, setEnterpriseAssignments] = useState<Record<string, EnterpriseAssignmentRow[]>>(
+    () =>
+      Object.fromEntries(
+        enterpriseQueue.map((property) => [property.name, createInitialEnterpriseRows(property)])
+      )
+  )
+  const [standardAssignments, setStandardAssignments] = useState<Record<string, StandardAssignmentRow[]>>(
+    () =>
+      Object.fromEntries(
+        standardQueue.map((property) => [property.name, createInitialStandardRows(property)])
+      )
+  )
 
   const handleAssignClick = (property: EnterpriseProperty) => {
     setSelectedProperty(property)
@@ -108,6 +172,40 @@ export function AdminAssignmentManagement() {
   const handleStandardAssignClick = (property: StandardProperty) => {
     setSelectedStandardProperty(property)
     setStandardAssignModalOpen(true)
+  }
+
+  const handleExportCsv = () => {
+    const rows: AssignmentExportRow[] = [
+      ...enterpriseQueue.map((property) => ({
+        queue: 'Enterprise',
+        propertyName: property.name,
+        propertyType: property.type,
+        organizationOrOwner: property.organization,
+        valueOrRent: property.valuation,
+        location: property.location,
+        status: property.brokerStatus,
+      })),
+      ...standardQueue.map((property) => ({
+        queue: 'Non-Enterprise',
+        propertyName: property.name,
+        propertyType: property.type,
+        organizationOrOwner: property.ownerType,
+        valueOrRent: property.rentPrice,
+        location: property.location,
+        status: property.status,
+      })),
+    ]
+
+    exportToCsv('assignment-queue.csv', rows, [
+      { key: 'queue', label: 'Queue' },
+      { key: 'propertyName', label: 'Property Name' },
+      { key: 'propertyType', label: 'Property Type' },
+      { key: 'organizationOrOwner', label: 'Organization / Owner' },
+      { key: 'valueOrRent', label: 'Value / Rent' },
+      { key: 'location', label: 'Location' },
+      { key: 'status', label: 'Status' },
+    ])
+    toast.success('Export started', `${rows.length} assignment records downloaded.`)
   }
 
   return (
@@ -177,15 +275,11 @@ export function AdminAssignmentManagement() {
             <div className="flex items-center gap-3">
               <button
                 type="button"
+                onClick={handleExportCsv}
                 className="inline-flex items-center gap-2 rounded-button border border-outline bg-white px-4 py-2.5 text-body font-medium text-text-primary shadow-sm hover:bg-hover-light transition-colors"
               >
+                <Download size={16} />
                 Export CSV
-              </button>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-button bg-navy px-4 py-2.5 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
-              >
-                Bulk Assign
               </button>
             </div>
           </div>
@@ -371,10 +465,18 @@ export function AdminAssignmentManagement() {
       </div>
 
       {/* Assign Modal (Enterprise) */}
-      {assignModalOpen && (
+      {assignModalOpen && selectedProperty && (
         <AssignModal
           onClose={() => setAssignModalOpen(false)}
-          rows={defaultAssignmentRows}
+          property={selectedProperty}
+          brokers={brokers}
+          rows={enterpriseAssignments[selectedProperty.name] ?? createInitialEnterpriseRows(selectedProperty)}
+          onRowsChange={(rows) =>
+            setEnterpriseAssignments((current) => ({
+              ...current,
+              [selectedProperty.name]: rows,
+            }))
+          }
         />
       )}
 
@@ -383,6 +485,14 @@ export function AdminAssignmentManagement() {
         <StandardAssignModal
           onClose={() => setStandardAssignModalOpen(false)}
           property={selectedStandardProperty}
+          brokers={brokers}
+          rows={standardAssignments[selectedStandardProperty.name] ?? createInitialStandardRows(selectedStandardProperty)}
+          onRowsChange={(rows) =>
+            setStandardAssignments((current) => ({
+              ...current,
+              [selectedStandardProperty.name]: rows,
+            }))
+          }
         />
       )}
     </div>
@@ -391,11 +501,58 @@ export function AdminAssignmentManagement() {
 
 function AssignModal({
   onClose,
+  property,
+  brokers,
   rows,
+  onRowsChange,
 }: {
   onClose: () => void
-  rows: AssignmentRow[]
+  property: EnterpriseProperty
+  brokers: AdminBroker[]
+  rows: EnterpriseAssignmentRow[]
+  onRowsChange: (rows: EnterpriseAssignmentRow[]) => void
 }) {
+  const [brokerPickerRowId, setBrokerPickerRowId] = useState<string | null>(null)
+  const [brokerSearch, setBrokerSearch] = useState('')
+  const activeRow = rows.find((row) => row.id === brokerPickerRowId)
+  const availableBrokers = brokers.filter((broker) => {
+    const query = brokerSearch.trim().toLowerCase()
+    const active = broker.status === 'ACTIVE'
+    if (!query) return active
+    return (
+      active &&
+      [broker.name, broker.role, broker.brokerId, String(broker.successRate), broker.avgTime]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    )
+  })
+
+  const updateRow = (rowId: string, patch: Partial<EnterpriseAssignmentRow>) => {
+    onRowsChange(rows.map((row) => (row.id === rowId ? { ...row, ...patch } : row)))
+  }
+
+  const addPropertyRow = () => {
+    const nextIndex = rows.length + 1
+    onRowsChange([
+      ...rows,
+      {
+        id: `${property.name}-new-${Date.now()}`,
+        propertyName: `${property.name} - New Property ${nextIndex}`,
+        block: 'A1',
+        floor: String(nextIndex).padStart(2, '0'),
+        commission: '50',
+      },
+    ])
+  }
+
+  const assignBroker = (row: EnterpriseAssignmentRow, broker: AdminBroker) => {
+    updateRow(row.id, { assignedBrokerId: broker.id })
+    setBrokerPickerRowId(null)
+    setBrokerSearch('')
+    toast.success('Broker assigned', `${broker.name} assigned to ${row.propertyName}.`)
+  }
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Backdrop */}
@@ -406,10 +563,15 @@ function AssignModal({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-modal bg-white p-8 shadow-modal">
+      <div className="relative w-full max-w-6xl max-h-[90vh] overflow-y-auto rounded-modal bg-white p-8 shadow-modal">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-heading-1 font-bold text-text-primary">Assign</h2>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-heading-1 font-bold text-text-primary">Assign</h2>
+            <p className="mt-1 text-body text-text-muted">
+              {property.name} - {property.organization}
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -420,90 +582,216 @@ function AssignModal({
           </button>
         </div>
 
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-card border border-outline bg-canvas-alt px-4 py-3">
+          <div className="flex items-center gap-3">
+            <img src={property.image} alt={property.name} className="h-12 w-16 rounded-button object-cover" />
+            <div>
+              <p className="text-body font-bold text-text-primary">{property.type}</p>
+              <p className="text-label text-text-muted">
+                {property.location} - {property.valuation}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={addPropertyRow}
+            className="inline-flex items-center gap-2 rounded-button bg-navy px-4 py-2.5 text-body font-semibold text-white hover:bg-slate-800"
+          >
+            <Plus size={16} />
+            Add Property
+          </button>
+        </div>
+
         {/* Table Header */}
-        <div className="mt-8 grid grid-cols-[1fr_1fr] gap-8 border-b border-outline pb-4">
-          <p className="text-filter-label uppercase tracking-wider text-text-muted text-center">
-            Assigning
-          </p>
-          <p className="text-filter-label uppercase tracking-wider text-text-muted text-center">
-            Commission (%)
-          </p>
+        <div className="mt-8 hidden grid-cols-[minmax(220px,1.4fr)_110px_110px_130px_minmax(190px,0.9fr)_120px] gap-3 border-b border-outline pb-4 lg:grid">
+          <p className="text-filter-label uppercase tracking-wider text-text-muted">Property Name</p>
+          <p className="text-filter-label uppercase tracking-wider text-text-muted">Block</p>
+          <p className="text-filter-label uppercase tracking-wider text-text-muted">Floor</p>
+          <p className="text-filter-label uppercase tracking-wider text-text-muted">Commission (%)</p>
+          <p className="text-filter-label uppercase tracking-wider text-text-muted">Assigned Broker</p>
+          <p className="text-filter-label uppercase tracking-wider text-text-muted text-center">Action</p>
         </div>
 
         {/* Assignment Rows */}
         <div className="divide-y divide-outline">
-          {rows.map((row, idx) => (
-            <div key={idx} className="grid grid-cols-[1fr_1fr] gap-8 py-6 items-center">
-              {/* Left: Block, Floor, Units */}
-              <div className="flex items-center gap-4">
-                {/* Block Select */}
-                <div>
-                  <p className="text-label text-text-muted">Block</p>
-                  <select className="mt-1 h-10 w-20 rounded-input border border-outline bg-white px-2 text-body font-medium text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
-                    <option>A1</option>
-                    <option>A2</option>
-                    <option>B1</option>
-                    <option>B2</option>
-                  </select>
-                </div>
+          {rows.map((row) => {
+            const assignedBroker = brokers.find((broker) => broker.id === row.assignedBrokerId)
+            return (
+            <div key={row.id} className="grid gap-3 py-5 lg:grid-cols-[minmax(220px,1.4fr)_110px_110px_130px_minmax(190px,0.9fr)_120px] lg:items-center">
+              <label className="block">
+                <span className="mb-1 block text-filter-label uppercase tracking-wider text-text-muted lg:hidden">
+                  Property Name
+                </span>
+                <input
+                  value={row.propertyName}
+                  onChange={(event) => updateRow(row.id, { propertyName: event.target.value })}
+                  className="h-11 w-full rounded-input border border-outline bg-white px-3 text-body font-semibold text-text-primary outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+              </label>
 
-                {/* Floor Select */}
-                <div>
-                  <p className="text-label text-text-muted">Floor</p>
-                  <select className="mt-1 h-10 w-20 rounded-input border border-outline bg-white px-2 text-body font-medium text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
-                    <option>04</option>
-                    <option>05</option>
-                    <option>06</option>
-                    <option>07</option>
-                  </select>
-                </div>
+              <label className="block">
+                <span className="mb-1 block text-filter-label uppercase tracking-wider text-text-muted lg:hidden">
+                  Block
+                </span>
+                <input
+                  value={row.block}
+                  onChange={(event) => updateRow(row.id, { block: event.target.value })}
+                  className="h-11 w-full rounded-input border border-outline bg-white px-3 text-body font-semibold text-text-primary outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+              </label>
 
-                {/* Unit Chips */}
-                <div className="mt-4">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {row.units.map((unit, unitIdx) => (
-                      <span
-                        key={unitIdx}
-                        className={cn(
-                          'inline-flex items-center justify-center h-8 min-w-[40px] px-2 rounded text-label font-semibold',
-                          unitIdx === 0
-                            ? 'bg-navy text-white'
-                            : 'bg-slate-100 text-text-primary',
-                        )}
-                      >
-                        {unit}
-                      </span>
-                    ))}
+              <label className="block">
+                <span className="mb-1 block text-filter-label uppercase tracking-wider text-text-muted lg:hidden">
+                  Floor
+                </span>
+                <input
+                  value={row.floor}
+                  onChange={(event) => updateRow(row.id, { floor: event.target.value })}
+                  className="h-11 w-full rounded-input border border-outline bg-white px-3 text-body font-semibold text-text-primary outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-filter-label uppercase tracking-wider text-text-muted lg:hidden">
+                  Commission
+                </span>
+                <div className="flex h-11 items-center rounded-input border border-outline bg-white px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30">
+                  <input
+                    value={row.commission}
+                    onChange={(event) => updateRow(row.id, { commission: event.target.value.replace(/[^0-9.]/g, '') })}
+                    className="min-w-0 flex-1 border-0 bg-transparent text-body font-semibold text-text-primary outline-none"
+                    inputMode="decimal"
+                  />
+                  <span className="text-body font-bold text-text-muted">%</span>
+                </div>
+              </label>
+
+              <div>
+                <span className="mb-1 block text-filter-label uppercase tracking-wider text-text-muted lg:hidden">
+                  Assigned Broker
+                </span>
+                {assignedBroker ? (
+                  <div className="flex items-center gap-2 rounded-button bg-primary-100 px-3 py-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                      {assignedBroker.avatar}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-label font-bold text-primary">{assignedBroker.name}</span>
+                      <span className="block truncate text-[10px] font-semibold text-text-muted">{assignedBroker.brokerId}</span>
+                    </span>
                   </div>
-                  <p className="mt-1 text-label text-text-muted">+{row.moreCount} more</p>
-                </div>
+                ) : (
+                  <span className="inline-flex h-11 w-full items-center rounded-button bg-slate-50 px-3 text-label font-semibold text-text-muted">
+                    Not assigned
+                  </span>
+                )}
               </div>
 
-              {/* Right: Commission + Assign */}
-              <div className="flex items-center justify-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-heading-3 font-bold text-text-primary">
-                    {row.commission}
-                  </span>
-                  <button
-                    type="button"
-                    className="p-1.5 rounded-button text-text-muted hover:text-primary hover:bg-hover-light transition-colors"
-                    aria-label="Edit commission"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                </div>
+              <button
+                type="button"
+                onClick={() => setBrokerPickerRowId(row.id)}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-button bg-navy px-4 text-body font-semibold text-white shadow-sm hover:bg-slate-800"
+              >
+                <UserCheck size={16} />
+                {assignedBroker ? 'Change' : 'Assign'}
+              </button>
+            </div>
+          )})}
+        </div>
 
-                <button
-                  type="button"
-                  className="rounded-button bg-navy px-6 py-3 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
-                >
-                  Assign
-                </button>
+        {activeRow && (
+          <section className="mt-6 overflow-hidden rounded-card border border-outline bg-canvas-alt">
+            <div className="flex flex-col gap-3 border-b border-outline bg-white px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-filter-label font-bold uppercase tracking-wider text-primary">
+                  Available Brokers
+                </p>
+                <h3 className="mt-1 text-heading-3 font-bold text-text-primary">
+                  Assign broker to {activeRow.propertyName}
+                </h3>
+                <p className="mt-1 text-label text-text-muted">
+                  Brokers can be assigned to multiple enterprise properties.
+                </p>
+              </div>
+              <div className="relative w-full lg:w-72">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input
+                  value={brokerSearch}
+                  onChange={(event) => setBrokerSearch(event.target.value)}
+                  placeholder="Search broker..."
+                  className="h-10 w-full rounded-input border border-outline bg-white pl-9 pr-3 text-body outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="max-h-[320px] overflow-y-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-outline bg-white">
+                    <th className="px-5 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Broker</th>
+                    <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Performance</th>
+                    <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Current Assignments</th>
+                    <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {availableBrokers.map((broker) => {
+                    const assignedCount = rows.filter((row) => row.assignedBrokerId === broker.id).length
+                    const assignedToActive = activeRow.assignedBrokerId === broker.id
+                    return (
+                      <tr key={broker.id} className="border-b border-outline bg-white last:border-0 hover:bg-hover-light">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-badge font-bold text-white">
+                              {broker.avatar}
+                            </span>
+                            <div>
+                              <p className="text-body font-bold text-text-primary">{broker.name}</p>
+                              <p className="text-label text-text-muted">{broker.role} - {broker.brokerId}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <p className="text-body font-bold text-text-primary">{broker.successRate}% success</p>
+                          <p className="text-label text-text-muted">
+                            {broker.dealsClosed} closed - Avg {broker.avgTime}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="inline-flex rounded-pill bg-primary-100 px-3 py-1 text-badge font-bold text-primary">
+                            {assignedCount} enterprise properties
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => assignBroker(activeRow, broker)}
+                            className={cn(
+                              'inline-flex items-center gap-2 rounded-button px-4 py-2 text-body font-semibold transition-colors',
+                              assignedToActive
+                                ? 'bg-status-success-bg text-status-success-text hover:bg-green-100'
+                                : 'bg-navy text-white hover:bg-slate-800'
+                            )}
+                          >
+                            {assignedToActive && <CheckCircle2 size={15} />}
+                            {assignedToActive ? 'Assigned' : 'Assign Broker'}
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+
+              {availableBrokers.length === 0 && (
+                <div className="bg-white px-6 py-10 text-center">
+                  <p className="text-body font-bold text-text-primary">No available brokers found</p>
+                  <p className="mt-1 text-label text-text-muted">Try a different broker name or speciality.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Footer */}
         <div className="mt-6 flex justify-end border-t border-outline pt-6">
@@ -523,11 +811,40 @@ function AssignModal({
 function StandardAssignModal({
   onClose,
   property,
+  brokers,
+  rows,
+  onRowsChange,
 }: {
   onClose: () => void
   property: StandardProperty
+  brokers: AdminBroker[]
+  rows: StandardAssignmentRow[]
+  onRowsChange: (rows: StandardAssignmentRow[]) => void
 }) {
-  const rows = [0, 1, 2]
+  const [brokerPickerRowId, setBrokerPickerRowId] = useState<string | null>(rows[0]?.id ?? null)
+  const [brokerSearch, setBrokerSearch] = useState('')
+  const activeRow = rows.find((row) => row.id === brokerPickerRowId)
+  const availableBrokers = brokers.filter((broker) => {
+    const query = brokerSearch.trim().toLowerCase()
+    const active = broker.status === 'ACTIVE'
+    if (!query) return active
+    return (
+      active &&
+      [broker.name, broker.role, broker.brokerId, String(broker.successRate), broker.avgTime]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    )
+  })
+
+  const updateRow = (rowId: string, patch: Partial<StandardAssignmentRow>) => {
+    onRowsChange(rows.map((row) => (row.id === rowId ? { ...row, ...patch } : row)))
+  }
+
+  const assignBroker = (row: StandardAssignmentRow, broker: AdminBroker) => {
+    updateRow(row.id, { assignedBrokerId: broker.id })
+    toast.success('Broker assigned', `${broker.name} assigned to ${row.propertyName}.`)
+  }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
@@ -539,10 +856,15 @@ function StandardAssignModal({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-modal bg-white p-8 shadow-modal">
+      <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-modal bg-white p-8 shadow-modal">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-heading-1 font-bold text-text-primary">Assign</h2>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-heading-1 font-bold text-text-primary">Assign</h2>
+            <p className="mt-1 text-body text-text-muted">
+              {property.name} - {property.ownerType}
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -553,56 +875,189 @@ function StandardAssignModal({
           </button>
         </div>
 
+        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-card border border-outline bg-canvas-alt px-4 py-3">
+          <img
+            src={property.image}
+            alt={property.name}
+            className="h-14 w-20 rounded-button object-cover"
+          />
+          <div>
+            <p className="text-body font-bold text-text-primary">{property.type}</p>
+            <p className="mt-0.5 text-label text-text-muted">
+              {property.location} - {property.rentPrice}
+            </p>
+          </div>
+          <span className={cn('ml-auto rounded-pill px-3 py-1 text-badge font-bold', property.statusColor)}>
+            {property.status}
+          </span>
+        </div>
+
         {/* Table Header */}
-        <div className="mt-8 grid grid-cols-[1fr_1fr] gap-8 border-b border-outline pb-4">
-          <p className="text-filter-label uppercase tracking-wider text-text-muted text-center">
-            Property
-          </p>
-          <p className="text-filter-label uppercase tracking-wider text-text-muted text-center">
-            Commission (%)
-          </p>
+        <div className="mt-8 hidden grid-cols-[minmax(220px,1.3fr)_150px_minmax(190px,0.9fr)_120px] gap-3 border-b border-outline pb-4 lg:grid">
+          <p className="text-filter-label uppercase tracking-wider text-text-muted">Property</p>
+          <p className="text-filter-label uppercase tracking-wider text-text-muted">Commission (%)</p>
+          <p className="text-filter-label uppercase tracking-wider text-text-muted">Assigned Broker</p>
+          <p className="text-filter-label uppercase tracking-wider text-text-muted text-center">Action</p>
         </div>
 
         {/* Assignment Rows */}
         <div className="divide-y divide-outline">
-          {rows.map((_, idx) => (
-            <div key={idx} className="grid grid-cols-[1fr_1fr] gap-8 py-6 items-center">
-              {/* Left: Property Info */}
+          {rows.map((row) => {
+            const assignedBroker = brokers.find((broker) => broker.id === row.assignedBrokerId)
+            return (
+            <div key={row.id} className="grid gap-3 py-5 lg:grid-cols-[minmax(220px,1.3fr)_150px_minmax(190px,0.9fr)_120px] lg:items-center">
               <div className="flex items-center gap-4">
                 <img
                   src={property.image}
-                  alt={property.name}
-                  className="h-14 w-18 rounded-button object-cover border border-outline"
+                  alt={row.propertyName}
+                  className="h-14 w-20 rounded-button border border-outline object-cover"
                 />
-                <div>
-                  <p className="text-body font-semibold text-text-primary">{property.name}</p>
-                  <p className="text-label text-text-muted">{property.type}</p>
+                <div className="min-w-0">
+                  <p className="truncate text-body font-bold text-text-primary">{row.propertyName}</p>
+                  <p className="mt-1 text-label text-text-muted">{property.type}</p>
                 </div>
               </div>
 
-              {/* Right: Commission + Assign */}
-              <div className="flex items-center justify-center gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-heading-3 font-bold text-text-primary">50%</span>
-                  <button
-                    type="button"
-                    className="p-1.5 rounded-button text-text-muted hover:text-primary hover:bg-hover-light transition-colors"
-                    aria-label="Edit commission"
-                  >
-                    <Pencil size={16} />
-                  </button>
+              <label className="block">
+                <span className="mb-1 block text-filter-label uppercase tracking-wider text-text-muted lg:hidden">
+                  Commission
+                </span>
+                <div className="flex h-11 items-center rounded-input border border-outline bg-white px-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30">
+                  <input
+                    value={row.commission}
+                    onChange={(event) => updateRow(row.id, { commission: event.target.value.replace(/[^0-9.]/g, '') })}
+                    className="min-w-0 flex-1 border-0 bg-transparent text-body font-semibold text-text-primary outline-none"
+                    inputMode="decimal"
+                  />
+                  <span className="text-body font-bold text-text-muted">%</span>
                 </div>
+              </label>
 
-                <button
-                  type="button"
-                  className="rounded-button bg-navy px-6 py-3 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
-                >
-                  Assign
-                </button>
+              <div>
+                <span className="mb-1 block text-filter-label uppercase tracking-wider text-text-muted lg:hidden">
+                  Assigned Broker
+                </span>
+                {assignedBroker ? (
+                  <div className="flex items-center gap-2 rounded-button bg-primary-100 px-3 py-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                      {assignedBroker.avatar}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-label font-bold text-primary">{assignedBroker.name}</span>
+                      <span className="block truncate text-[10px] font-semibold text-text-muted">{assignedBroker.brokerId}</span>
+                    </span>
+                  </div>
+                ) : (
+                  <span className="inline-flex h-11 w-full items-center rounded-button bg-slate-50 px-3 text-label font-semibold text-text-muted">
+                    Not assigned
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setBrokerPickerRowId(row.id)}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-button bg-navy px-4 text-body font-semibold text-white shadow-sm hover:bg-slate-800"
+              >
+                <UserCheck size={16} />
+                {assignedBroker ? 'Change' : 'Assign'}
+              </button>
+            </div>
+          )})}
+        </div>
+
+        {activeRow && (
+          <section className="mt-6 overflow-hidden rounded-card border border-outline bg-canvas-alt">
+            <div className="flex flex-col gap-3 border-b border-outline bg-white px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-filter-label font-bold uppercase tracking-wider text-primary">
+                  Available Brokers
+                </p>
+                <h3 className="mt-1 text-heading-3 font-bold text-text-primary">
+                  Assign broker to {activeRow.propertyName}
+                </h3>
+                <p className="mt-1 text-label text-text-muted">
+                  Choose any active broker and set the commission percentage above.
+                </p>
+              </div>
+              <div className="relative w-full lg:w-72">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <input
+                  value={brokerSearch}
+                  onChange={(event) => setBrokerSearch(event.target.value)}
+                  placeholder="Search broker..."
+                  className="h-10 w-full rounded-input border border-outline bg-white pl-9 pr-3 text-body outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                />
               </div>
             </div>
-          ))}
-        </div>
+
+            <div className="max-h-[320px] overflow-y-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-outline bg-white">
+                    <th className="px-5 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Broker</th>
+                    <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Performance</th>
+                    <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Commission</th>
+                    <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {availableBrokers.map((broker) => {
+                    const assignedToActive = activeRow.assignedBrokerId === broker.id
+                    return (
+                      <tr key={broker.id} className="border-b border-outline bg-white last:border-0 hover:bg-hover-light">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-badge font-bold text-white">
+                              {broker.avatar}
+                            </span>
+                            <div>
+                              <p className="text-body font-bold text-text-primary">{broker.name}</p>
+                              <p className="text-label text-text-muted">{broker.role} - {broker.brokerId}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <p className="text-body font-bold text-text-primary">{broker.successRate}% success</p>
+                          <p className="text-label text-text-muted">
+                            {broker.activeDeals} active - {broker.dealsClosed} closed
+                          </p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="inline-flex rounded-pill bg-slate-100 px-3 py-1 text-badge font-bold text-text-primary">
+                            {activeRow.commission || '0'}%
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => assignBroker(activeRow, broker)}
+                            className={cn(
+                              'inline-flex items-center gap-2 rounded-button px-4 py-2 text-body font-semibold transition-colors',
+                              assignedToActive
+                                ? 'bg-status-success-bg text-status-success-text hover:bg-green-100'
+                                : 'bg-navy text-white hover:bg-slate-800'
+                            )}
+                          >
+                            {assignedToActive && <CheckCircle2 size={15} />}
+                            {assignedToActive ? 'Assigned' : 'Assign Broker'}
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+
+              {availableBrokers.length === 0 && (
+                <div className="bg-white px-6 py-10 text-center">
+                  <p className="text-body font-bold text-text-primary">No available brokers found</p>
+                  <p className="mt-1 text-label text-text-muted">Try a different broker name or speciality.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* Footer */}
         <div className="mt-6 flex justify-end border-t border-outline pt-6">

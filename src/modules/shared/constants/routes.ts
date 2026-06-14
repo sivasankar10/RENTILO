@@ -82,9 +82,11 @@ export const ROUTES = {
     LISTING_MANAGEMENT: '/admin/listing-management',
     USER_MANAGEMENT: '/admin/user-management',
     FINANCE_PAYMENTS: '/admin/finance-payments',
+    PAYMENT_RECEIPT: (id: string) => `/admin/finance-payments/receipt/${encodeURIComponent(id.replace(/^#/, ''))}`,
     PLATFORM_CONFIGURATION: '/admin/platform-configuration',
     ASSIGNMENT_MANAGEMENT: '/admin/assignment-management',
     MAINTENANCE_TICKETS: '/admin/maintenance-tickets',
     NOTIFICATIONS: '/admin/notifications',
+    MESSAGES: '/admin/messages',
   },
 } as const

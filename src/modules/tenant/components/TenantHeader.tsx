@@ -24,13 +24,14 @@ export function TenantHeader() {
   return (
     <header className="sticky top-0 z-50 bg-brand-surface">
       <div className="flex justify-between items-center w-full max-w-tenant mx-auto px-8 py-4">
-        <div
-          className="font-display text-2xl font-black text-brand tracking-tight cursor-pointer"
-          onClick={() => navigate(ROUTES.TENANT.LISTINGS)}
-          role="presentation"
+        <button
+          type="button"
+          className="border-0 bg-transparent p-0 font-display text-2xl font-black tracking-tight text-brand cursor-pointer hover:opacity-80"
+          onClick={() => navigate(ROUTES.TENANT.DASHBOARD)}
+          aria-label="Go to tenant dashboard"
         >
           RENTILO
-        </div>
+        </button>
 
         <div className="flex items-center gap-4 md:gap-6">
           <RoleModeSwitcher className="hidden sm:inline-flex" />
