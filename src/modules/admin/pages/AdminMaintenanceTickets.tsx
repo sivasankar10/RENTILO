@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   AlertTriangle,
   CalendarClock,
@@ -68,6 +68,8 @@ export function AdminMaintenanceTickets() {
   const [categoryFilter, setCategoryFilter] = useState<TicketCategory | 'All'>('All')
   const [chatDraft, setChatDraft] = useState('')
   const [callStatus, setCallStatus] = useState('')
+  const chatSectionRef = useRef<HTMLElement>(null)
+  const chatInputRef = useRef<HTMLInputElement>(null)
 
   const categories = useMemo(
     () => Array.from(new Set(tickets.map((ticket) => ticket.category))),
@@ -134,6 +136,11 @@ export function AdminMaintenanceTickets() {
       setCallStatus(`Call request logged for ${activeTicket.tenantName}.`)
       toast.success('Call logged', `${activeTicket.ticketNo} call activity was recorded.`)
     }, 800)
+  }
+
+  const handleOpenChat = () => {
+    chatSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    window.setTimeout(() => chatInputRef.current?.focus(), 350)
   }
 
   const handleStatusChange = (status: TicketStatus) => {
@@ -271,13 +278,14 @@ export function AdminMaintenanceTickets() {
                       <Phone size={16} />
                       Call Tenant
                     </button>
-                    <a
-                      href={`sms:${activeTicket.tenantPhone}`}
+                    <button
+                      type="button"
+                      onClick={handleOpenChat}
                       className="inline-flex items-center justify-center gap-2 rounded-button border border-outline bg-white px-4 py-2.5 text-body font-semibold text-text-primary transition-colors hover:bg-hover-light"
                     >
                       <MessageSquare size={16} />
-                      SMS
-                    </a>
+                      Chat
+                    </button>
                   </div>
                 </div>
                 {callStatus && (
@@ -373,7 +381,7 @@ export function AdminMaintenanceTickets() {
                 </section>
               </div>
 
-              <section className="flex min-h-0 flex-1 flex-col">
+              <section ref={chatSectionRef} className="flex min-h-0 flex-1 scroll-mt-4 flex-col">
                 <div className="border-b border-outline px-5 py-4">
                   <h3 className="text-body-lg font-bold text-text-primary">Ticket Chat</h3>
                   <p className="mt-1 text-label text-text-muted">
@@ -412,6 +420,7 @@ export function AdminMaintenanceTickets() {
                 <form onSubmit={handleSendMessage} className="border-t border-outline bg-white p-4">
                   <div className="flex items-center gap-2 rounded-input border border-outline bg-white px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-100">
                     <input
+                      ref={chatInputRef}
                       value={chatDraft}
                       onChange={(event) => setChatDraft(event.target.value)}
                       placeholder="Message tenant..."
