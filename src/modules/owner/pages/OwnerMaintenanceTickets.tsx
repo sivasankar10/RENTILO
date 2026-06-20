@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   AlertTriangle,
   CalendarClock,
@@ -66,6 +66,8 @@ export function OwnerMaintenanceTickets() {
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'All'>('All')
   const [chatDraft, setChatDraft] = useState('')
   const [callStatus, setCallStatus] = useState('')
+  const chatSectionRef = useRef<HTMLElement>(null)
+  const chatInputRef = useRef<HTMLInputElement>(null)
 
   const currentPropertyId = selectedPropertyId ?? OWNER_MANAGED_PROPERTIES[0]?.id ?? ''
   const selectedProperty = OWNER_MANAGED_PROPERTIES.find((property) => property.id === currentPropertyId)
@@ -125,6 +127,11 @@ export function OwnerMaintenanceTickets() {
     window.setTimeout(() => {
       setCallStatus(`Call request logged for ${activeTicket.tenantName}.`)
     }, 900)
+  }
+
+  const handleOpenChat = () => {
+    chatSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    window.setTimeout(() => chatInputRef.current?.focus(), 350)
   }
 
   return (
@@ -363,13 +370,14 @@ export function OwnerMaintenanceTickets() {
                       <Phone size={16} />
                       Call
                     </button>
-                    <a
-                      href={`sms:${activeTicket.tenantPhone}`}
+                    <button
+                      type="button"
+                      onClick={handleOpenChat}
                       className="inline-flex items-center justify-center gap-2 rounded-button border border-outline bg-white px-4 py-3 text-body font-semibold text-text-primary transition-colors hover:bg-hover-light"
                     >
                       <MessageSquare size={16} />
-                      SMS
-                    </a>
+                      Chat
+                    </button>
                   </div>
                   {callStatus && (
                     <p className="mt-3 rounded-button bg-primary-100 px-3 py-2 text-label font-semibold text-primary">
@@ -378,7 +386,7 @@ export function OwnerMaintenanceTickets() {
                   )}
                 </section>
 
-                <section className="rounded-card border border-outline bg-white shadow-sm">
+                <section ref={chatSectionRef} className="scroll-mt-4 rounded-card border border-outline bg-white shadow-sm">
                   <div className="border-b border-outline px-5 py-4">
                     <h2 className="text-body-lg font-bold text-text-primary">Ticket Chat</h2>
                     <p className="mt-1 text-label text-text-muted">Session messages with {activeTicket.tenantName}</p>
@@ -418,6 +426,7 @@ export function OwnerMaintenanceTickets() {
                   <form onSubmit={handleSendMessage} className="border-t border-outline p-4">
                     <div className="flex items-center gap-2 rounded-input border border-outline bg-white px-3 py-2 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-100">
                       <input
+                        ref={chatInputRef}
                         value={chatDraft}
                         onChange={(event) => setChatDraft(event.target.value)}
                         placeholder="Message tenant..."
