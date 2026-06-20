@@ -9,6 +9,8 @@ import {
   Car,
   Check,
   CheckCircle2,
+  ClipboardList,
+  DollarSign,
   Dumbbell,
   Image,
   Lock,
@@ -25,14 +27,14 @@ import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
 import { useOwnerStore, type OwnerRegisterPropertyFormData } from '../store/ownerStore'
 
-type StepNumber = 1 | 2 | 3 | 4 | 5
+export type StepNumber = 1 | 2 | 3 | 4 | 5
 
 interface StepDef {
   number: StepNumber
   label: string
 }
 
-const steps: StepDef[] = [
+export const steps: StepDef[] = [
   { number: 1, label: 'Basic Information' },
   { number: 2, label: 'Property Location' },
   { number: 3, label: 'Amenities & Features' },
@@ -195,7 +197,7 @@ export function OwnerRegisterProperty() {
 }
 
 /* ───────── STEP 1: Basic Information ───────── */
-function Step1BasicInfo({ formData, update }: StepProps) {
+export function Step1BasicInfo({ formData, update }: StepProps) {
   return (
     <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
       <div>
@@ -284,7 +286,7 @@ function Step1BasicInfo({ formData, update }: StepProps) {
 }
 
 /* ───────── STEP 2: Property Location ───────── */
-function Step2Location({ formData, update }: StepProps) {
+export function Step2Location({ formData, update }: StepProps) {
   return (
     <div className="space-y-6">
       <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
@@ -359,7 +361,7 @@ function Step2Location({ formData, update }: StepProps) {
 }
 
 /* ───────── STEP 3: Amenities & Features ───────── */
-function Step3Amenities({ formData, update }: StepProps) {
+export function Step3Amenities({ formData, update }: StepProps) {
   const amenities = formData.amenities
   const features = formData.buildingFeatures
 
@@ -450,7 +452,7 @@ function Step3Amenities({ formData, update }: StepProps) {
 }
 
 /* ───────── STEP 4: Media & Gallery ───────── */
-function Step4Media({ formData, update }: StepProps) {
+export function Step4Media({ formData, update }: StepProps) {
   return (
     <div className="space-y-6">
       {/* Progress bar */}
@@ -525,7 +527,7 @@ function Step4Media({ formData, update }: StepProps) {
 }
 
 /* ───────── STEP 5: Pricing & Lease ───────── */
-function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { onComplete: () => void; goPrev: () => void }) {
+export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { onComplete: () => void; goPrev: () => void }) {
   const utilities = formData.utilities
   const toggleUtility = (key: keyof typeof utilities) => {
     update('utilities', { ...utilities, [key]: !utilities[key] })
@@ -542,27 +544,33 @@ function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { on
     <div className="space-y-6">
       {/* Horizontal stepper */}
       <div className="rounded-card border border-outline bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-center gap-4 flex-wrap">
-          {steps.map((s, idx) => (
-            <div key={s.number} className="flex items-center gap-2">
-              <div className={cn('flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold', s.number < 5 ? 'bg-primary text-white' : 'bg-navy text-white')}>
+        <div className="grid gap-3 sm:grid-cols-5">
+          {steps.map((s) => (
+            <div
+              key={s.number}
+              className={cn(
+                'flex min-h-10 items-center gap-2 rounded-button px-3 py-2',
+                s.number === 5 ? 'bg-primary-100' : 'bg-canvas-alt'
+              )}
+            >
+              <div className={cn('flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold', s.number < 5 ? 'bg-primary text-white' : 'bg-navy text-white')}>
                 {s.number < 5 ? <Check size={12} /> : s.number}
               </div>
-              <span className={cn('text-label font-medium', s.number === 5 ? 'text-text-primary font-bold' : 'text-text-muted')}>{s.number}. {s.label.split(' ')[0]}</span>
-              {idx < steps.length - 1 && <span className="hidden sm:block w-8 h-0.5 bg-slate-200" />}
+              <span className={cn('truncate text-label font-medium', s.number === 5 ? 'text-text-primary font-bold' : 'text-text-muted')}>{s.label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           {/* Rental Details */}
-          <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
+          <div className="space-y-5 rounded-card border border-outline bg-white p-6 shadow-surface">
             <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">
-              💰 Rental Details
+              <DollarSign size={20} className="text-primary" />
+              Rental Details
             </h2>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_160px] lg:items-end">
               <div>
                 <label className="text-label font-medium text-text-muted">Base Rent (Monthly)</label>
                 <div className="relative mt-1.5">
@@ -571,11 +579,11 @@ function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { on
                 </div>
               </div>
               <div>
-                <label className="text-label font-medium text-text-muted">Security Deposit (Months or Fixed)</label>
+                <label className="text-label font-medium text-text-muted">Security Deposit</label>
                 <input type="text" value={formData.securityDeposit} onChange={(e) => update('securityDeposit', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
               </div>
               <div>
-                <label className="text-label font-medium text-text-muted invisible">Unit</label>
+                <label className="text-label font-medium text-text-muted">Deposit Unit</label>
                 <select value={formData.depositUnit} onChange={(e) => update('depositUnit', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-3 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
                   <option>Months</option>
                   <option>Fixed</option>
@@ -584,19 +592,20 @@ function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { on
             </div>
             <div>
               <label className="text-label font-medium text-text-muted">Minimum Lease Duration (Months)</label>
-              <div className="mt-2 flex items-center gap-4">
-                <span className="text-label text-text-muted">1 Month</span>
+              <div className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4">
+                <span className="whitespace-nowrap text-label text-text-muted">1 Month</span>
                 <input type="range" min={1} max={24} value={formData.leaseDuration} onChange={(e) => update('leaseDuration', parseInt(e.target.value))} className="flex-1 accent-primary" />
-                <span className="text-label text-text-muted">24 Months</span>
+                <span className="whitespace-nowrap text-label text-text-muted">24 Months</span>
               </div>
               <p className="mt-1 text-center text-label font-bold text-primary">{formData.leaseDuration} Months</p>
             </div>
           </div>
 
           {/* Lease Terms */}
-          <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
+          <div className="space-y-5 rounded-card border border-outline bg-white p-6 shadow-surface">
             <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">
-              📋 Lease Terms
+              <ClipboardList size={20} className="text-primary" />
+              Lease Terms
             </h2>
             <div>
               <label className="text-body font-medium text-text-primary">Utilities Included</label>
@@ -609,8 +618,8 @@ function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { on
                 ))}
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-4 rounded-button border border-outline bg-canvas-alt p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <p className="text-body font-medium text-text-primary">Pet Policy</p>
                 <p className="text-label text-text-muted">Allow domestic animals within the premises</p>
               </div>
@@ -626,31 +635,31 @@ function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { on
 
         {/* Availability + Listing Summary */}
         <div className="space-y-6">
-          <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
-            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">📅 Availability</h2>
+          <div className="space-y-5 rounded-card border border-outline bg-white p-6 shadow-surface">
+            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">Availability</h2>
             <div>
               <label className="text-label font-medium text-text-muted">Available From</label>
               <input type="text" value={formData.availableFrom} onChange={(e) => update('availableFrom', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
             </div>
             <div>
               <label className="text-label font-medium text-text-muted">Notice Period (Days)</label>
-              <div className="mt-1.5 flex items-center gap-2">
-                <input type="text" value={formData.noticePeriod} onChange={(e) => update('noticePeriod', e.target.value)} className="h-11 w-20 rounded-input border border-outline bg-white px-3 text-body text-text-primary text-center focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+              <div className="mt-1.5 grid grid-cols-[96px_auto] items-center gap-2">
+                <input type="text" value={formData.noticePeriod} onChange={(e) => update('noticePeriod', e.target.value)} className="h-11 w-full rounded-input border border-outline bg-white px-3 text-center text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
                 <span className="text-body text-text-muted">Days</span>
               </div>
             </div>
           </div>
 
-          <div className="rounded-card bg-canvas-alt border border-outline p-6 shadow-sm">
+          <div className="rounded-card border border-outline bg-canvas-alt p-6 shadow-sm">
             <h3 className="text-body-lg font-bold text-text-primary">Listing Summary</h3>
             <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
                 <span className="text-body text-text-muted">Annual Revenue</span>
-                <span className="text-body font-bold text-text-primary">${annualRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="whitespace-nowrap text-body font-bold text-text-primary">${annualRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
                 <span className="text-body text-text-muted">Initial Intake</span>
-                <span className="text-body font-bold text-text-primary">${initialIntake.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="whitespace-nowrap text-body font-bold text-text-primary">${initialIntake.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
             <p className="mt-3 text-label text-text-muted">
@@ -661,11 +670,11 @@ function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { on
       </div>
 
       {/* Bottom navigation */}
-      <div className="flex items-center justify-between pt-4">
+      <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 text-body font-medium text-text-muted hover:text-text-primary transition-colors">
           <ArrowLeft size={16} />Previous Step
         </button>
-        <button type="button" onClick={onComplete} className="inline-flex items-center gap-2 rounded-button bg-navy px-6 py-3 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors">
+        <button type="button" onClick={onComplete} className="inline-flex items-center justify-center gap-2 rounded-button bg-navy px-6 py-3 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors">
           Complete Registration
           <CheckCircle2 size={16} />
         </button>
@@ -675,7 +684,7 @@ function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { on
 }
 
 /* ───────── Bottom Info Cards ───────── */
-function BottomInfoCards() {
+export function BottomInfoCards() {
   const cards = [
     { icon: ShieldCheck, title: 'Verified Listings', desc: 'Verified properties receive 5x more views and inquiries.', color: 'bg-primary-100 text-primary' },
     { icon: TrendingUp, title: 'Pricing Insights', desc: "We'll suggest optimal rents based on local market data.", color: 'bg-status-error-bg text-status-error' },
@@ -703,7 +712,7 @@ function BottomInfoCards() {
 }
 
 /* ───────── Types ───────── */
-type StepProps = {
+export type StepProps = {
   formData: OwnerRegisterPropertyFormData
   update: <K extends keyof OwnerRegisterPropertyFormData>(
     key: K,

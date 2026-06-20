@@ -39,6 +39,7 @@ export const ROUTES = {
     MAINTENANCE: '/owner/maintenance',
     LEASES: '/owner/leases',
     TENANTS: '/owner/tenants',
+    PAYMENTS: '/owner/payments',
     ANALYTICS: '/owner/analytics',
     PLANS_RULES: '/owner/plans-rules',
     PREMIUM_PAYMENT: '/owner/premium-payment',

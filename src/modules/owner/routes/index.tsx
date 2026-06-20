@@ -8,6 +8,7 @@ import { OwnerMaintenanceTickets } from '../pages/OwnerMaintenanceTickets'
 import { OwnerLeases } from '../pages/OwnerLeases'
 import { OwnerTenants } from '../pages/OwnerTenants'
 import { OwnerAnalytics } from '../pages/OwnerAnalytics'
+import { OwnerPayments } from '../pages/OwnerPayments'
 import { OwnerPlansRules } from '../pages/OwnerPlansRules'
 import { OwnerSettings } from '../pages/OwnerSettings'
 import { OwnerNotifications } from '../pages/OwnerNotifications'
@@ -24,6 +25,7 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'maintenance', element: <OwnerMaintenanceTickets /> },
   { path: 'leases', element: <OwnerLeases /> },
   { path: 'tenants', element: <OwnerTenants /> },
+  { path: 'payments', element: <OwnerPayments /> },
   { path: 'analytics', element: <OwnerAnalytics /> },
   { path: 'plans-rules', element: <OwnerPlansRules /> },
   { path: 'premium-payment', element: <OwnerPremiumPaymentPage /> },

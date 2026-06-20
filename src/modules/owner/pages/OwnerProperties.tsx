@@ -1,345 +1,195 @@
 import { useState } from 'react'
-import {
-  Accessibility,
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Crosshair,
-  LockKeyhole,
-  MapPin,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
-
-const stepLabels = [
-  'Basic Information',
-  'Property Location',
-  'Amenities, Features & Rules',
-  'Media & Gallery',
-  'Pricing & Lease',
-]
-
-const features = ['Wheelchair Access', 'Elevator in Building', 'On-site Parking']
-
-const trustCards = [
-  {
-    icon: ShieldCheck,
-    title: 'Verified Listings',
-    description: 'Verified properties receive 2x more views and inquiries.',
-    tone: 'blue',
-  },
-  {
-    icon: Sparkles,
-    title: 'Pricing Insights',
-    description: 'We suggest optimal rent based on local market data.',
-    tone: 'amber',
-  },
-  {
-    icon: LockKeyhole,
-    title: 'Data Privacy',
-    description: 'Your property documents are encrypted and secure.',
-    tone: 'red',
-  },
-]
+import { ROUTES } from '@shared/constants/routes'
+import { useOwnerStore, type OwnerRegisterPropertyFormData } from '../store/ownerStore'
+import {
+  BottomInfoCards,
+  Step1BasicInfo,
+  Step2Location,
+  Step3Amenities,
+  Step4Media,
+  Step5Pricing,
+  steps,
+  type StepNumber,
+} from './OwnerRegisterProperty'
 
 export function OwnerProperties() {
-  const [currentStep, setCurrentStep] = useState(1)
+  const navigate = useNavigate()
+  const [currentStep, setCurrentStep] = useState<StepNumber>(1)
   const [draftStatus, setDraftStatus] = useState('')
   const [supportStatus, setSupportStatus] = useState('')
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(features)
-  const [pin, setPin] = useState({ x: 50, y: 50 })
-  const [form, setForm] = useState({
-    streetAddress: 'e.g., 123 Architecture Blvd',
-    unit: 'Apt 4B',
-    postalCode: '10001',
-    city: 'New York City',
-    neighborhood: 'Manhattan',
-  })
+  const formData = useOwnerStore((state) => state.registerPropertyDraft)
+  const updateRegisterPropertyDraft = useOwnerStore((state) => state.updateRegisterPropertyDraft)
+  const saveRegisterPropertyDraft = useOwnerStore((state) => state.saveRegisterPropertyDraft)
 
-  const updateField = (field: keyof typeof form, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }))
+  const update = <K extends keyof OwnerRegisterPropertyFormData>(
+    key: K,
+    val: OwnerRegisterPropertyFormData[K]
+  ) => {
+    updateRegisterPropertyDraft(key, val)
     setDraftStatus('')
   }
 
-  const toggleFeature = (feature: string) => {
-    setSelectedFeatures((current) =>
-      current.includes(feature)
-        ? current.filter((item) => item !== feature)
-        : [...current, feature]
-    )
+  const goNext = () => setCurrentStep((step) => Math.min(5, step + 1) as StepNumber)
+  const goPrev = () => setCurrentStep((step) => Math.max(1, step - 1) as StepNumber)
+
+  const handleSaveDraft = () => {
+    saveRegisterPropertyDraft()
+    setDraftStatus('Property details saved locally.')
+  }
+
+  const handleComplete = () => {
+    saveRegisterPropertyDraft()
+    setDraftStatus('Property details updated.')
+    navigate(ROUTES.OWNER.DASHBOARD)
   }
 
   return (
-    <div className="min-h-screen bg-canvas-alt px-6 py-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+    <div className="min-h-screen bg-canvas-alt px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="flex items-center gap-2 text-label text-text-muted">
-              <span>Properties</span>
-              <span>/</span>
-              <span className="text-text-primary">Add New Listing</span>
-            </div>
-            <h1 className="mt-2 text-heading-2 font-bold tracking-tight text-text-primary">
-              Register New Property
+            <p className="text-label text-text-muted">
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.OWNER.DASHBOARD)}
+                className="transition-colors hover:text-primary"
+              >
+                Overview
+              </button>
+              {' > '}
+              <span className="text-text-primary">Edit Details</span>
+            </p>
+            <h1 className="mt-2 text-heading-1 font-bold tracking-tight text-text-primary">
+              Edit Property Details
             </h1>
             {draftStatus && <p className="mt-2 text-label text-status-success-text">{draftStatus}</p>}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setDraftStatus('Draft saved locally.')}
-            className="w-fit rounded-button border border-outline-variant bg-white px-4 py-2 text-label font-semibold text-text-primary transition-all duration-200 hover:bg-hover-light hover:shadow-sm"
-          >
-            Save as Draft
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              className="rounded-button border border-outline bg-white px-5 py-2.5 text-body font-medium text-text-primary shadow-sm transition-colors hover:bg-hover-light"
+            >
+              Save Changes
+            </button>
+            <button
+              type="button"
+              onClick={handleComplete}
+              className="rounded-button bg-navy px-5 py-2.5 text-body font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
+            >
+              Finish Editing
+            </button>
+          </div>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
+          <div className="space-y-6">
             <div className="rounded-card border border-outline bg-white p-5 shadow-sm">
-              <ol className="space-y-5">
-                {stepLabels.map((label, index) => {
-                  const stepNumber = index + 1
-                  const isDone = stepNumber < currentStep
-                  const isActive = stepNumber === currentStep
+              <nav className="space-y-4">
+                {steps.map((step) => {
+                  const isCompleted = step.number < currentStep
+                  const isActive = step.number === currentStep
                   return (
-                    <li key={label}>
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep(stepNumber)}
-                        className="flex w-full gap-3 text-left"
+                    <button
+                      type="button"
+                      key={step.number}
+                      onClick={() => setCurrentStep(step.number)}
+                      className="flex w-full items-start gap-3 text-left"
+                    >
+                      <div
+                        className={cn(
+                          'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-badge font-bold',
+                          isCompleted
+                            ? 'bg-primary text-white'
+                            : isActive
+                              ? 'bg-navy text-white'
+                              : 'bg-slate-100 text-text-muted'
+                        )}
                       >
-                        <div
-                          className={cn(
-                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-label font-bold',
-                            isDone && 'bg-navy text-white',
-                            isActive && 'border border-navy bg-white text-navy',
-                            !isDone && !isActive && 'bg-slate-100 text-text-muted'
-                          )}
-                        >
-                          {isDone ? <Check size={14} /> : stepNumber}
-                        </div>
-                        <p
-                          className={cn(
-                            'text-label font-bold leading-4',
-                            isActive || isDone ? 'text-text-primary' : 'text-text-muted'
-                          )}
-                        >
-                          {label}
-                        </p>
-                      </button>
-                    </li>
+                        {isCompleted ? <Check size={14} /> : step.number}
+                      </div>
+                      <span
+                        className={cn(
+                          'pt-0.5 text-body',
+                          isActive
+                            ? 'font-bold text-text-primary'
+                            : isCompleted
+                              ? 'font-medium text-text-primary'
+                              : 'font-medium text-text-muted'
+                        )}
+                      >
+                        {step.label}
+                      </span>
+                    </button>
                   )
                 })}
-              </ol>
+              </nav>
             </div>
 
-            <div className="rounded-card bg-primary-100 p-5 text-text-primary">
-              <p className="text-label font-bold">Need Assistance?</p>
-              <p className="mt-3 text-label leading-5 text-text-primary">
-                Our onboarding specialists are available 24/7 to help you optimize your listing.
+            <div className="rounded-card bg-primary-100 p-5">
+              <h3 className="text-body font-bold text-text-primary">Need Assistance?</h3>
+              <p className="mt-2 text-label leading-5 text-text-muted">
+                Our onboarding specialists are available 24x7 to help you optimize your listing.
               </p>
               <button
                 type="button"
                 onClick={() => setSupportStatus('Support request queued.')}
-                className="mt-4 inline-flex items-center gap-2 text-label font-bold text-navy"
+                className="mt-4 inline-flex items-center gap-2 text-label font-bold text-navy transition-colors hover:text-primary"
               >
-                <ArrowRight size={14} />
                 Contact Support
               </button>
               {supportStatus && <p className="mt-3 text-label text-primary">{supportStatus}</p>}
             </div>
-          </aside>
+          </div>
 
-          <section className="space-y-6">
-            <article className="overflow-hidden rounded-card border border-outline bg-white shadow-sm">
-              <div className="border-b border-outline bg-white px-6 py-5">
-                <h2 className="text-heading-3 font-bold text-text-primary">Location Details</h2>
-                <p className="mt-1 text-label text-text-muted">
-                  Precisely mark the location to help potential tenants find their next home.
-                </p>
-              </div>
+          <div className="space-y-6">
+            {currentStep === 1 && <Step1BasicInfo formData={formData} update={update} />}
+            {currentStep === 2 && <Step2Location formData={formData} update={update} />}
+            {currentStep === 3 && <Step3Amenities formData={formData} update={update} />}
+            {currentStep === 4 && <Step4Media formData={formData} update={update} />}
+            {currentStep === 5 && (
+              <Step5Pricing
+                formData={formData}
+                update={update}
+                onComplete={handleComplete}
+                goPrev={goPrev}
+              />
+            )}
 
-              <div className="space-y-5 p-6">
-                <label className="block">
-                  <span className="text-label font-medium text-text-primary">Street Address</span>
-                  <input
-                    type="text"
-                    value={form.streetAddress}
-                    onChange={(event) => updateField('streetAddress', event.target.value)}
-                    className="mt-2 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
-                  />
-                  <span className="mt-2 block text-label text-text-muted">
-                    Full legal address as it appears on title deeds.
-                  </span>
-                </label>
-
-                <div className="grid gap-5 md:grid-cols-2">
-                  <label className="block">
-                    <span className="text-label font-medium text-text-primary">Unit / Suite Number</span>
-                    <input
-                      type="text"
-                      value={form.unit}
-                      onChange={(event) => updateField('unit', event.target.value)}
-                      className="mt-2 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="text-label font-medium text-text-primary">Postal Code</span>
-                    <input
-                      type="text"
-                      value={form.postalCode}
-                      onChange={(event) => updateField('postalCode', event.target.value)}
-                      className="mt-2 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="text-label font-medium text-text-primary">City</span>
-                    <select
-                      value={form.city}
-                      onChange={(event) => updateField('city', event.target.value)}
-                      className="mt-2 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
-                    >
-                      <option>New York City</option>
-                      <option>Chicago</option>
-                      <option>San Francisco</option>
-                    </select>
-                  </label>
-
-                  <label className="block">
-                    <span className="text-label font-medium text-text-primary">Neighborhood</span>
-                    <input
-                      type="text"
-                      value={form.neighborhood}
-                      onChange={(event) => updateField('neighborhood', event.target.value)}
-                      className="mt-2 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
-                    />
-                  </label>
-                </div>
-              </div>
-            </article>
-
-            <article className="overflow-hidden rounded-card border border-outline bg-white shadow-sm">
-              <div className="flex items-start justify-between gap-4 border-b border-outline px-6 py-5">
-                <div>
-                  <h2 className="text-heading-3 font-bold text-text-primary">Map Pin</h2>
-                  <p className="mt-1 text-label text-text-muted">
-                    Click the map or use GPS to set the property entrance.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPin({ x: 58, y: 46 })}
-                  className="inline-flex items-center gap-2 rounded-button bg-primary-100 px-3 py-2 text-label font-bold text-primary transition-colors duration-200 hover:bg-active"
-                >
-                  <Crosshair size={14} />
-                  Use GPS
-                </button>
-              </div>
-
-              <div className="p-0">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    const rect = event.currentTarget.getBoundingClientRect()
-                    setPin({
-                      x: ((event.clientX - rect.left) / rect.width) * 100,
-                      y: ((event.clientY - rect.top) / rect.height) * 100,
-                    })
-                  }}
-                  className="relative block h-80 w-full overflow-hidden bg-slate-700 text-left"
-                >
-                  <div className="absolute inset-0 opacity-70 [background-image:linear-gradient(90deg,rgba(255,255,255,0.18)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.16)_1px,transparent_1px)] [background-size:32px_32px]" />
-                  <div className="absolute inset-0 [background-image:radial-gradient(circle_at_42%_28%,rgba(255,255,255,0.25),transparent_10%),radial-gradient(circle_at_74%_60%,rgba(255,255,255,0.22),transparent_8%),linear-gradient(135deg,transparent_40%,rgba(255,255,255,0.28)_41%,rgba(255,255,255,0.28)_43%,transparent_44%)]" />
-                  <div
-                    className="absolute flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-modal bg-navy text-white shadow-modal transition-all duration-200"
-                    style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
+            {currentStep < 5 && (
+              <div className="flex items-center justify-between pt-4">
+                {currentStep > 1 ? (
+                  <button
+                    type="button"
+                    onClick={goPrev}
+                    className="inline-flex items-center gap-2 text-body font-medium text-text-muted transition-colors hover:text-text-primary"
                   >
-                    <MapPin size={22} />
-                  </div>
-                </button>
-
-                <div className="min-h-56 px-6 py-6">
-                  <p className="text-label font-medium text-text-primary">Accessibility Features</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {features.map((feature) => {
-                      const selected = selectedFeatures.includes(feature)
-                      return (
-                        <button
-                          type="button"
-                          key={feature}
-                          onClick={() => toggleFeature(feature)}
-                          className={cn(
-                            'inline-flex items-center gap-1 rounded-pill px-3 py-1.5 text-badge transition-colors duration-200',
-                            selected
-                              ? 'bg-primary-100 text-primary'
-                              : 'bg-slate-100 text-text-primary hover:bg-hover-light'
-                          )}
-                        >
-                          {feature === 'Wheelchair Access' ? (
-                            <Accessibility size={12} />
-                          ) : (
-                            <MapPin size={12} />
-                          )}
-                          {feature}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
-                onClick={() => setCurrentStep((step) => Math.max(1, step - 1))}
-                className="inline-flex items-center gap-2 rounded-button px-4 py-3 text-body font-semibold text-text-primary transition-colors duration-200 hover:bg-hover-light"
-              >
-                <ArrowLeft size={16} />
-                Previous Step
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCurrentStep((step) => Math.min(stepLabels.length, step + 1))}
-                className="inline-flex items-center justify-center gap-3 rounded-button bg-navy px-8 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-slate-800 hover:shadow-md"
-              >
-                Continue
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </section>
-        </div>
-
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
-          {trustCards.map((card) => {
-            const Icon = card.icon
-            return (
-              <article
-                key={card.title}
-                className="flex items-start gap-4 rounded-card border border-outline bg-white p-5 shadow-sm"
-              >
-                <div
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-button',
-                    card.tone === 'blue' && 'bg-primary-100 text-primary',
-                    card.tone === 'amber' && 'bg-status-warning-bg text-status-warning-text',
-                    card.tone === 'red' && 'bg-status-error-bg text-status-error-text'
-                  )}
+                    <ArrowLeft size={16} />
+                    Previous Step
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className="inline-flex items-center gap-2 rounded-button bg-navy px-6 py-3 text-body font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
                 >
-                  <Icon size={18} />
-                </div>
-                <div>
-                  <h3 className="text-body font-bold text-text-primary">{card.title}</h3>
-                  <p className="mt-1 text-label leading-5 text-text-muted">{card.description}</p>
-                </div>
-              </article>
-            )
-          })}
+                  {currentStep === 1 && 'Continue to Location'}
+                  {currentStep === 2 && 'Continue to Amenities'}
+                  {currentStep === 3 && 'Continue to Media & Gallery'}
+                  {currentStep === 4 && 'Continue to Pricing & Lease'}
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            )}
+
+            <BottomInfoCards />
+          </div>
         </div>
       </div>
     </div>
