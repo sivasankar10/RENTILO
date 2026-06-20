@@ -12,7 +12,6 @@ import {
   Info,
   MessageCircle,
   Phone,
-  PlusCircle,
   Ruler,
   Search,
   ShieldCheck,
@@ -27,6 +26,7 @@ import { ROUTES } from '@shared/constants/routes'
 
 type BrokerCandidate = {
   id: string
+  conversationId: number
   name: string
   title: string
   rating: number
@@ -55,6 +55,7 @@ const portfolioProperty = {
 
 const suggestedBroker: BrokerCandidate = {
   id: 'alexander-pierce',
+  conversationId: 6,
   name: 'Alexander Pierce',
   title: 'Senior Portfolio Manager',
   rating: 4.9,
@@ -73,6 +74,7 @@ const brokerCandidates: BrokerCandidate[] = [
   suggestedBroker,
   {
     id: 'maya-deshpande',
+    conversationId: 2,
     name: 'Maya Deshpande',
     title: 'Tenant Acquisition Lead',
     rating: 4.8,
@@ -88,6 +90,7 @@ const brokerCandidates: BrokerCandidate[] = [
   },
   {
     id: 'jordan-lee',
+    conversationId: 1,
     name: 'Jordan Lee',
     title: 'Residential Leasing Specialist',
     rating: 4.7,
@@ -103,6 +106,7 @@ const brokerCandidates: BrokerCandidate[] = [
   },
   {
     id: 'priya-menon',
+    conversationId: 7,
     name: 'Priya Menon',
     title: 'Premium Homes Advisor',
     rating: 4.6,
@@ -196,6 +200,7 @@ export function OwnerPortfolio() {
     setBrokerStatus(`${broker.name} has been assigned to ${portfolioProperty.name}.`)
     setPropertyPosted(true)
     setBrokerPickerOpen(false)
+    navigate(`${ROUTES.OWNER.MESSAGES}?conversation=${broker.conversationId}`)
   }
 
   const rejectBroker = (broker: BrokerCandidate) => {
@@ -239,14 +244,6 @@ export function OwnerPortfolio() {
                 <BadgeInfo size={16} />
                 Free Plan: 1/1 Property Listed
               </div>
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.OWNER.REGISTER_PROPERTY)}
-                className="inline-flex items-center justify-center gap-2 rounded-button bg-slate-200 px-4 py-3 text-body font-semibold text-text-primary transition-colors duration-200 hover:bg-outline"
-              >
-                <PlusCircle size={16} />
-                Post New Property
-              </button>
             </div>
           </div>
 
@@ -455,7 +452,7 @@ export function OwnerPortfolio() {
                     ? 'Assigned'
                     : suggestedBrokerRejected
                       ? 'Rejected'
-                      : 'Auto Assign'}
+                      : 'Assign'}
                   <ArrowRight size={18} />
                 </button>
                 <button

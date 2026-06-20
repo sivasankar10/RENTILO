@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   BriefcaseBusiness,
   Home,
@@ -14,10 +15,17 @@ import { cn } from '@shared/utils/cn'
 import { useOwnerChatStore } from '../store/chatStore'
 
 export function OwnerMessages() {
+  const [searchParams] = useSearchParams()
   const conversations = useOwnerChatStore((state) => state.conversations)
   const storeSendMessage = useOwnerChatStore((state) => state.sendMessage)
   const markConversationRead = useOwnerChatStore((state) => state.markConversationRead)
-  const [activeId, setActiveId] = useState(conversations[0]?.id ?? 0)
+  const requestedConversationId = Number(searchParams.get('conversation'))
+  const initialConversationId = conversations.some(
+    (conversation) => conversation.id === requestedConversationId
+  )
+    ? requestedConversationId
+    : conversations[0]?.id ?? 0
+  const [activeId, setActiveId] = useState(initialConversationId)
   const [query, setQuery] = useState('')
   const [draft, setDraft] = useState('')
   const [status, setStatus] = useState('')
@@ -30,6 +38,15 @@ export function OwnerMessages() {
       markConversationRead(activeConversation.id)
     }
   }, [activeConversation?.id, markConversationRead])
+
+  useEffect(() => {
+    if (
+      Number.isFinite(requestedConversationId) &&
+      conversations.some((conversation) => conversation.id === requestedConversationId)
+    ) {
+      setActiveId(requestedConversationId)
+    }
+  }, [conversations, requestedConversationId])
 
   const groupedConversations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
