@@ -13,11 +13,18 @@ import { ownerRoutes } from '@modules/owner'
 import { brokerRoutes } from '@modules/broker'
 import { enterpriseRoutes } from '@modules/enterprise'
 import { adminRoutes } from '@modules/admin'
+import { DummyDashboard } from '@modules/DummyDashboard'
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <RoleRedirect />,
+  },
+
+  // ── Demo Routes (public) ──
+  {
+    path: '/demo',
+    element: <DummyDashboard />,
   },
 
   // ── Auth Routes (public) ──
