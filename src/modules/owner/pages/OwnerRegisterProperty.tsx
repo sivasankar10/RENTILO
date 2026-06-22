@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Building2,
+  CalendarClock,
   Camera,
   Car,
   Check,
@@ -420,7 +421,7 @@ export function Step3Amenities({ formData, update }: StepProps) {
                   <span className="text-body font-medium text-text-primary">{f.label}</span>
                 </div>
                 <button type="button" onClick={() => toggleFeature(f.key)} className={cn('relative h-6 w-11 rounded-pill transition-colors', features[f.key] ? 'bg-navy' : 'bg-slate-200')}>
-                  <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform', features[f.key] ? 'translate-x-5' : 'translate-x-0.5')} />
+                  <span className={cn('absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform', features[f.key] ? 'translate-x-5' : 'translate-x-0.5')} />
                 </button>
               </div>
             )
@@ -599,6 +600,15 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
               </div>
               <p className="mt-1 text-center text-label font-bold text-primary">{formData.leaseDuration} Months</p>
             </div>
+            <div className="flex flex-col gap-4 rounded-button border border-outline bg-canvas-alt p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-body font-medium text-text-primary">Price Negotiable</p>
+                <p className="text-label text-text-muted">Show tenants whether rent can be discussed.</p>
+              </div>
+              <button type="button" onClick={() => update('priceNegotiable', !formData.priceNegotiable)} className={cn('relative h-6 w-11 rounded-pill transition-colors', formData.priceNegotiable ? 'bg-navy' : 'bg-slate-200')}>
+                <span className={cn('absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform', formData.priceNegotiable ? 'translate-x-5' : 'translate-x-0.5')} />
+              </button>
+            </div>
           </div>
 
           {/* Lease Terms */}
@@ -624,7 +634,7 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
                 <p className="text-label text-text-muted">Allow domestic animals within the premises</p>
               </div>
               <button type="button" onClick={() => update('petPolicy', !formData.petPolicy)} className={cn('relative h-6 w-11 rounded-pill transition-colors', formData.petPolicy ? 'bg-navy' : 'bg-slate-200')}>
-                <span className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform', formData.petPolicy ? 'translate-x-5' : 'translate-x-0.5')} />
+                <span className={cn('absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform', formData.petPolicy ? 'translate-x-5' : 'translate-x-0.5')} />
               </button>
             </div>
             {formData.petPolicy && (
@@ -636,10 +646,31 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
         {/* Availability + Listing Summary */}
         <div className="space-y-6">
           <div className="space-y-5 rounded-card border border-outline bg-white p-6 shadow-surface">
-            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">Availability</h2>
+            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">
+              <CalendarClock size={20} className="text-primary" />
+              Availability
+            </h2>
             <div>
               <label className="text-label font-medium text-text-muted">Available From</label>
               <input type="text" value={formData.availableFrom} onChange={(e) => update('availableFrom', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="text-label font-medium text-text-muted">Visit Weekday</label>
+              <select value={formData.visitWeekday} onChange={(e) => update('visitWeekday', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-3 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                  <option key={day}>{day}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="text-label font-medium text-text-muted">Visit Starts</label>
+                <input type="text" value={formData.visitStartTime} onChange={(e) => update('visitStartTime', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+              </div>
+              <div>
+                <label className="text-label font-medium text-text-muted">Visit Ends</label>
+                <input type="text" value={formData.visitEndTime} onChange={(e) => update('visitEndTime', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+              </div>
             </div>
             <div>
               <label className="text-label font-medium text-text-muted">Notice Period (Days)</label>

@@ -46,6 +46,7 @@ export const ROUTES = {
     SETTINGS: '/owner/settings',
     NOTIFICATIONS: '/owner/notifications',
     MESSAGES: '/owner/messages',
+    BROKER_PROFILE: (id: string | number) => `/owner/brokers/${id}`,
   },
 
   // Broker
