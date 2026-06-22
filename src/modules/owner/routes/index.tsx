@@ -14,6 +14,7 @@ import { OwnerSettings } from '../pages/OwnerSettings'
 import { OwnerNotifications } from '../pages/OwnerNotifications'
 import { OwnerMessages } from '../pages/OwnerMessages'
 import { OwnerPremiumPaymentPage } from '../pages/OwnerPremiumPaymentPage'
+import { OwnerBrokerProfile } from '../pages/OwnerBrokerProfile'
 
 export const ownerRoutes: RouteObject[] = [
   { index: true, element: <OwnerDashboard /> },
@@ -32,4 +33,5 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'settings', element: <OwnerSettings /> },
   { path: 'notifications', element: <OwnerNotifications /> },
   { path: 'messages', element: <OwnerMessages /> },
+  { path: 'brokers/:brokerId', element: <OwnerBrokerProfile /> },
 ]

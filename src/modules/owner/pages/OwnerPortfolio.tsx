@@ -7,6 +7,7 @@ import {
   Bath,
   Bed,
   BriefcaseBusiness,
+  CalendarClock,
   CheckCircle2,
   CircleDollarSign,
   Info,
@@ -23,6 +24,7 @@ import {
   X,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { useOwnerStore } from '../store/ownerStore'
 
 type BrokerCandidate = {
   id: string
@@ -168,6 +170,7 @@ const benefits = [
 
 export function OwnerPortfolio() {
   const navigate = useNavigate()
+  const registerPropertyDraft = useOwnerStore((state) => state.registerPropertyDraft)
   const [brokerStatus, setBrokerStatus] = useState('Awaiting broker decision.')
   const [propertyPosted, setPropertyPosted] = useState(false)
   const [brokerPickerOpen, setBrokerPickerOpen] = useState(false)
@@ -289,8 +292,21 @@ export function OwnerPortfolio() {
                 </div>
 
                 <p className="mt-8 text-heading-2 font-bold tracking-tight text-primary">
-                  $4,500 <span className="text-label font-medium text-text-muted">/ mo</span>
+                  ${Number(registerPropertyDraft.baseRent || 4500).toLocaleString('en-US')}{' '}
+                  <span className="text-label font-medium text-text-muted">/ mo</span>
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2 text-label font-semibold">
+                  <span className="inline-flex items-center gap-1.5 rounded-pill bg-canvas-alt px-3 py-1.5 text-text-primary">
+                    <CalendarClock size={14} />
+                    Visits: {registerPropertyDraft.visitWeekday}, {registerPropertyDraft.visitStartTime} - {registerPropertyDraft.visitEndTime}
+                  </span>
+                  <span className="inline-flex items-center gap-2 text-text-primary">
+                    Price
+                    <span className="rounded-pill bg-canvas-alt px-3 py-1.5">
+                      {registerPropertyDraft.priceNegotiable ? 'negotiable' : 'non negotiable'}
+                    </span>
+                  </span>
+                </div>
 
                 {assignedBroker && (
                   <div className="mt-4 inline-flex items-center gap-2 rounded-button bg-primary-50 px-3 py-2 text-label font-semibold text-primary">

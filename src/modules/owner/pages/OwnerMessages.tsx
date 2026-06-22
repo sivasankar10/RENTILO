@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   BriefcaseBusiness,
   Home,
@@ -12,9 +12,11 @@ import {
   Video,
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { ROUTES } from '@shared/constants/routes'
 import { useOwnerChatStore } from '../store/chatStore'
 
 export function OwnerMessages() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const conversations = useOwnerChatStore((state) => state.conversations)
   const storeSendMessage = useOwnerChatStore((state) => state.sendMessage)
@@ -78,6 +80,7 @@ export function OwnerMessages() {
   ]
 
   const activeContactLabel = activeConversation?.contactType === 'broker' ? 'Broker' : 'Tenant'
+  const activeIsBroker = activeConversation?.contactType === 'broker'
 
   const sendMessage = () => {
     const trimmed = draft.trim()
@@ -95,6 +98,10 @@ export function OwnerMessages() {
     setActiveId(id)
     setStatus('')
     markConversationRead(id)
+  }
+
+  const openBrokerProfile = (conversationId: number) => {
+    navigate(ROUTES.OWNER.BROKER_PROFILE(conversationId))
   }
 
   if (!activeConversation) {
@@ -149,18 +156,34 @@ export function OwnerMessages() {
                         )}
                       >
                         <div className="relative">
-                          <img
-                            src={conversation.avatar}
-                            alt={conversation.name}
-                            className="h-12 w-12 rounded-full object-cover"
-                          />
+                          {conversation.contactType === 'broker' ? (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                openBrokerProfile(conversation.id)
+                              }}
+                              className="block rounded-full focus:outline-none focus:ring-2 focus:ring-primary-100"
+                              aria-label={`View ${conversation.name} profile`}
+                            >
+                              <img
+                                src={conversation.avatar}
+                                alt={conversation.name}
+                                className="h-12 w-12 rounded-full object-cover"
+                              />
+                            </button>
+                          ) : (
+                            <img
+                              src={conversation.avatar}
+                              alt={conversation.name}
+                              className="h-12 w-12 rounded-full object-cover"
+                            />
+                          )}
                           <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-status-success" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="truncate text-body font-bold text-text-primary">
-                              {conversation.name}
-                            </p>
+                            <p className="truncate text-body font-bold text-text-primary">{conversation.name}</p>
                             <span className="text-filter-label uppercase text-text-muted">
                               {conversation.time}
                             </span>
@@ -209,11 +232,22 @@ export function OwnerMessages() {
           <header className="flex items-center justify-between border-b border-outline bg-white px-8 py-4">
             <div>
               <h1 className="text-heading-3 font-bold text-navy">{activeConversation.property}</h1>
-              <p className="mt-1 text-label text-text-muted">
-                <span className="inline-block h-2 w-2 rounded-full bg-status-success align-middle" />{' '}
-                {activeContactLabel}:{' '}
-                {activeConversation.name}
-              </p>
+              {activeIsBroker ? (
+                <button
+                  type="button"
+                  onClick={() => openBrokerProfile(activeConversation.id)}
+                  className="mt-1 inline-flex items-center gap-2 text-label text-text-muted transition-colors hover:text-primary"
+                  aria-label={`View ${activeConversation.name} profile`}
+                >
+                  <span className="inline-block h-2 w-2 rounded-full bg-status-success align-middle" />
+                  {activeContactLabel}: <span className="font-semibold">{activeConversation.name}</span>
+                </button>
+              ) : (
+                <p className="mt-1 text-label text-text-muted">
+                  <span className="inline-block h-2 w-2 rounded-full bg-status-success align-middle" />{' '}
+                  {activeContactLabel}: {activeConversation.name}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-3 text-navy">
               <button
@@ -279,11 +313,26 @@ export function OwnerMessages() {
                 )}
               >
                 {message.sender !== 'owner' && (
-                  <img
-                    src={activeConversation.avatar}
-                    alt={activeConversation.name}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
+                  activeIsBroker ? (
+                    <button
+                      type="button"
+                      onClick={() => openBrokerProfile(activeConversation.id)}
+                      className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-100"
+                      aria-label={`View ${activeConversation.name} profile`}
+                    >
+                      <img
+                        src={activeConversation.avatar}
+                        alt={activeConversation.name}
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    </button>
+                  ) : (
+                    <img
+                      src={activeConversation.avatar}
+                      alt={activeConversation.name}
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  )
                 )}
                 <div
                   className={cn(
