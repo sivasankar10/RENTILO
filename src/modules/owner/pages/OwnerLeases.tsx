@@ -1,303 +1,258 @@
 import { useMemo, useState } from 'react'
-import {
-  AlertTriangle,
-  CalendarDays,
-  CheckCircle2,
-  FileSignature,
-  Filter,
-  Search,
-  ShieldCheck,
-} from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { CalendarCheck, Check, FileSignature, MessageCircle, Phone, Send, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { ROUTES } from '@shared/constants/routes'
+import {
+  DEMO_OWNER,
+  type AgreementTerms,
+  type OnboardingRecord,
+  useOnboardingStore,
+} from '@shared/store/onboardingStore'
+import { useLeaseChatStore } from '@shared/store/leaseChatStore'
+import { useOwnerChatStore } from '../store/chatStore'
 
-const leaseRecords = [
-  {
-    id: 'LSE-402',
-    property: 'Skyline Heights - Unit 402',
-    tenant: 'Rajesh Kumar',
-    rent: '$4,500',
-    deposit: '$9,000',
-    start: 'Nov 01, 2024',
-    end: 'Oct 31, 2025',
-    payment: 'Paid',
-    status: 'Active',
-    renewal: 'Signed',
-  },
-  {
-    id: 'LSE-14B',
-    property: 'The Opus Tower, 14B',
-    tenant: 'Sarah Miller',
-    rent: '$6,200',
-    deposit: '$12,400',
-    start: 'Dec 15, 2024',
-    end: 'Dec 14, 2025',
-    payment: 'Due Soon',
-    status: 'Review',
-    renewal: 'Pending',
-  },
-  {
-    id: 'LSE-88A',
-    property: 'Parkview Residences - 88A',
-    tenant: 'Amit Shah',
-    rent: '$3,850',
-    deposit: '$7,700',
-    start: 'Aug 01, 2024',
-    end: 'Jul 31, 2025',
-    payment: 'Paid',
-    status: 'Active',
-    renewal: 'Auto-Renew',
-  },
-]
-
-const summaryCards = [
-  { label: 'Active Leases', value: '2', icon: ShieldCheck, tone: 'success' },
-  { label: 'Needs Review', value: '1', icon: AlertTriangle, tone: 'warning' },
-  { label: 'Documents Signed', value: '7', icon: FileSignature, tone: 'primary' },
-]
-
-const statusStyles = {
-  Active: 'bg-status-success-bg text-status-success',
-  Review: 'bg-status-warning-bg text-status-warning',
-  Paid: 'bg-status-success-bg text-status-success',
-  'Due Soon': 'bg-status-warning-bg text-status-warning',
-  Signed: 'bg-primary-50 text-primary',
-  Pending: 'bg-status-warning-bg text-status-warning',
-  'Auto-Renew': 'bg-slate-100 text-text-primary',
+const statusLabels: Record<OnboardingRecord['status'], string> = {
+  interest_shown: 'Interest shown',
+  visit_scheduled: 'Visit scheduled',
+  visit_confirmed: 'Visit confirmed',
+  awaiting_owner_approval: 'Awaiting approval',
+  owner_approved: 'Tenant approved',
+  agreement_requested: 'Agreement requested',
+  agreement_sent: 'Agreement sent',
+  changes_requested: 'Changes requested',
+  agreement_approved: 'Tenant signed',
+  payment_completed: 'Payment completed',
+  active: 'Active lease',
+  rejected: 'Rejected',
 }
 
-export function OwnerLeases() {
-  const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('All')
-  const [selectedLease, setSelectedLease] = useState(leaseRecords[0])
-  const [notice, setNotice] = useState('')
+const defaultTerms = (record: OnboardingRecord): AgreementTerms => ({
+  startDate: new Date().toISOString().slice(0, 10),
+  endDate: new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10),
+  monthlyRent: record.monthlyRent,
+  securityDeposit: record.securityDeposit,
+  noticePeriod: '30 days',
+  utilities: 'Electricity and internet paid by tenant. Water included in rent.',
+  maintenanceResponsibility: 'Owner handles structural repairs; tenant handles routine upkeep.',
+  petPolicy: 'Pets require written owner approval.',
+  specialClauses: 'No subletting without written consent.',
+  ownerSignature: DEMO_OWNER.name,
+})
 
-  const filteredLeases = useMemo(
-    () =>
-      leaseRecords.filter((lease) => {
-        const matchesQuery = `${lease.property} ${lease.tenant} ${lease.id}`
-          .toLowerCase()
-          .includes(query.toLowerCase())
-        const matchesStatus = statusFilter === 'All' || lease.status === statusFilter
-        return matchesQuery && matchesStatus
-      }),
-    [query, statusFilter]
+export function OwnerLeases() {
+  const navigate = useNavigate()
+  const [tab, setTab] = useState<'applications' | 'leases' | 'agreements'>('applications')
+  const [draftFor, setDraftFor] = useState<OnboardingRecord | null>(null)
+  const [terms, setTerms] = useState<AgreementTerms | null>(null)
+  const records = useOnboardingStore((state) => state.records)
+  const approveTenant = useOnboardingStore((state) => state.approveTenant)
+  const rejectTenant = useOnboardingStore((state) => state.rejectTenant)
+  const sendAgreement = useOnboardingStore((state) => state.sendAgreement)
+  const confirmTenantOnboarding = useOnboardingStore((state) => state.confirmTenantOnboarding)
+  const ensureTenantConversation = useOwnerChatStore((state) => state.ensureTenantConversation)
+  const ensureLeaseThread = useLeaseChatStore((state) => state.ensureThread)
+
+  const ownerRecords = useMemo(
+    () => records.filter((record) => record.owner.id === DEMO_OWNER.id),
+    [records],
   )
+  const applications = ownerRecords.filter((record) => !['active', 'rejected'].includes(record.status))
+  const activeLeases = ownerRecords.filter((record) => record.status === 'active')
+  const agreements = ownerRecords.filter((record) => record.agreementVersions.length > 0)
+
+  const openAgreement = (record: OnboardingRecord) => {
+    const latest = record.agreementVersions.at(-1)
+    setDraftFor(record)
+    setTerms(latest ? { ...latest } : defaultTerms(record))
+  }
+
+  const submitAgreement = () => {
+    if (!draftFor || !terms) return
+    sendAgreement(draftFor.id, terms)
+    setDraftFor(null)
+    setTerms(null)
+  }
+
+  const openLeaseDocuments = (record: OnboardingRecord) => {
+    navigate(ROUTES.OWNER.LEASE_DOCUMENTS(record.id))
+  }
+
+  const openTenantChat = (record: OnboardingRecord) => {
+    ensureLeaseThread({
+      onboardingId: record.id,
+      ownerId: record.owner.id,
+      tenantId: record.tenant.id,
+      tenantName: record.tenant.name,
+      tenantAvatar: record.tenant.avatar,
+      ownerName: record.owner.name,
+      propertyName: record.propertyName,
+      unit: record.unit,
+      address: record.address,
+      monthlyRent: record.monthlyRent,
+    })
+    const conversationId = ensureTenantConversation({
+      tenantId: record.tenant.id,
+      onboardingId: record.id,
+      name: record.tenant.name,
+      propertyName: record.propertyName,
+      unit: record.unit,
+      address: record.address,
+      monthlyRent: record.monthlyRent,
+      avatar: record.tenant.avatar,
+    })
+    navigate(`${ROUTES.OWNER.MESSAGES}?conversationId=${conversationId}`)
+  }
 
   return (
-    <div className="min-h-screen bg-canvas-alt px-6 py-10">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div className="min-h-screen bg-canvas-alt px-5 py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="flex flex-col gap-4 border-b border-outline pb-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-filter-label font-bold uppercase tracking-wider text-primary">
-              Lease Operations
-            </p>
-            <h1 className="mt-2 text-heading-1 font-extrabold tracking-tight text-navy">
-              Lease Management
-            </h1>
-            <p className="mt-2 max-w-2xl text-body text-text-muted">
-              Track agreements, renewals, rent status, and document readiness across your active
-              owner portfolio.
-            </p>
+            <p className="text-filter-label font-bold uppercase tracking-wider text-primary">Tenant onboarding</p>
+            <h1 className="mt-2 text-heading-1 font-extrabold text-navy">Applications & Leases</h1>
+            <p className="mt-2 text-body text-text-muted">Review applications, issue agreements, and activate paid leases.</p>
+          </div>
+          <div className="flex gap-2" role="tablist">
+            {(['applications', 'leases', 'agreements'] as const).map((item) => (
+              <button key={item} type="button" onClick={() => setTab(item)} className={cn('rounded-button px-4 py-2 text-label font-bold capitalize', tab === item ? 'bg-navy text-white' : 'border border-outline bg-white text-text-primary')}>
+                {item} ({item === 'applications' ? applications.length : item === 'leases' ? activeLeases.length : agreements.length})
+              </button>
+            ))}
           </div>
         </header>
 
-        <section className="grid gap-6 md:grid-cols-3">
-          {summaryCards.map((card) => {
-            const Icon = card.icon
-            return (
-              <article key={card.label} className="rounded-card border border-outline bg-white p-6 shadow-surface">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-label font-semibold text-text-muted">{card.label}</p>
-                    <p className="mt-2 text-heading-2 font-extrabold tracking-tight text-navy">
-                      {card.value}
-                    </p>
+        {tab === 'applications' && (
+          <section className="mt-7 space-y-4">
+            {applications.map((record) => {
+              const latest = record.agreementVersions.at(-1)
+              return (
+                <article key={record.id} className="rounded-card border border-outline bg-white p-5 shadow-surface">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex min-w-0 items-center gap-4">
+                      <img src={record.tenant.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-body-lg font-bold text-navy">{record.tenant.name}</h2>
+                          <span className="rounded-pill bg-primary-50 px-2.5 py-1 text-badge font-bold text-primary">{statusLabels[record.status]}</span>
+                        </div>
+                        <p className="mt-1 text-label font-semibold text-text-primary">{record.propertyName} � {record.unit}</p>
+                        <p className="mt-1 text-label text-text-muted">{record.tenant.email} � {record.tenant.phone}</p>
+                        {latest?.changeRequest && <p className="mt-2 rounded-button bg-status-warning-bg px-3 py-2 text-label font-semibold text-status-warning-text">Requested change: {latest.changeRequest}</p>}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a href={`tel:${record.tenant.phone}`} title="Call tenant" className="flex h-10 w-10 items-center justify-center rounded-button border border-outline text-navy"><Phone size={17} /></a>
+                      <button type="button" onClick={() => openTenantChat(record)} title="Chat with tenant" className="flex h-10 w-10 items-center justify-center rounded-button border border-outline text-navy"><MessageCircle size={17} /></button>
+                      {record.status === 'awaiting_owner_approval' && (
+                        <>
+                          <button type="button" onClick={() => rejectTenant(record.id)} className="rounded-button border border-red-200 px-4 py-2.5 text-label font-bold text-red-600">Reject</button>
+                          <button type="button" onClick={() => approveTenant(record.id)} className="rounded-button bg-navy px-4 py-2.5 text-label font-bold text-white">Approve tenant</button>
+                        </>
+                      )}
+                      {['owner_approved', 'agreement_requested', 'changes_requested'].includes(record.status) && (
+                        <button type="button" onClick={() => openAgreement(record)} className="flex items-center gap-2 rounded-button bg-navy px-4 py-2.5 text-label font-bold text-white">
+                          <FileSignature size={16} />{' '}
+                          {record.status === 'changes_requested'
+                            ? 'Revise agreement'
+                            : record.status === 'agreement_requested'
+                              ? 'Send agreement'
+                              : 'Create agreement'}
+                        </button>
+                      )}
+                      {record.status === 'agreement_sent' && <span className="text-label font-semibold text-text-muted">Waiting for tenant review</span>}
+                      {record.status === 'agreement_approved' && <span className="text-label font-semibold text-text-muted">Waiting for payment</span>}
+                      {record.status === 'payment_completed' && <button type="button" onClick={() => confirmTenantOnboarding(record.id)} className="flex items-center gap-2 rounded-button bg-status-success px-4 py-2.5 text-label font-bold text-white"><Check size={16} /> Onboard tenant</button>}
+                    </div>
                   </div>
-                  <div
-                    className={cn(
-                      'flex h-12 w-12 items-center justify-center rounded-button',
-                      card.tone === 'success' && 'bg-status-success-bg text-status-success',
-                      card.tone === 'warning' && 'bg-status-warning-bg text-status-warning',
-                      card.tone === 'primary' && 'bg-primary-50 text-primary'
-                    )}
-                  >
-                    <Icon size={22} />
-                  </div>
+                </article>
+              )
+            })}
+            {applications.length === 0 && <EmptyCopy title="No applications yet" body="Tenant rental agreement requests will appear here." />}
+          </section>
+        )}
+
+        {tab === 'leases' && (
+          <section className="mt-7 grid gap-5 md:grid-cols-2">
+            {activeLeases.map((record) => (
+              <article
+                key={record.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openLeaseDocuments(record)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    openLeaseDocuments(record)
+                  }
+                }}
+                className="cursor-pointer rounded-card border border-outline bg-white p-6 shadow-surface transition-shadow hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div><p className="text-filter-label font-bold uppercase text-status-success">Active lease</p><h2 className="mt-2 text-heading-3 font-bold text-navy">{record.propertyName}</h2><p className="text-label text-text-muted">{record.unit} · {record.address}</p></div>
+                  <CalendarCheck className="text-status-success" />
+                </div>
+                <div className="mt-5 grid grid-cols-2 gap-4 border-y border-outline py-5 text-label">
+                  <Info label="Tenant" value={record.tenant.name} /><Info label="Lease ID" value={record.lease?.id ?? '-'} /><Info label="Rent" value={record.monthlyRent} /><Info label="Access key" value={record.lease?.accessKey ?? '-'} />
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <a href={`tel:${record.tenant.phone}`} onClick={(event) => event.stopPropagation()} className="rounded-button border border-outline px-3 py-2 text-label font-bold text-navy">Call tenant</a>
+                  <button type="button" onClick={(event) => { event.stopPropagation(); openTenantChat(record) }} className="rounded-button bg-navy px-3 py-2 text-label font-bold text-white">Chat</button>
                 </div>
               </article>
-            )
-          })}
-        </section>
+            ))}
+            {activeLeases.length === 0 && <EmptyCopy title="No active leases" body="A paid application appears here after you confirm tenant onboarding." />}
+          </section>
+        )}
 
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="rounded-card border border-outline bg-white shadow-surface">
-            <div className="flex flex-col gap-4 border-b border-outline p-6 lg:flex-row lg:items-center lg:justify-between">
-              <label className="relative block flex-1">
-                <Search
-                  size={16}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted"
-                />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search leases, tenants, or property..."
-                  className="w-full rounded-input border border-outline bg-white py-3 pl-11 pr-4 text-body text-text-primary outline-none transition-all duration-200 placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary-100"
-                />
-              </label>
-              <label className="flex items-center gap-2 rounded-input border border-outline bg-white px-3 py-3 text-label font-bold text-text-primary">
-                <Filter size={16} className="text-text-muted" />
-                <select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                  className="bg-transparent outline-none"
-                >
-                  <option>All</option>
-                  <option>Active</option>
-                  <option>Review</option>
-                </select>
-              </label>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] border-collapse">
-                <thead>
-                  <tr className="border-b border-outline bg-slate-50 text-left text-filter-label uppercase tracking-wider text-text-muted">
-                    <th className="px-6 py-4 font-bold">Lease</th>
-                    <th className="px-6 py-4 font-bold">Tenant</th>
-                    <th className="px-6 py-4 font-bold">Term</th>
-                    <th className="px-6 py-4 font-bold">Rent</th>
-                    <th className="px-6 py-4 font-bold">Payment</th>
-                    <th className="px-6 py-4 font-bold">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLeases.map((lease) => (
-                    <tr
-                      key={lease.id}
-                      className={cn(
-                        'cursor-pointer border-b border-outline transition-colors duration-200 hover:bg-hover-light',
-                        selectedLease.id === lease.id && 'bg-primary-50'
-                      )}
-                      onClick={() => {
-                        setSelectedLease(lease)
-                        setNotice('')
-                      }}
-                    >
-                      <td className="px-6 py-5">
-                        <p className="text-body font-bold text-navy">{lease.property}</p>
-                        <p className="mt-1 text-label text-text-muted">{lease.id}</p>
-                      </td>
-                      <td className="px-6 py-5 text-body font-semibold text-text-primary">
-                        {lease.tenant}
-                      </td>
-                      <td className="px-6 py-5 text-label text-text-muted">
-                        {lease.start} - {lease.end}
-                      </td>
-                      <td className="px-6 py-5 text-body font-bold text-navy">{lease.rent}</td>
-                      <td className="px-6 py-5">
-                        <span
-                          className={cn(
-                            'rounded-pill px-2.5 py-1 text-badge font-bold uppercase',
-                            statusStyles[lease.payment as keyof typeof statusStyles]
-                          )}
-                        >
-                          {lease.payment}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span
-                          className={cn(
-                            'rounded-pill px-2.5 py-1 text-badge font-bold uppercase',
-                            statusStyles[lease.status as keyof typeof statusStyles]
-                          )}
-                        >
-                          {lease.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <aside className="space-y-6">
-            <article className="rounded-card border border-outline bg-white p-6 shadow-surface">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-filter-label font-bold uppercase text-primary">Selected Lease</p>
-                  <h2 className="mt-2 text-heading-3 font-bold text-navy">{selectedLease.id}</h2>
-                </div>
-                <span
-                  className={cn(
-                    'rounded-pill px-2.5 py-1 text-badge font-bold uppercase',
-                    statusStyles[selectedLease.status as keyof typeof statusStyles]
-                  )}
-                >
-                  {selectedLease.status}
-                </span>
-              </div>
-
-              <div className="mt-6 space-y-4 border-y border-outline py-6">
-                <div>
-                  <p className="text-label font-semibold text-text-muted">Property</p>
-                  <p className="mt-1 text-body font-bold text-text-primary">{selectedLease.property}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-label font-semibold text-text-muted">Tenant</p>
-                    <p className="mt-1 text-body font-bold text-text-primary">{selectedLease.tenant}</p>
-                  </div>
-                  <div>
-                    <p className="text-label font-semibold text-text-muted">Deposit</p>
-                    <p className="mt-1 text-body font-bold text-text-primary">{selectedLease.deposit}</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-label font-semibold text-text-muted">Renewal State</p>
-                  <span
-                    className={cn(
-                      'mt-2 inline-flex rounded-pill px-2.5 py-1 text-badge font-bold uppercase',
-                      statusStyles[selectedLease.renewal as keyof typeof statusStyles]
-                    )}
-                  >
-                    {selectedLease.renewal}
-                  </span>
-                </div>
-              </div>
-
-              {notice && (
-                <p className="mt-4 rounded-button bg-primary-50 px-3 py-2 text-label font-semibold text-primary">
-                  {notice}
-                </p>
-              )}
-            </article>
-
-            <article className="rounded-card border border-outline bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-2">
-                <CalendarDays size={18} className="text-primary" />
-                <h2 className="text-body-lg font-bold text-navy">Upcoming Milestones</h2>
-              </div>
-              <div className="mt-5 space-y-4">
-                <div className="flex gap-3">
-                  <CheckCircle2 size={18} className="mt-0.5 text-status-success" />
-                  <div>
-                    <p className="text-label font-bold text-text-primary">Rent receipt issued</p>
-                    <p className="text-label text-text-muted">Skyline Heights - Unit 402</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <AlertTriangle size={18} className="mt-0.5 text-status-warning" />
-                  <div>
-                    <p className="text-label font-bold text-text-primary">Renewal review due</p>
-                    <p className="text-label text-text-muted">The Opus Tower, 14B</p>
-                  </div>
-                </div>
-              </div>
-            </article>
-          </aside>
-        </section>
+        {tab === 'agreements' && (
+          <section className="mt-7 space-y-4">
+            {agreements.map((record) => record.agreementVersions.map((agreement) => (
+              <article key={agreement.id} className="flex flex-col gap-4 rounded-card border border-outline bg-white p-5 md:flex-row md:items-center md:justify-between">
+                <div><p className="text-body font-bold text-navy">{record.propertyName} � Version {agreement.version}</p><p className="mt-1 text-label text-text-muted">{record.tenant.name} � Sent {agreement.sentAt}</p></div>
+                <span className={cn('rounded-pill px-3 py-1 text-badge font-bold uppercase', agreement.tenantApprovedAt ? 'bg-status-success-bg text-status-success' : 'bg-status-warning-bg text-status-warning-text')}>{agreement.tenantApprovedAt ? 'Signed' : 'Awaiting signature'}</span>
+              </article>
+            )))}
+            {agreements.length === 0 && <EmptyCopy title="No agreements" body="Created rental agreements and their versions will appear here." />}
+          </section>
+        )}
       </div>
+
+      {draftFor && terms && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-navy/55 p-4" role="dialog" aria-modal="true">
+          <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-card bg-white shadow-modal">
+            <div className="sticky top-0 z-10 flex items-start justify-between border-b border-outline bg-white p-6">
+              <div><h2 className="text-heading-2 font-bold text-navy">Create Rental Agreement</h2><p className="mt-1 text-label text-text-muted">{draftFor.tenant.name} � {draftFor.propertyName}</p></div>
+              <button type="button" onClick={() => setDraftFor(null)} className="rounded-button border border-outline p-2"><X size={18} /></button>
+            </div>
+            <div className="grid gap-4 p-6 md:grid-cols-2">
+              <Field label="Start date" type="date" value={terms.startDate} onChange={(value) => setTerms({ ...terms, startDate: value })} />
+              <Field label="End date" type="date" value={terms.endDate} onChange={(value) => setTerms({ ...terms, endDate: value })} />
+              <Field label="Monthly rent" value={terms.monthlyRent} onChange={(value) => setTerms({ ...terms, monthlyRent: value })} />
+              <Field label="Security deposit" value={terms.securityDeposit} onChange={(value) => setTerms({ ...terms, securityDeposit: value })} />
+              <Field label="Notice period" value={terms.noticePeriod} onChange={(value) => setTerms({ ...terms, noticePeriod: value })} />
+              <Field label="Owner signature" value={terms.ownerSignature} onChange={(value) => setTerms({ ...terms, ownerSignature: value })} />
+              <TextField label="Utilities" value={terms.utilities} onChange={(value) => setTerms({ ...terms, utilities: value })} />
+              <TextField label="Maintenance responsibilities" value={terms.maintenanceResponsibility} onChange={(value) => setTerms({ ...terms, maintenanceResponsibility: value })} />
+              <TextField label="Pet policy" value={terms.petPolicy} onChange={(value) => setTerms({ ...terms, petPolicy: value })} />
+              <TextField label="Special clauses" value={terms.specialClauses} onChange={(value) => setTerms({ ...terms, specialClauses: value })} />
+            </div>
+            <div className="sticky bottom-0 flex justify-end gap-3 border-t border-outline bg-white p-5"><button type="button" onClick={() => setDraftFor(null)} className="rounded-button border border-outline px-5 py-3 font-bold">Cancel</button><button type="button" onClick={submitAgreement} className="flex items-center gap-2 rounded-button bg-navy px-5 py-3 font-bold text-white"><Send size={17} /> Send to tenant</button></div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
+function Field({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
+  return <label className="space-y-1.5"><span className="text-label font-bold text-text-primary">{label}</span><input required type={type} value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-input border border-outline px-3 py-2.5 outline-none focus:border-primary" /></label>
+}
+
+function TextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return <label className="space-y-1.5"><span className="text-label font-bold text-text-primary">{label}</span><textarea rows={3} value={value} onChange={(event) => onChange(event.target.value)} className="w-full resize-none rounded-input border border-outline px-3 py-2.5 outline-none focus:border-primary" /></label>
+}
+
+function Info({ label, value }: { label: string; value: string }) { return <div><p className="font-semibold text-text-muted">{label}</p><p className="mt-1 font-bold text-text-primary">{value}</p></div> }
+function EmptyCopy({ title, body }: { title: string; body: string }) { return <div className="col-span-full rounded-card border border-dashed border-outline bg-white p-12 text-center"><h2 className="text-heading-3 font-bold text-navy">{title}</h2><p className="mt-2 text-body text-text-muted">{body}</p></div> }

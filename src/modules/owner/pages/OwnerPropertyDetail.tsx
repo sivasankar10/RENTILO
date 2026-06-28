@@ -1,4 +1,5 @@
-import { useMemo, useState, type FormEvent } from 'react'
+﻿import { useMemo, useState, type FormEvent } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   Bath,
   BedDouble,
@@ -8,6 +9,7 @@ import {
   CheckCircle2,
   Clock3,
   ClipboardList,
+  FileText,
   Dumbbell,
   Home,
   KeyRound,
@@ -25,6 +27,12 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { ROUTES } from '@shared/constants/routes'
+import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
+import { useLeaseChatStore } from '@shared/store/leaseChatStore'
+import { usePaymentsStore } from '@shared/store/paymentsStore'
+import { useOwnerChatStore } from '../store/chatStore'
+import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
 
 const galleryImages = [
   {
@@ -221,6 +229,9 @@ const visitStatusStyles: Record<VisitStatus, string> = {
 }
 
 export function OwnerPropertyDetail() {
+  const navigate = useNavigate()
+  const { propertyId } = useParams<{ propertyId: string }>()
+  const ownerPropertyId = propertyId ?? PRIMARY_OWNER_PROPERTY_ID
   const [schedulerOpen, setSchedulerOpen] = useState(false)
   const [leadsOpen, setLeadsOpen] = useState(false)
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(calendarDays[0].date)
@@ -228,11 +239,62 @@ export function OwnerPropertyDetail() {
   const [chatDraft, setChatDraft] = useState('')
   const [callStatus, setCallStatus] = useState('')
   const [chatMessages, setChatMessages] = useState<Record<string, string[]>>({})
+  const onboardingRecords = useOnboardingStore((state) => state.records)
+  const payments = usePaymentsStore((state) => state.payments)
+  const ensureTenantConversation = useOwnerChatStore((state) => state.ensureTenantConversation)
+  const ensureLeaseThread = useLeaseChatStore((state) => state.ensureThread)
 
   const selectedDayVisits = useMemo(
     () => visitSchedules.filter((visit) => visit.date === selectedScheduleDate),
     [selectedScheduleDate]
   )
+  const activeLease = useMemo(
+    () =>
+      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, ownerPropertyId, [
+        'payment_completed',
+        'active',
+      ]),
+    [onboardingRecords, ownerPropertyId],
+  )
+  const isOnboarded = activeLease?.status === 'active'
+  const activeAgreement = activeLease?.agreementVersions[activeLease.agreementVersions.length - 1]
+  const onboardingPayment = useMemo(
+    () =>
+      payments.find(
+        (payment) =>
+          payment.onboardingId === activeLease?.id &&
+          payment.flow === 'tenant_to_owner' &&
+          payment.category === 'RENT',
+      ),
+    [payments, activeLease?.id],
+  )
+
+  const openTenantChat = () => {
+    if (!activeLease) return
+    ensureLeaseThread({
+      onboardingId: activeLease.id,
+      ownerId: activeLease.owner.id,
+      tenantId: activeLease.tenant.id,
+      tenantName: activeLease.tenant.name,
+      tenantAvatar: activeLease.tenant.avatar,
+      ownerName: activeLease.owner.name,
+      propertyName: activeLease.propertyName,
+      unit: activeLease.unit,
+      address: activeLease.address,
+      monthlyRent: activeLease.monthlyRent,
+    })
+    const conversationId = ensureTenantConversation({
+      tenantId: activeLease.tenant.id,
+      onboardingId: activeLease.id,
+      name: activeLease.tenant.name,
+      propertyName: activeLease.propertyName,
+      unit: activeLease.unit,
+      address: activeLease.address,
+      monthlyRent: activeLease.monthlyRent,
+      avatar: activeLease.tenant.avatar,
+    })
+    navigate(`${ROUTES.OWNER.MESSAGES}?conversationId=${conversationId}`)
+  }
 
   const openChat = (target: ContactTarget) => {
     setActiveContact(target)
@@ -268,9 +330,21 @@ export function OwnerPropertyDetail() {
         <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_280px]">
           <main className="space-y-8">
             <header>
-              <h1 className="text-heading-1 font-extrabold tracking-tight text-navy">
-                The Opus Tower, 14B
-              </h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-heading-1 font-extrabold tracking-tight text-navy">
+                  The Opus Tower, 14B
+                </h1>
+                {isOnboarded && (
+                  <span className="rounded-pill bg-primary-50 px-3 py-1 text-badge font-bold uppercase text-primary">
+                    Occupied
+                  </span>
+                )}
+                {activeLease && !isOnboarded && (
+                  <span className="rounded-pill bg-status-warning-bg px-3 py-1 text-badge font-bold uppercase text-status-warning-text">
+                    Pending onboarding
+                  </span>
+                )}
+              </div>
               <p className="mt-2 flex items-center gap-2 text-label font-medium text-text-primary">
                 <MapPin size={14} />
                 Downtown Financial District
@@ -397,7 +471,7 @@ export function OwnerPropertyDetail() {
 
               <div className="rounded-card border border-outline bg-white p-8 shadow-surface">
                 <h2 className="text-heading-3 font-bold text-navy">Nearby Highlights</h2>
-                <div className="mt-6 space-y-3">
+              <div className="mt-6 space-y-3">
                   {nearbyHighlights.map((place) => (
                     <div key={place.name} className="flex items-baseline justify-between gap-4 border-b border-outline pb-3 last:border-0 last:pb-0">
                       <div>
@@ -458,6 +532,99 @@ export function OwnerPropertyDetail() {
                 </div>
               </div>
 
+              {activeLease && (
+                <div className="mt-6 space-y-4 rounded-card border border-outline bg-slate-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <img src={activeLease.tenant.avatar} alt={activeLease.tenant.name} className="h-12 w-12 rounded-full object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-filter-label uppercase tracking-widest text-text-muted">
+                        {isOnboarded ? 'Current Tenant' : 'Tenant — payment received'}
+                      </p>
+                      <h3 className="mt-1 truncate text-body-lg font-bold text-navy">{activeLease.tenant.name}</h3>
+                      <p className="mt-1 text-label text-text-muted">{activeLease.tenant.email}</p>
+                      <p className="mt-1 text-label text-text-muted">{activeLease.tenant.phone}</p>
+                      {isOnboarded && activeLease.lease?.accessKey && (
+                        <p className="mt-2 text-label font-semibold text-navy">Access key: {activeLease.lease.accessKey}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={openTenantChat}
+                      className="inline-flex items-center justify-center gap-2 rounded-button bg-navy px-3 py-2 text-label font-bold text-white transition-colors hover:bg-slate-800"
+                    >
+                      <MessageSquare size={14} />
+                      Chat
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleCall({
+                        id: `tenant-call-${activeLease.tenant.id}`,
+                        name: activeLease.tenant.name,
+                        phone: activeLease.tenant.phone,
+                        avatar: activeLease.tenant.avatar,
+                        context: `${activeLease.unit} active lease`,
+                      })}
+                      className="inline-flex items-center justify-center gap-2 rounded-button border border-outline bg-white px-3 py-2 text-label font-bold text-navy transition-colors hover:bg-hover-light"
+                    >
+                      <Phone size={14} />
+                      Call
+                    </button>
+                  </div>
+
+                  <div className="border-t border-outline pt-4">
+                    <p className="text-filter-label font-bold uppercase tracking-widest text-text-muted">Documents</p>
+                    <div className="mt-3 space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate(ROUTES.OWNER.LEASE_DOCUMENTS(activeLease.id))}
+                        className="flex w-full items-center gap-3 rounded-button border border-outline bg-white px-3 py-3 text-left transition-colors hover:bg-hover-light"
+                      >
+                        <FileText size={16} className="text-navy" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-label font-bold text-text-primary">
+                            Rental Agreement v{activeAgreement?.version ?? 1}
+                          </span>
+                          <span className="block truncate text-label text-text-muted">
+                            {activeAgreement?.tenantApprovedAt
+                              ? `Signed ${activeAgreement.tenantApprovedAt}`
+                              : 'View signed agreement'}
+                          </span>
+                        </span>
+                      </button>
+                      {onboardingPayment && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(ROUTES.OWNER.PAYMENT_RECEIPT(onboardingPayment.id))}
+                          className="flex w-full items-center gap-3 rounded-button border border-outline bg-white px-3 py-3 text-left transition-colors hover:bg-hover-light"
+                        >
+                          <FileText size={16} className="text-navy" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-label font-bold text-text-primary">Payment Receipt</span>
+                            <span className="block truncate text-label text-text-muted">{onboardingPayment.txnId}</span>
+                          </span>
+                        </button>
+                      )}
+                      {isOnboarded && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(ROUTES.OWNER.LEASES)}
+                          className="flex w-full items-center gap-3 rounded-button border border-outline bg-white px-3 py-3 text-left transition-colors hover:bg-hover-light"
+                        >
+                          <FileText size={16} className="text-navy" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-label font-bold text-text-primary">Lease Summary</span>
+                            <span className="block truncate text-label text-text-muted">{activeLease.lease?.id ?? 'Active lease'}</span>
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {!activeLease && (
               <div className="mt-6 space-y-3">
                 <button
                   type="button"
@@ -487,7 +654,8 @@ export function OwnerPropertyDetail() {
                 </button>
               </div>
 
-              {schedulerOpen && (
+              )}
+              {!activeLease && schedulerOpen && (
                 <div className="mt-4 rounded-card border border-outline bg-slate-50 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -592,7 +760,7 @@ export function OwnerPropertyDetail() {
                 </div>
               )}
 
-              {leadsOpen && (
+              {!activeLease && leadsOpen && (
                 <div className="mt-4 rounded-card border border-outline bg-slate-50 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -777,3 +945,10 @@ export function OwnerPropertyDetail() {
     </div>
   )
 }
+
+
+
+
+
+
+

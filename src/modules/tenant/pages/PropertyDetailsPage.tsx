@@ -1,7 +1,8 @@
-import { useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
+import { useAuth } from '@shared/hooks/useAuth'
 import { getPropertyById } from '../constants/properties'
 import type { NearbyPlace } from '../types/property'
 import { MaterialIcon } from '../components/MaterialIcon'
@@ -10,18 +11,13 @@ import { Toast, ToastContainer } from '@shared/ui/Toast'
 import { KycVerificationModal } from '../components/KycVerificationModal'
 import { ScheduleVisitModal } from '../components/ScheduleVisitModal'
 import { ApplicationProgressPanel } from '../components/ApplicationProgressPanel'
-
-// ─── Per-property schedule behaviour ─────────────────────────────────────────
-// prop-1 → KYC gate
-// prop-2 → Calendar / time picker
-// prop-3 → Application progress panel (replaces highlights card)
-type ScheduleMode = 'kyc' | 'calendar' | 'progress'
-
-function getScheduleMode(id: string): ScheduleMode {
-  if (id === 'prop-1') return 'kyc'
-  if (id === 'prop-2') return 'calendar'
-  return 'progress'
-}
+import {
+  DEMO_TENANT,
+  isProgressPanelVisible,
+  type OnboardingParty,
+  useOnboardingStore,
+} from '@shared/store/onboardingStore'
+import { useTenantKycStore } from '../store/tenantKycStore'
 
 function renderPlaceList(places: NearbyPlace[] | undefined, emptyMessage: string) {
   if (!places?.length) {
@@ -44,29 +40,85 @@ function renderPlaceList(places: NearbyPlace[] | undefined, emptyMessage: string
   )
 }
 
+function buildTenantParty(user: ReturnType<typeof useAuth>['user']): OnboardingParty {
+  if (!user) return DEMO_TENANT
+  return {
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`.trim() || DEMO_TENANT.name,
+    email: user.email,
+    phone: user.phone ?? DEMO_TENANT.phone,
+    avatar: user.avatar ?? DEMO_TENANT.avatar,
+  }
+}
+
 export function PropertyDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const property = id ? getPropertyById(id) : null
+  const tenant = useMemo(() => buildTenantParty(user), [user])
+
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [activeNearbyTab, setActiveNearbyTab] = useState<'transit' | 'essentials' | 'utility'>(
-    'transit'
+    'transit',
   )
   const [showInterestToast, setShowInterestToast] = useState(false)
   const [showKycModal, setShowKycModal] = useState(false)
   const [showVisitToast, setShowVisitToast] = useState(false)
+  const [showKycVerifiedToast, setShowKycVerifiedToast] = useState(false)
   const [showCalendarModal, setShowCalendarModal] = useState(false)
   const [visitConfirmedMsg, setVisitConfirmedMsg] = useState('')
 
-  const scheduleMode = getScheduleMode(id ?? '')
+  const onboardingRecords = useOnboardingStore((state) => state.records)
+  const showInterest = useOnboardingStore((state) => state.showInterest)
+  const scheduleVisit = useOnboardingStore((state) => state.scheduleVisit)
+  const kycVerified = useTenantKycStore((state) => state.status === 'verified')
+  const setKycVerified = useTenantKycStore((state) => state.setVerified)
+
+  const onboardingRecord = property
+    ? onboardingRecords.find(
+        (record) =>
+          record.tenant.id === tenant.id &&
+          record.tenantPropertyId === property.id &&
+          record.status !== 'rejected',
+      )
+    : undefined
+
+  const showProgressPanel = isProgressPanelVisible(onboardingRecord?.status)
+  const hasInterestOnly = onboardingRecord?.status === 'interest_shown'
+  const canShowInterest = !onboardingRecord || hasInterestOnly
+
+  function applicationInput() {
+    if (!property) return null
+    return {
+      tenantPropertyId: property.id,
+      propertyName: property.title,
+      address: property.location,
+      monthlyRent: property.price,
+      securityDeposit: property.deposit,
+      tenant,
+    }
+  }
+
+  function handleInterestClick() {
+    const input = applicationInput()
+    if (!input) return
+    showInterest(input)
+    setShowInterestToast(true)
+  }
 
   function handleScheduleClick() {
-    if (scheduleMode === 'kyc')      setShowKycModal(true)
-    if (scheduleMode === 'calendar') setShowCalendarModal(true)
-    // 'progress' mode has no modal — the panel is always visible in the aside
+    if (!kycVerified) {
+      setShowKycModal(true)
+      return
+    }
+    setShowCalendarModal(true)
   }
 
   function handleCalendarConfirmed(date: string, time: string) {
+    const input = applicationInput()
+    if (!input) return
+    scheduleVisit(input, { date, time })
     setVisitConfirmedMsg(`Visit confirmed for ${date} at ${time}.`)
     setShowVisitToast(true)
   }
@@ -89,6 +141,7 @@ export function PropertyDetailsPage() {
   }
 
   const gallery = property.gallery.length ? property.gallery : [property.image]
+  const visitAlreadyScheduled = onboardingRecord && onboardingRecord.status !== 'interest_shown'
 
   return (
     <div className={cn(tenantStyles.page, 'min-h-screen')}>
@@ -142,7 +195,7 @@ export function PropertyDetailsPage() {
                     type="button"
                     className={cn(
                       'aspect-[4/3] rounded-lg overflow-hidden border-2 p-0 cursor-pointer bg-brand-container-low transition-colors',
-                      activeImageIndex === index ? 'border-brand' : 'border-transparent'
+                      activeImageIndex === index ? 'border-brand' : 'border-transparent',
                     )}
                     onClick={() => setActiveImageIndex(index)}
                   >
@@ -197,7 +250,7 @@ export function PropertyDetailsPage() {
                       'px-5 py-2.5 border-0 bg-transparent font-body text-sm font-semibold cursor-pointer -mb-px border-b-2 transition-colors',
                       activeNearbyTab === tab.id
                         ? 'text-brand border-brand'
-                        : 'text-brand-outline border-transparent hover:text-brand'
+                        : 'text-brand-outline border-transparent hover:text-brand',
                     )}
                     onClick={() => setActiveNearbyTab(tab.id)}
                   >
@@ -210,29 +263,16 @@ export function PropertyDetailsPage() {
                 {activeNearbyTab === 'transit' && (
                   <>
                     <div className="mb-6 last:mb-0">
-                      <h3 className="font-display text-[15px] font-bold text-brand mb-3">
-                        Bus Stations
-                      </h3>
-                      {renderPlaceList(
-                        property.nearby.transit.busStations,
-                        'No bus stations within 2 km'
-                      )}
+                      <h3 className="font-display text-[15px] font-bold text-brand mb-3">Bus Stations</h3>
+                      {renderPlaceList(property.nearby.transit.busStations, 'No bus stations within 2 km')}
                     </div>
                     <div className="mb-6 last:mb-0">
                       <h3 className="font-display text-[15px] font-bold text-brand mb-3">Airport</h3>
-                      {renderPlaceList(
-                        property.nearby.transit.airport,
-                        'No airport access points within 5 km'
-                      )}
+                      {renderPlaceList(property.nearby.transit.airport, 'No airport access points within 5 km')}
                     </div>
                     <div className="mb-6 last:mb-0">
-                      <h3 className="font-display text-[15px] font-bold text-brand mb-3">
-                        Train Stations
-                      </h3>
-                      {renderPlaceList(
-                        property.nearby.transit.trainStations,
-                        'No train stations within 5 km'
-                      )}
+                      <h3 className="font-display text-[15px] font-bold text-brand mb-3">Train Stations</h3>
+                      {renderPlaceList(property.nearby.transit.trainStations, 'No train stations within 5 km')}
                     </div>
                   </>
                 )}
@@ -300,11 +340,9 @@ export function PropertyDetailsPage() {
           </div>
 
           <aside className="sticky top-[100px] max-lg:static max-lg:order-1">
-            {scheduleMode === 'progress' ? (
-              /* ── Application Progress Panel (prop-3) ── */
-              <ApplicationProgressPanel />
+            {showProgressPanel ? (
+              <ApplicationProgressPanel propertyId={property.id} />
             ) : (
-              /* ── Standard highlights card (prop-1, prop-2) ── */
               <div className="bg-brand-container-lowest rounded-2xl p-7 shadow-card border border-brand-outline-variant">
                 <div className="grid grid-cols-2 gap-5 mb-6">
                   {property.highlights.map((item) => (
@@ -317,21 +355,31 @@ export function PropertyDetailsPage() {
                   ))}
                 </div>
 
+                {!visitAlreadyScheduled && (
+                  <button
+                    type="button"
+                    className={cn(tenantStyles.primaryBtn, 'mb-3')}
+                    onClick={handleScheduleClick}
+                  >
+                    Schedule Visit
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  className={cn(tenantStyles.primaryBtn, 'mb-3')}
-                  onClick={handleScheduleClick}
-                >
-                  {scheduleMode === 'kyc' ? 'Schedule Visit' : 'Schedule Visit'}
-                </button>
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-center gap-2 py-3.5 px-5 mb-6 rounded-[10px] border-0 bg-brand-container-low text-brand font-body text-[15px] font-semibold cursor-pointer hover:bg-brand-container-high transition-colors"
-                  onClick={() => setShowInterestToast(true)}
+                  disabled={!canShowInterest}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 px-5 mb-6 rounded-[10px] border-0 bg-brand-container-low text-brand font-body text-[15px] font-semibold cursor-pointer hover:bg-brand-container-high transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={handleInterestClick}
                 >
                   <MaterialIcon name="chat" className="!text-xl" />
-                  I&apos;m Interested
+                  {hasInterestOnly ? 'Interest Sent' : "I'm Interested"}
                 </button>
+
+                {hasInterestOnly && (
+                  <p className="mb-6 text-[13px] text-brand-on-surface-variant">
+                    Interest recorded. Schedule a visit to continue your application.
+                  </p>
+                )}
 
                 <div className="grid grid-cols-3 gap-2 pt-5 border-t border-brand-outline-variant text-center">
                   <div>
@@ -344,17 +392,13 @@ export function PropertyDetailsPage() {
                     <span className="block font-display text-[22px] font-extrabold text-brand">
                       {property.shortlists}
                     </span>
-                    <span className="text-[10px] font-bold tracking-wider text-brand-outline">
-                      SHORTLISTS
-                    </span>
+                    <span className="text-[10px] font-bold tracking-wider text-brand-outline">SHORTLISTS</span>
                   </div>
                   <div>
                     <span className="block font-display text-[22px] font-extrabold text-brand">
                       {property.contacts}
                     </span>
-                    <span className="text-[10px] font-bold tracking-wider text-brand-outline">
-                      CONTACTS
-                    </span>
+                    <span className="text-[10px] font-bold tracking-wider text-brand-outline">CONTACTS</span>
                   </div>
                 </div>
               </div>
@@ -382,13 +426,12 @@ export function PropertyDetailsPage() {
         </div>
       </footer>
 
-      {/* Toasts */}
       <ToastContainer>
         {showInterestToast && (
           <Toast
             variant="success"
             message="Interest sent to owner!"
-            description="The owner will reach out to you shortly."
+            description="The owner has been notified about your interest in this property."
             onClose={() => setShowInterestToast(false)}
           />
         )}
@@ -396,23 +439,30 @@ export function PropertyDetailsPage() {
           <Toast
             variant="success"
             message="Visit scheduled successfully!"
-            description={visitConfirmedMsg || "You're verified. The owner will confirm your visit shortly."}
+            description={visitConfirmedMsg}
             onClose={() => setShowVisitToast(false)}
+          />
+        )}
+        {showKycVerifiedToast && (
+          <Toast
+            variant="success"
+            message="KYC verified!"
+            description="Your identity is verified. Click Schedule Visit again to pick a time."
+            onClose={() => setShowKycVerifiedToast(false)}
           />
         )}
       </ToastContainer>
 
-      {/* KYC modal — prop-1 */}
       <KycVerificationModal
         isOpen={showKycModal}
         onClose={() => setShowKycModal(false)}
-        onVerified={() => {
-          setVisitConfirmedMsg("You're verified. The owner will confirm your visit shortly.")
-          setShowVisitToast(true)
+        onVerified={(aadhaarRaw) => {
+          setKycVerified(aadhaarRaw)
+          setShowKycModal(false)
+          setShowKycVerifiedToast(true)
         }}
       />
 
-      {/* Calendar modal — prop-2 */}
       <ScheduleVisitModal
         propertyTitle={property.title}
         isOpen={showCalendarModal}

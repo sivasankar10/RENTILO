@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -24,6 +24,10 @@ import {
   X,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
+import { useOwnerStore } from '../store/ownerStore'
+import { OwnerListingPromotionTable } from '../components/OwnerListingPromotionTable'
+import { PRIMARY_OWNER_PROPERTY_ID, primaryPortfolioProperty } from '../constants/portfolioProperty'
 
 type BrokerCandidate = {
   id: string
@@ -49,8 +53,8 @@ type BrokerAssignmentUpdate = {
 }
 
 const portfolioProperty = {
-  name: 'Skyline Heights - Unit 402',
-  address: '1248 Park Avenue, New York',
+  name: primaryPortfolioProperty.name,
+  address: primaryPortfolioProperty.address,
 }
 
 const suggestedBroker: BrokerCandidate = {
@@ -168,8 +172,30 @@ export function OwnerPortfolio() {
   const [propertyPosted, setPropertyPosted] = useState(false)
   const [brokerPickerOpen, setBrokerPickerOpen] = useState(false)
   const [brokerSearch, setBrokerSearch] = useState('')
-  const [assignedBrokerId, setAssignedBrokerId] = useState<string | null>(null)
   const [rejectedBrokerIds, setRejectedBrokerIds] = useState<string[]>([])
+  const brokerIntegrationEnabled = useOwnerStore((state) => state.brokerIntegrationEnabled)
+  const assignedBrokerId = useOwnerStore((state) => state.assignedBrokerId)
+  const assignBrokerToProperty = useOwnerStore((state) => state.assignBrokerToProperty)
+  const removeBrokerFromProperty = useOwnerStore((state) => state.removeBrokerFromProperty)
+  const isBrokerReleasedForProperty = useOwnerStore((state) => state.isBrokerReleasedForProperty)
+  const onboardingRecords = useOnboardingStore((state) => state.records)
+  const activeLease = useMemo(
+    () =>
+      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, ['active']),
+    [onboardingRecords],
+  )
+  const leaseWithPayment = useMemo(
+    () =>
+      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, [
+        'payment_completed',
+        'active',
+      ]),
+    [onboardingRecords],
+  )
+  const propertyOccupied = Boolean(activeLease)
+  const brokerReleased = isBrokerReleasedForProperty(PRIMARY_OWNER_PROPERTY_ID)
+  const brokerPanelVisible =
+    (brokerIntegrationEnabled || Boolean(assignedBrokerId)) && !brokerReleased && !leaseWithPayment
 
   const assignedBroker =
     brokerCandidates.find((broker) => broker.id === assignedBrokerId) ?? null
@@ -191,7 +217,7 @@ export function OwnerPortfolio() {
   })
 
   const assignBroker = (broker: BrokerCandidate) => {
-    setAssignedBrokerId(broker.id)
+    assignBrokerToProperty(broker.id)
     setRejectedBrokerIds((current) => current.filter((id) => id !== broker.id))
     setBrokerStatus(`${broker.name} has been assigned to ${portfolioProperty.name}.`)
     setPropertyPosted(true)
@@ -211,13 +237,21 @@ export function OwnerPortfolio() {
     }
 
     setBrokerStatus(`${assignedBroker.name} was removed from ${portfolioProperty.name}.`)
-    setAssignedBrokerId(null)
+    removeBrokerFromProperty()
     setPropertyPosted(false)
   }
 
+  useEffect(() => {
+    if (window.location.hash === '#listing-promotions') {
+      window.requestAnimationFrame(() => {
+        document.getElementById('listing-promotions')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
+  }, [])
+
   return (
     <div className="min-h-screen bg-canvas-alt px-6 py-10">
-      <div className="mx-auto grid max-w-7xl gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className={brokerPanelVisible ? 'mx-auto grid max-w-7xl gap-6 xl:grid-cols-[minmax(0,1fr)_320px]' : 'mx-auto max-w-7xl'}>
         <section className="space-y-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
@@ -250,12 +284,23 @@ export function OwnerPortfolio() {
             </div>
           </div>
 
+          <OwnerListingPromotionTable />
+
           <div className="flex items-center justify-between text-label text-text-primary">
             <span>Eligible Properties</span>
             <span className="text-primary">3 Properties Available</span>
           </div>
 
-          <article className="rounded-card border border-outline bg-white p-6 shadow-surface">
+          <article
+            onClick={() => {
+              if (leaseWithPayment) navigate(ROUTES.OWNER.PROPERTY_DETAIL(PRIMARY_OWNER_PROPERTY_ID))
+            }}
+            className={
+              leaseWithPayment
+                ? 'cursor-pointer rounded-card border border-outline bg-white p-6 shadow-surface transition-shadow hover:shadow-modal'
+                : 'rounded-card border border-outline bg-white p-6 shadow-surface'
+            }
+          >
             <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)_160px] md:items-center">
               <img
                 src="https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=700&q=80"
@@ -271,8 +316,16 @@ export function OwnerPortfolio() {
                     </h2>
                     <p className="mt-1 text-label text-text-primary">{portfolioProperty.address}</p>
                   </div>
-                  <span className="rounded-pill bg-status-success-bg px-3 py-1.5 text-badge uppercase text-status-success-text">
-                    Vacant
+                  <span
+                    className={
+                      propertyOccupied
+                        ? 'rounded-pill bg-primary-50 px-3 py-1.5 text-badge uppercase text-primary'
+                        : leaseWithPayment
+                          ? 'rounded-pill bg-status-warning-bg px-3 py-1.5 text-badge uppercase text-status-warning-text'
+                          : 'rounded-pill bg-status-success-bg px-3 py-1.5 text-badge uppercase text-status-success-text'
+                    }
+                  >
+                    {propertyOccupied ? 'Occupied' : leaseWithPayment ? 'Pending onboarding' : 'Vacant'}
                   </span>
                 </div>
 
@@ -295,7 +348,16 @@ export function OwnerPortfolio() {
                   $4,500 <span className="text-label font-medium text-text-muted">/ mo</span>
                 </p>
 
-                {assignedBroker && (
+                {leaseWithPayment && (
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-button bg-slate-100 px-3 py-2 text-label font-semibold text-navy">
+                    <Users size={15} />
+                    {propertyOccupied
+                      ? `Tenant onboarded: ${leaseWithPayment.tenant.name}`
+                      : `Payment received from ${leaseWithPayment.tenant.name}`}
+                  </div>
+                )}
+
+                {brokerPanelVisible && assignedBroker && (
                   <div className="mt-4 inline-flex items-center gap-2 rounded-button bg-primary-50 px-3 py-2 text-label font-semibold text-primary">
                     <UserCheck size={15} />
                     Broker assigned: {assignedBroker.name}
@@ -303,7 +365,9 @@ export function OwnerPortfolio() {
                 )}
               </div>
 
+              {brokerPanelVisible && (
               <div className="space-y-3">
+
                 {assignedBroker && (
                   <div className="rounded-button border border-primary-100 bg-primary-50 p-3 text-label text-primary">
                     <p className="font-bold">{assignedBroker.rating.toFixed(1)}/5.0 rated</p>
@@ -312,12 +376,13 @@ export function OwnerPortfolio() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setBrokerPickerOpen(true)}
+                  onClick={(event) => { event.stopPropagation(); setBrokerPickerOpen(true) }}
                   className="w-full rounded-button bg-navy px-4 py-3 text-body font-semibold text-white transition-all duration-200 hover:bg-slate-800 hover:shadow-md"
                 >
                   {assignedBroker ? 'Change Broker' : 'Assign Broker'}
                 </button>
               </div>
+              )}
             </div>
           </article>
 
@@ -351,6 +416,7 @@ export function OwnerPortfolio() {
           </article>
         </section>
 
+        {brokerPanelVisible && (
         <aside className="space-y-6">
           <article className="rounded-modal bg-navy p-6 text-white shadow-modal">
             <p className="inline-flex items-center gap-2 text-filter-label uppercase tracking-normal text-blue-200">
@@ -455,7 +521,7 @@ export function OwnerPortfolio() {
                     ? 'Assigned'
                     : suggestedBrokerRejected
                       ? 'Rejected'
-                      : 'Auto Assign'}
+                      : 'Assign'}
                   <ArrowRight size={18} />
                 </button>
                 <button
@@ -503,6 +569,7 @@ export function OwnerPortfolio() {
             </div>
           </article>
         </aside>
+        )}
       </div>
 
       {brokerPickerOpen && (
@@ -670,3 +737,10 @@ export function OwnerPortfolio() {
     </div>
   )
 }
+
+
+
+
+
+
+

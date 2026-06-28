@@ -6,6 +6,8 @@ import { ROLES } from '@shared/constants/roles'
 import { cn } from '@shared/utils/cn'
 import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
 import { MaterialIcon } from './MaterialIcon'
+import { useOnboardingStore } from '@shared/store/onboardingStore'
+import { useTenantId } from '../hooks/useTenantId'
 
 const AVATAR_SRC =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBsjFwGI8TSSdoEXUZWAE-nRGmK8p1eH8KgYLjT3Urn8_obEczpwXsONy_TGRwKE0xPxoIiwJBviAzhbr8_8hIDA4l_kLNXdDbBX6-QfmRcjzG89x6vzPJXOX37ffQJu6xx0_zNwcREd9vf8PK0Du-IaTWhO6oVo0nqBbRArkk5eIc0SIYI174D3jXGPi3s-g82-4iFdrt9-Rhjwsej9Y7K0PTNiC4gdcsm5cL4dCFxk6wfXLf_ncUSgwvGRPdp_YbPZzioXRLYcnuV'
@@ -26,6 +28,7 @@ function isProfileSectionActive(pathname: string, id: string): boolean {
   if (id === 'payments') return pathname.includes('/payments')
   if (id === 'maintenance') return pathname.includes('/maintenance')
   if (id === 'documents') return pathname.includes('/documents')
+  if (id === 'my-lease') return pathname.includes('/my-lease')
   return false
 }
 
@@ -38,6 +41,13 @@ export function TenantProfileMenu({ open, onClose }: TenantProfileMenuProps) {
   const profileMeta = user?.email ?? user?.phone ?? 'Manage your account'
   const canSwitchMode =
     Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
+  const tenantId = useTenantId()
+  const hasLease = useOnboardingStore((state) =>
+    state.records.some((record) => record.tenant.id === tenantId && Boolean(record.lease))
+  )
+  const menuItems = hasLease
+    ? [...MENU_ITEMS, { id: 'my-lease', label: 'My Lease', icon: 'key', href: ROUTES.TENANT.MY_LEASE }]
+    : [...MENU_ITEMS]
 
   useEffect(() => {
     if (!open) return
@@ -124,7 +134,7 @@ export function TenantProfileMenu({ open, onClose }: TenantProfileMenuProps) {
           </>
         )}
 
-        {MENU_ITEMS.map((item) => (
+        {menuItems.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -171,6 +181,9 @@ export function isProfileSectionPath(pathname: string): boolean {
     pathname.includes('/profile') ||
     pathname.includes('/payments') ||
     pathname.includes('/maintenance') ||
-    pathname.includes('/documents')
+    pathname.includes('/documents') ||
+    pathname.includes('/my-lease')
   )
 }
+
+

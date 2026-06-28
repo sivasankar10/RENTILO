@@ -11,6 +11,9 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { KycVerificationModal } from '@modules/tenant/components/KycVerificationModal'
+import { useOwnerStore } from '../store/ownerStore'
+import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
 
 const tierFeatures = [
   'Up to 50 Properties',
@@ -21,9 +24,22 @@ const tierFeatures = [
 
 export function OwnerPlansRules() {
   const navigate = useNavigate()
-  const [identityStatus, setIdentityStatus] = useState('Not Started')
-  const [businessStatus, setBusinessStatus] = useState('Pending Upload')
-  const [brokersEnabled, setBrokersEnabled] = useState(false)
+  const kycStatus = useOwnerStore((state) => state.kycStatus)
+  const setKycStatus = useOwnerStore((state) => state.setKycStatus)
+  const brokerIntegrationEnabled = useOwnerStore((state) => state.brokerIntegrationEnabled)
+  const assignedBrokerId = useOwnerStore((state) => state.assignedBrokerId)
+  const enableBrokerIntegration = useOwnerStore((state) => state.enableBrokerIntegration)
+  const [businessStatus, setBusinessStatus] = useState(kycStatus === 'Verified' ? 'Verified' : 'Pending Upload')
+  const [showKycModal, setShowKycModal] = useState(false)
+  const [verificationMessage, setVerificationMessage] = useState('')
+  const isVerified = kycStatus === 'Verified'
+  const brokersEnabled = brokerIntegrationEnabled || Boolean(assignedBrokerId)
+
+  const handleVerified = () => {
+    setKycStatus('Verified')
+    setBusinessStatus('Verified')
+    setVerificationMessage('Owner KYC verified successfully for this session.')
+  }
 
   return (
     <div className="min-h-screen bg-canvas-alt px-6 py-12">
@@ -48,20 +64,20 @@ export function OwnerPlansRules() {
                   <br />
                   Verification
                 </h2>
-                <span className="rounded-sm bg-status-error-bg px-2 py-1 text-badge uppercase text-status-error-text">
-                  Required
+                <span className={isVerified ? 'rounded-sm bg-status-success-bg px-2 py-1 text-badge uppercase text-status-success-text' : 'rounded-sm bg-status-error-bg px-2 py-1 text-badge uppercase text-status-error-text'}>
+                  {isVerified ? 'Verified' : 'Required'}
                 </span>
               </div>
 
               <p className="mt-5 text-body leading-6 text-text-muted">
-                Complete your identity verification to enable automated payment processing and
-                broker assignments.
+                Complete Aadhaar verification to enable automated payment processing and broker
+                assignments.
               </p>
 
               <div className="mt-6 space-y-4">
                 <button
                   type="button"
-                  onClick={() => setIdentityStatus('Upload Requested')}
+                  onClick={() => setShowKycModal(true)}
                   className="flex w-full items-center gap-4 rounded-button bg-hover-light p-4 text-left transition-all duration-200 hover:bg-active"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-button bg-white text-navy">
@@ -69,14 +85,14 @@ export function OwnerPlansRules() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-label font-bold text-text-primary">Identity Document</p>
-                    <p className="text-label text-text-muted">{identityStatus}</p>
+                    <p className="text-label text-text-muted">{kycStatus}</p>
                   </div>
                   <ChevronRight size={18} className="text-text-muted" />
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setBusinessStatus('Upload Requested')}
+                  onClick={() => setBusinessStatus(isVerified ? 'Verified' : 'Pending KYC')}
                   className="flex w-full items-center gap-4 rounded-button bg-hover-light p-4 text-left transition-all duration-200 hover:bg-active"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-button bg-white text-navy">
@@ -90,15 +106,19 @@ export function OwnerPlansRules() {
                 </button>
               </div>
 
+              {verificationMessage && (
+                <p className="mt-5 rounded-button bg-status-success-bg px-4 py-3 text-label font-semibold text-status-success-text">
+                  {verificationMessage}
+                </p>
+              )}
+
               <button
                 type="button"
-                onClick={() => {
-                  setIdentityStatus('In Review')
-                  setBusinessStatus('In Review')
-                }}
-                className="mt-6 w-full rounded-button bg-navy px-4 py-3 text-body font-semibold text-white transition-all duration-200 hover:bg-slate-800 hover:shadow-md"
+                onClick={() => { if (!isVerified) setShowKycModal(true) }}
+                disabled={isVerified}
+                className={isVerified ? 'mt-6 w-full cursor-default rounded-button bg-status-success-bg px-4 py-3 text-body font-semibold text-status-success-text' : 'mt-6 w-full rounded-button bg-navy px-4 py-3 text-body font-semibold text-white transition-all duration-200 hover:bg-slate-800 hover:shadow-md'}
               >
-                Start Verification
+                {isVerified ? 'Verified KYC' : 'Start Verification'}
               </button>
             </article>
 
@@ -111,14 +131,19 @@ export function OwnerPlansRules() {
                     <Link2 size={18} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-label font-bold text-text-primary">Auto-Assign Brokers</p>
+                    <p className="text-label font-bold text-text-primary">Assign Brokers</p>
                   </div>
                   <button
                     type="button"
-                    onClick={() => setBrokersEnabled((enabled) => !enabled)}
+                    onClick={() => {
+                      if (!brokersEnabled) {
+                        enableBrokerIntegration()
+                      }
+                    }}
+                    disabled={brokersEnabled}
                     className={
                       brokersEnabled
-                        ? 'flex h-6 w-11 items-center justify-end rounded-pill bg-primary p-1'
+                        ? 'flex h-6 w-11 cursor-default items-center justify-end rounded-pill bg-primary p-1'
                         : 'flex h-6 w-11 items-center justify-start rounded-pill bg-primary-100 p-1'
                     }
                     aria-pressed={brokersEnabled}
@@ -129,10 +154,12 @@ export function OwnerPlansRules() {
               </div>
 
               <p className="mt-5 text-label leading-5 text-text-muted">
-                When enabled, new property inquiries are automatically routed to the top-performing
-                brokers in your network based on current capacity.
+                When enabled, broker recommendations and assignment tools are available in your
+                portfolio for the current session.
               </p>
             </article>
+
+            <ListingPromotionPromoCard compact />
           </aside>
 
           <section className="rounded-card border border-outline bg-white p-6 shadow-sm">
@@ -206,6 +233,18 @@ export function OwnerPlansRules() {
           </article>
         </div>
       </div>
+
+      <KycVerificationModal
+        isOpen={showKycModal}
+        onClose={() => setShowKycModal(false)}
+        onVerified={() => handleVerified()}
+      />
     </div>
   )
 }
+
+
+
+
+
+

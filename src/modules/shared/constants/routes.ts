@@ -1,4 +1,4 @@
-/** Centralized route path constants for all modules */
+﻿/** Centralized route path constants for all modules */
 
 export const ROUTES = {
   HOME: '/',
@@ -20,8 +20,13 @@ export const ROUTES = {
     PROFILE: '/tenant/profile',
     PROPERTIES: '/tenant/properties',
     PAYMENTS: '/tenant/payments',
+    PAYMENT_RECEIPT: (id: string) => `/tenant/payments/${encodeURIComponent(id)}`,
     MAINTENANCE: '/tenant/maintenance',
+    MAINTENANCE_DETAIL: (id: string) => `/tenant/maintenance/${encodeURIComponent(id)}`,
     DOCUMENTS: '/tenant/documents',
+    AGREEMENT: (id: string) => `/tenant/agreements/${id}`,
+    ONBOARDING_PAYMENT: (id: string) => `/tenant/onboarding/${id}/payment`,
+    MY_LEASE: '/tenant/my-lease',
     NOTIFICATIONS: '/tenant/notifications',
     MESSAGES: '/tenant/messages',
     SERIOUS_BUYER_BADGE: '/tenant/serious-buyer-badge',
@@ -34,14 +39,20 @@ export const ROUTES = {
     DASHBOARD: '/owner/dashboard',
     PORTFOLIO: '/owner/portfolio',
     PROPERTY_DETAIL: (id: string) => `/owner/properties/${id}`,
+    PROPERTY_EDIT: (id: string) => `/owner/properties/${id}/edit`,
     PROPERTIES: '/owner/properties',
     REGISTER_PROPERTY: '/owner/properties/register',
     MAINTENANCE: '/owner/maintenance',
     LEASES: '/owner/leases',
+    LEASE_DOCUMENTS: (onboardingId: string) => `/owner/leases/${encodeURIComponent(onboardingId)}/documents`,
     TENANTS: '/owner/tenants',
     ANALYTICS: '/owner/analytics',
     PLANS_RULES: '/owner/plans-rules',
     PREMIUM_PAYMENT: '/owner/premium-payment',
+    LISTING_PROMOTION_PAYMENT: (propertyId: string) =>
+      `/owner/portfolio/promote/${encodeURIComponent(propertyId)}/payment`,
+    PAYMENTS: '/owner/payments',
+    PAYMENT_RECEIPT: (id: string) => `/owner/payments/${encodeURIComponent(id)}`,
     SETTINGS: '/owner/settings',
     NOTIFICATIONS: '/owner/notifications',
     MESSAGES: '/owner/messages',
@@ -90,3 +101,6 @@ export const ROUTES = {
     MESSAGES: '/admin/messages',
   },
 } as const
+
+
+

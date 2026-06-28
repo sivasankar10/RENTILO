@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AlertCircle, Ban, Eye, Mail, Search, Trash2, TrendingUp, UserCheck } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore } from '../store/adminStore'
@@ -7,6 +8,7 @@ import { ActionMenu } from '../components/ActionMenu'
 import { confirm } from '../components/ConfirmDialog'
 import { toast } from '../components/Toast'
 import { exportToCsv } from '../utils/exportCsv'
+import { ROUTES } from '@shared/constants/routes'
 
 type TabFilter = 'All' | 'Active' | 'Banned'
 type EnterpriseTab = 'Enterprise' | 'Non-Enterprise'
@@ -34,8 +36,7 @@ export function AdminBrokerManagement() {
   const setBrokerStatus = useAdminStore((s) => s.setBrokerStatus)
   const removeBroker = useAdminStore((s) => s.removeBroker)
   const removeEnterpriseBroker = useAdminStore((s) => s.removeEnterpriseBroker)
-  const assignQueueItem = useAdminStore((s) => s.assignQueueItem)
-  const assignAllQueueItems = useAdminStore((s) => s.assignAllQueueItems)
+  const navigate = useNavigate()
 
   const [activeTab, setActiveTab] = useState<TabFilter>('All')
   const [enterpriseTab, setEnterpriseTab] = useState<EnterpriseTab>('Enterprise')
@@ -101,25 +102,12 @@ export function AdminBrokerManagement() {
     })
   }
 
-  const handleAssignQueue = (id: string, name: string) => {
-    assignQueueItem(id)
-    toast.success('Assignment dispatched', `${name} has been routed to the next broker.`)
+  const handleAssignQueue = (name: string, type: 'enterprise' | 'standard') => {
+    navigate(`${ROUTES.ADMIN.ASSIGNMENT_MANAGEMENT}?assign=${encodeURIComponent(name)}&type=${type}`)
   }
 
   const handleAssignAll = () => {
-    if (queue.every((q) => q.assigned)) {
-      toast.info('Queue is empty', 'All listings are already assigned.')
-      return
-    }
-    confirm({
-      title: 'Assign all pending listings?',
-      description: `${queue.filter((q) => !q.assigned).length} listings will be auto-routed to top brokers.`,
-      confirmLabel: 'Assign all',
-      onConfirm: () => {
-        assignAllQueueItems()
-        toast.success('All listings assigned', 'Brokers have been notified.')
-      },
-    })
+    navigate(ROUTES.ADMIN.ASSIGNMENT_MANAGEMENT)
   }
 
   return (
@@ -402,10 +390,10 @@ export function AdminBrokerManagement() {
             </p>
 
             <div className="mt-5 space-y-4">
-              {queue.map((item) => (
+              {queue.slice(0, 2).map((item) => (
                 <div key={item.id} className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-button bg-slate-100">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-button bg-slate-100">
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-text-muted">
                         <path d="M2 14V6l6-4 6 4v8H2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
                         <path d="M6 14v-4h4v4" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
@@ -418,16 +406,10 @@ export function AdminBrokerManagement() {
                   </div>
                   <button
                     type="button"
-                    disabled={item.assigned}
-                    onClick={() => handleAssignQueue(item.id, item.name)}
-                    className={cn(
-                      'rounded-button px-3 py-1.5 text-badge font-bold transition-colors',
-                      item.assigned
-                        ? 'bg-status-success-bg text-status-success-text cursor-default'
-                        : 'bg-primary text-white hover:bg-primary-700',
-                    )}
+                    onClick={() => handleAssignQueue(item.name, item.type)}
+                    className="shrink-0 rounded-button bg-primary px-3 py-1.5 text-badge font-bold text-white transition-colors hover:bg-primary-700"
                   >
-                    {item.assigned ? 'Assigned' : 'Assign'}
+                    Assign
                   </button>
                 </div>
               ))}
@@ -501,7 +483,7 @@ function SortableHeader({
         )}
       >
         {label}
-        {active && <span aria-hidden="true">↓</span>}
+        {active && <span aria-hidden="true">â†“</span>}
       </button>
     </th>
   )
@@ -569,3 +551,4 @@ function SuccessRateBar({ rate, banned }: { rate: number; banned?: boolean }) {
     </div>
   )
 }
+

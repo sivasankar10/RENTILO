@@ -44,7 +44,14 @@ export function ListingCard({
 
       <div className="relative h-64 overflow-hidden bg-brand-container-low">
         {property.badge && (
-          <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full bg-brand-verified/90 backdrop-blur-sm text-brand text-[10px] font-bold uppercase tracking-widest shadow-sm">
+          <div
+            className={cn(
+              'absolute top-4 left-4 z-10 px-3 py-1 rounded-full backdrop-blur-sm text-[10px] font-bold uppercase tracking-widest shadow-sm',
+              property.badge === 'Suggested'
+                ? 'bg-amber-500/95 text-white'
+                : 'bg-brand-verified/90 text-brand',
+            )}
+          >
             {property.badge}
           </div>
         )}

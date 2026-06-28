@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   BriefcaseBusiness,
   Home,
@@ -11,19 +12,50 @@ import {
   Video,
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { useOwnerChatStore } from '../store/chatStore'
 
 export function OwnerMessages() {
+  const [searchParams] = useSearchParams()
   const conversations = useOwnerChatStore((state) => state.conversations)
+  const leaseThreads = useLeaseChatStore((state) => state.threads)
   const storeSendMessage = useOwnerChatStore((state) => state.sendMessage)
   const markConversationRead = useOwnerChatStore((state) => state.markConversationRead)
-  const [activeId, setActiveId] = useState(conversations[0]?.id ?? 0)
+  const paramConversationId = Number(searchParams.get('conversationId') ?? '')
+  const [activeId, setActiveId] = useState(
+    Number.isFinite(paramConversationId) && paramConversationId > 0
+      ? paramConversationId
+      : conversations[0]?.id ?? 0,
+  )
   const [query, setQuery] = useState('')
   const [draft, setDraft] = useState('')
   const [status, setStatus] = useState('')
 
   const activeConversation =
     conversations.find((conversation) => conversation.id === activeId) ?? conversations[0]
+
+  const leaseThread = useMemo(
+    () =>
+      activeConversation?.onboardingId
+        ? leaseThreads.find((thread) => thread.onboardingId === activeConversation.onboardingId)
+        : undefined,
+    [activeConversation?.onboardingId, leaseThreads],
+  )
+
+  const displayMessages = leaseThread?.messages.length
+    ? leaseThread.messages.map((message, index) => ({
+        id: index + 1,
+        sender: message.sender === 'owner' ? ('owner' as const) : ('tenant' as const),
+        text: message.text,
+        time: message.time,
+      }))
+    : activeConversation?.messages ?? []
+
+  useEffect(() => {
+    if (Number.isFinite(paramConversationId) && paramConversationId > 0) {
+      setActiveId(paramConversationId)
+    }
+  }, [paramConversationId])
 
   useEffect(() => {
     if (activeConversation) {
@@ -253,7 +285,7 @@ export function OwnerMessages() {
               </span>
             </div>
 
-            {activeConversation.messages.map((message) => (
+            {displayMessages.map((message) => (
               <div
                 key={message.id}
                 className={cn(
