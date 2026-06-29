@@ -11,11 +11,8 @@ import {
   MapPin,
   MessageSquare,
   ParkingCircle,
-<<<<<<< HEAD
-=======
   Pencil,
   Phone,
->>>>>>> main
   PlayCircle,
   Plus,
   Ruler,

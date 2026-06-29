@@ -89,10 +89,6 @@ export const ROUTES = {
     ASSIGNMENT_MANAGEMENT: '/admin/assignment-management',
     MAINTENANCE_TICKETS: '/admin/maintenance-tickets',
     NOTIFICATIONS: '/admin/notifications',
-<<<<<<< HEAD
-    PROPERTY_OVERVIEW: '/admin/property-overview',
-=======
     MESSAGES: '/admin/messages',
->>>>>>> main
   },
 } as const

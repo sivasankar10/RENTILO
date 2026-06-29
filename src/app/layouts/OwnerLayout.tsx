@@ -47,29 +47,16 @@ const baseSidebarItems: OwnerSidebarItem[] = [
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
   { label: 'Maintenance', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
-<<<<<<< HEAD
+  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
 
-// Premium items - require subscription
+// Premium features (locked for FREE users)
 const premiumSidebarItems: OwnerSidebarItem[] = [
-  { label: 'Analytics', href: ROUTES.OWNER.ANALYTICS, icon: BarChart3, feature: 'analytics' },
   { label: 'Inquiries', href: `${ROUTES.OWNER.ROOT}/inquiries`, icon: Users, feature: 'inquiry_management' },
   { label: 'Viewings', href: `${ROUTES.OWNER.ROOT}/viewings`, icon: Calendar, feature: 'viewings_calendar' },
-  { label: 'Broker Management', href: `${ROUTES.OWNER.ROOT}/broker-management`, icon: Users, feature: 'broker_management' },
+  { label: 'Brokers', href: `${ROUTES.OWNER.ROOT}/brokers`, icon: Users, feature: 'broker_management' },
   { label: 'Promotions', href: `${ROUTES.OWNER.ROOT}/promotions`, icon: Megaphone, feature: 'promoted_listings' },
   { label: 'Financials', href: `${ROUTES.OWNER.ROOT}/financials`, icon: CreditCard, feature: 'financial_reports' },
-]
-
-const mobileNavItems: OwnerSidebarItem[] = [
-  { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
-  { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
-  { label: 'Maintenance', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
-  { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
-  { label: 'Settings', href: ROUTES.OWNER.SETTINGS, icon: Settings },
-]
-
-=======
-  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
 
 const mobileNavItems = [
@@ -80,7 +67,6 @@ const mobileNavItems = [
   { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
 
->>>>>>> main
 interface OwnerProfileMenuProps {
   open: boolean
   onClose: () => void
@@ -223,11 +209,8 @@ export function OwnerLayout() {
   const notificationsActive = pathname.startsWith(ROUTES.OWNER.NOTIFICATIONS)
   const messagesActive = pathname.startsWith(ROUTES.OWNER.MESSAGES)
   const profileActive = pathname.startsWith(ROUTES.OWNER.SETTINGS)
-<<<<<<< HEAD
-=======
-  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
-  const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
->>>>>>> main
+  // const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  // const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
   const currentPropertyId = selectedPropertyId ?? OWNER_MANAGED_PROPERTIES[0]?.id ?? ''
   const canSwitchMode =
     Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
@@ -278,31 +261,9 @@ export function OwnerLayout() {
             <RoleModeSwitcher className="hidden sm:inline-flex" />
             <button
               type="button"
-<<<<<<< HEAD
-              disabled={propertyLimitReached}
-              onClick={() => {
-                if (propertyLimitReached) {
-                  showUpgradePrompt('bulk_property_management')
-                } else {
-                  navigate(ROUTES.OWNER.REGISTER_PROPERTY)
-                }
-              }}
-              title={
-                propertyLimitReached
-                  ? 'Free plan allows one posted property. Upgrade to add more.'
-                  : 'Post a new property'
-              }
-              className={cn(
-                'hidden rounded-button px-4 py-2 text-label font-semibold shadow-sm transition-all duration-200 sm:inline-flex',
-                propertyLimitReached
-                  ? 'cursor-not-allowed border border-brand-outline/30 bg-transparent text-brand-outline opacity-60'
-                  : 'bg-brand text-white hover:opacity-90'
-              )}
-=======
               onClick={() => navigate(ROUTES.OWNER.REGISTER_PROPERTY)}
               title="Post a new property"
               className="hidden rounded-button bg-brand px-4 py-2 text-label font-semibold text-white shadow-sm transition-all duration-200 hover:opacity-90 sm:inline-flex"
->>>>>>> main
             >
               Post New Property
             </button>
