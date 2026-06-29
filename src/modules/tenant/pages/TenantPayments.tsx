@@ -1,11 +1,23 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@shared/utils/cn'
+import { ROUTES } from '@shared/constants/routes'
+import { useAuth } from '@shared/hooks/useAuth'
+import {
+  usePaymentsStore,
+  type PaymentCategory,
+  type PaymentStatus,
+  type PlatformPayment,
+} from '@shared/store/paymentsStore'
+import { useOnboardingStore } from '@shared/store/onboardingStore'
 import { MaterialIcon } from '../components/MaterialIcon'
+<<<<<<< HEAD
+=======
+import { useTenantId } from '../hooks/useTenantId'
+>>>>>>> main
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type PaymentStatus = 'Successful' | 'Failed' | 'Pending'
-type PaymentCategory = 'RENT' | 'SECURITY DEPOSIT' | 'UTILITY BILL' | 'MAINTENANCE'
 type PaymentMethod = 'UPI' | 'Net Banking' | 'Credit Card' | 'Debit Card'
 
 interface Payment {
@@ -13,26 +25,31 @@ interface Payment {
   to: string
   category: PaymentCategory
   amount: number
+  amountDisplay: string
   txnId: string
   refId: string
-  via: PaymentMethod
+  via: string
   status: PaymentStatus
   date: string
   time: string
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const ALL_PAYMENTS: Payment[] = [
-  { id: '1', to: 'Civic Realty Group',      category: 'RENT',             amount: 45000,  txnId: 'RT-9928341', refId: '0021-X99', via: 'UPI',          status: 'Successful', date: '12 Apr 2026', time: '4:30 PM' },
-  { id: '2', to: 'Green Valley Estates',    category: 'SECURITY DEPOSIT', amount: 120000, txnId: 'RT-8821034', refId: '0021-Z02', via: 'Net Banking',   status: 'Failed',     date: '08 Apr 2026', time: '11:15 AM' },
-  { id: '3', to: 'Urban Lofts Management',  category: 'UTILITY BILL',     amount: 3450,   txnId: 'RT-7761022', refId: '0021-A12', via: 'Credit Card',   status: 'Pending',    date: '14 Apr 2026', time: '9:00 AM' },
-  { id: '4', to: 'Civic Realty Group',      category: 'RENT',             amount: 45000,  txnId: 'RT-6652011', refId: '0021-X98', via: 'UPI',          status: 'Successful', date: '12 Mar 2026', time: '4:15 PM' },
-  { id: '5', to: 'Skyline Properties',      category: 'MAINTENANCE',      amount: 8200,   txnId: 'RT-5541009', refId: '0021-M03', via: 'Debit Card',   status: 'Successful', date: '02 Mar 2026', time: '2:00 PM' },
-  { id: '6', to: 'Green Valley Estates',    category: 'RENT',             amount: 45000,  txnId: 'RT-4430998', refId: '0021-X97', via: 'UPI',          status: 'Successful', date: '12 Feb 2026', time: '4:45 PM' },
-  { id: '7', to: 'Urban Lofts Management',  category: 'UTILITY BILL',     amount: 2900,   txnId: 'RT-3320887', refId: '0021-A11', via: 'Credit Card',  status: 'Failed',     date: '05 Feb 2026', time: '10:30 AM' },
-  { id: '8', to: 'Civic Realty Group',      category: 'RENT',             amount: 45000,  txnId: 'RT-2210776', refId: '0021-X96', via: 'UPI',          status: 'Successful', date: '12 Jan 2026', time: '4:20 PM' },
-]
+function mapPayment(payment: PlatformPayment): Payment {
+  const stamp = new Date(payment.paidAtIso)
+  return {
+    id: payment.id,
+    to: payment.counterparty,
+    category: payment.category,
+    amount: payment.amount,
+    amountDisplay: payment.amountDisplay,
+    txnId: payment.txnId,
+    refId: payment.refId,
+    via: payment.method,
+    status: payment.status,
+    date: stamp.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+    time: stamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+  }
+}
 
 const PAGE_SIZE = 4
 
@@ -61,6 +78,8 @@ const categoryColors: Record<PaymentCategory, string> = {
   'SECURITY DEPOSIT': 'bg-purple-50 text-purple-700',
   'UTILITY BILL':     'bg-teal-50 text-teal-700',
   'MAINTENANCE':      'bg-orange-50 text-orange-700',
+  'PREMIUM':          'bg-indigo-50 text-indigo-700',
+  'OTHER':            'bg-slate-50 text-slate-700',
 }
 
 function CategoryBadge({ category }: { category: PaymentCategory }) {
@@ -73,10 +92,21 @@ function CategoryBadge({ category }: { category: PaymentCategory }) {
 
 // ─── Payment Row ──────────────────────────────────────────────────────────────
 
-function PaymentRow({ payment }: { payment: Payment }) {
+function PaymentRow({ payment, onView }: { payment: Payment; onView: (payment: Payment) => void }) {
   const canDownload = payment.status === 'Successful' || payment.status === 'Pending'
   return (
-    <div className="px-6 py-5 border-b border-[#f1f5f9] last:border-0 hover:bg-[#fafbfc] transition-colors">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onView(payment)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onView(payment)
+        }
+      }}
+      className="cursor-pointer px-6 py-5 border-b border-[#f1f5f9] last:border-0 hover:bg-[#fafbfc] transition-colors"
+    >
       <div className="flex items-start justify-between gap-4 flex-wrap">
         {/* Left */}
         <div className="flex-1 min-w-0">
@@ -85,7 +115,9 @@ function PaymentRow({ payment }: { payment: Payment }) {
             <CategoryBadge category={payment.category} />
           </div>
           <div className="font-display text-[26px] font-extrabold text-[#0F172A] leading-none mb-2">
-            ₹{payment.amount.toLocaleString('en-IN')}
+            {payment.amountDisplay.startsWith('$') || payment.amountDisplay.startsWith('₹')
+              ? payment.amountDisplay
+              : `₹${payment.amount.toLocaleString('en-IN')}`}
           </div>
           <div className="flex items-center gap-3 flex-wrap text-[12px] text-[#64748b] font-medium">
             <span>TXN ID: <span className="text-[#0F172A] font-semibold">{payment.txnId}</span></span>
@@ -102,6 +134,10 @@ function PaymentRow({ payment }: { payment: Payment }) {
           {canDownload ? (
             <button
               type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                onView(payment)
+              }}
               className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#0F172A] hover:text-[#2563eb] border-0 bg-transparent cursor-pointer transition-colors p-0"
             >
               <MaterialIcon name="download" className="!text-[16px]" />
@@ -121,11 +157,25 @@ function PaymentRow({ payment }: { payment: Payment }) {
 
 // ─── Make Payment Modal ───────────────────────────────────────────────────────
 
-const PAYMENT_CATEGORIES: PaymentCategory[] = ['RENT', 'SECURITY DEPOSIT', 'UTILITY BILL', 'MAINTENANCE']
+const PAYMENT_CATEGORIES: PaymentCategory[] = ['RENT', 'SECURITY DEPOSIT', 'UTILITY BILL', 'MAINTENANCE', 'OTHER']
 const PAYMENT_METHODS: PaymentMethod[] = ['UPI', 'Net Banking', 'Credit Card', 'Debit Card']
 
-function MakePaymentModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const [to, setTo] = useState('')
+function MakePaymentModal({
+  onClose,
+  onSubmit,
+  defaultRecipient,
+}: {
+  onClose: () => void
+  onSubmit: (data: {
+    to: string
+    amount: number
+    category: PaymentCategory
+    method: PaymentMethod
+    refId: string
+  }) => void
+  defaultRecipient?: string
+}) {
+  const [to, setTo] = useState(defaultRecipient ?? '')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<PaymentCategory>('RENT')
   const [method, setMethod] = useState<PaymentMethod>('UPI')
@@ -150,7 +200,13 @@ function MakePaymentModal({ onClose, onSuccess }: { onClose: () => void; onSucce
     setSubmitting(true)
     await new Promise((r) => setTimeout(r, 1200))
     setSubmitting(false)
-    onSuccess()
+    onSubmit({
+      to: to.trim(),
+      amount: Number(amount),
+      category,
+      method,
+      refId: method === 'UPI' ? upiId.trim() : '',
+    })
     onClose()
   }
 
@@ -226,6 +282,24 @@ function MakePaymentModal({ onClose, onSuccess }: { onClose: () => void; onSucce
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function TenantPayments() {
+  const navigate = useNavigate()
+  const tenantId = useTenantId()
+  const { user } = useAuth()
+  const tenantName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Tenant'
+  const storePayments = usePaymentsStore((state) => state.payments)
+  const addTenantPayment = usePaymentsStore((state) => state.addTenantPayment)
+  const activeLease = useOnboardingStore((state) =>
+    state.records.find((record) => record.tenant.id === tenantId && record.status === 'active'),
+  )
+
+  const allPayments = useMemo(
+    () =>
+      storePayments
+        .filter((payment) => payment.tenantId === tenantId && payment.flow === 'tenant_to_owner')
+        .map(mapPayment),
+    [storePayments, tenantId],
+  )
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | 'All Status'>('All Status')
   const [page, setPage] = useState(1)
@@ -233,7 +307,7 @@ export function TenantPayments() {
   const [showSuccessToast, setShowSuccessToast] = useState(false)
 
   const filtered = useMemo(() => {
-    return ALL_PAYMENTS.filter((p) => {
+    return allPayments.filter((p) => {
       const matchSearch =
         !search ||
         p.txnId.toLowerCase().includes(search.toLowerCase()) ||
@@ -241,7 +315,7 @@ export function TenantPayments() {
       const matchStatus = statusFilter === 'All Status' || p.status === statusFilter
       return matchSearch && matchStatus
     })
-  }, [search, statusFilter])
+  }, [allPayments, search, statusFilter])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
@@ -314,7 +388,13 @@ export function TenantPayments() {
       {/* Transactions card */}
       <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)] overflow-hidden mb-6">
         {paginated.length > 0 ? (
-          paginated.map((p) => <PaymentRow key={p.id} payment={p} />)
+          paginated.map((p) => (
+            <PaymentRow
+              key={p.id}
+              payment={p}
+              onView={(payment) => navigate(ROUTES.TENANT.PAYMENT_RECEIPT(payment.id))}
+            />
+          ))
         ) : (
           <div className="py-16 text-center">
             <MaterialIcon name="receipt_long" className="!text-[48px] text-[#cbd5e1] mb-3" />
@@ -382,15 +462,32 @@ export function TenantPayments() {
       )}
 
       {/* Footer note */}
-      <p className="text-center text-[11px] font-semibold tracking-wider text-[#94a3b8] uppercase pb-2">
-        Property ID: RTL-882-DAN • Lease Active Until Oct 2024
-      </p>
+      {activeLease?.lease && (
+        <p className="text-center text-[11px] font-semibold tracking-wider text-[#94a3b8] uppercase pb-2">
+          Lease {activeLease.lease.id} · {activeLease.propertyName}
+        </p>
+      )}
 
       {/* Make Payment Modal */}
       {showModal && (
         <MakePaymentModal
+          defaultRecipient={activeLease?.owner.name}
           onClose={() => setShowModal(false)}
-          onSuccess={() => {
+          onSubmit={(data) => {
+            addTenantPayment({
+              tenantId,
+              tenantName,
+              ownerId: activeLease?.owner.id,
+              ownerName: activeLease?.owner.name,
+              propertyId: activeLease?.ownerPropertyId,
+              propertyName: activeLease?.propertyName,
+              unit: activeLease?.unit,
+              to: data.to,
+              category: data.category,
+              amount: data.amount,
+              method: data.method,
+              refId: data.refId,
+            })
             setShowSuccessToast(true)
             setTimeout(() => setShowSuccessToast(false), 4000)
           }}
@@ -417,3 +514,4 @@ export function TenantPayments() {
     </div>
   )
 }
+

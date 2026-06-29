@@ -8,7 +8,7 @@ type Step = 'aadhaar' | 'otp'
 interface KycVerificationModalProps {
   isOpen: boolean
   onClose: () => void
-  onVerified: () => void
+  onVerified: (aadhaarRaw: string) => void
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -206,7 +206,7 @@ export function KycVerificationModal({
     // Simulate API call
     await new Promise((r) => setTimeout(r, 1200))
     setVerifying(false)
-    onVerified()
+    onVerified(aadhaarRaw)
     onClose()
   }
 

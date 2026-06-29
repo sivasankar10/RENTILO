@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
+import { useOwnerStore } from '@modules/owner/store/ownerStore'
+import { useListingPromotionStore } from '@shared/store/listingPromotionStore'
 import { PROPERTIES } from '../constants/properties'
 import type { Property } from '../types/property'
 import { useSavedPropertiesStore } from '../store/savedPropertiesStore'
@@ -112,11 +114,28 @@ export function ListingsPage() {
   const [rentRange, setRentRange] = useState({ min: RENT_MIN, max: RENT_MAX })
   const [tenantTypes, setTenantTypes] = useState(DEFAULT_TENANT_TYPES)
   const [bhkConfig, setBhkConfig] = useState(DEFAULT_BHK_CONFIG)
+  const assignedBrokerId = useOwnerStore((state) => state.assignedBrokerId)
+  const promotedListingIds = useListingPromotionStore((state) => state.getActivePromotedTenantListingIds())
 
   const selectedTenantTypes = useMemo(() => getSelectedKeys(tenantTypes), [tenantTypes])
   const selectedBhkConfigs = useMemo(() => getSelectedKeys(bhkConfig), [bhkConfig])
   const minRentPercent = ((rentRange.min - RENT_MIN) / (RENT_MAX - RENT_MIN)) * 100
   const maxRentPercent = ((rentRange.max - RENT_MIN) / (RENT_MAX - RENT_MIN)) * 100
+  const promotedIdSet = useMemo(() => new Set(promotedListingIds), [promotedListingIds])
+  const tenantProperties = useMemo(() => {
+    return PROPERTIES.map((property) => {
+      if (promotedIdSet.has(property.id)) {
+        return { ...property, badge: 'Suggested' as const }
+      }
+
+      if (assignedBrokerId && property.id === 'prop-1') {
+        return { ...property, badge: 'Recommended' as const }
+      }
+
+      return property
+    })
+  }, [assignedBrokerId, promotedIdSet])
+
   const hasActiveFilters =
     activeSearchTerms.length > 0 ||
     sortBy !== 'recommended' ||
@@ -128,7 +147,7 @@ export function ListingsPage() {
   const filteredProperties = useMemo(() => {
     const normalizedTerms = activeSearchTerms.map((term) => term.toLowerCase())
 
-    return PROPERTIES.filter((property) => {
+    return tenantProperties.filter((property) => {
       const propertyRent = parseRent(property.price)
       const matchesSearch =
         normalizedTerms.length === 0 ||
@@ -152,7 +171,7 @@ export function ListingsPage() {
         b.views - a.views
       )
     })
-  }, [activeSearchTerms, rentRange.max, rentRange.min, selectedBhkConfigs, selectedTenantTypes, sortBy])
+  }, [activeSearchTerms, rentRange.max, rentRange.min, selectedBhkConfigs, selectedTenantTypes, sortBy, tenantProperties])
 
   const toggleTenantType = (type: TenantTypeKey) => {
     setTenantTypes((prev) => ({ ...prev, [type]: !prev[type] }))
@@ -281,7 +300,7 @@ export function ListingsPage() {
               Curated Properties
             </h1>
             <p className="text-sm text-brand-on-surface-variant mt-2">
-              Showing {filteredProperties.length} of {PROPERTIES.length} available residences matching your criteria.
+              Showing {filteredProperties.length} of {tenantProperties.length} available residences matching your criteria.
             </p>
           </div>
 
@@ -469,3 +488,5 @@ export function ListingsPage() {
     </div>
   )
 }
+
+

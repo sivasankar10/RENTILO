@@ -1,4 +1,6 @@
-import type { RouteObject } from 'react-router-dom'
+﻿import type { RouteObject } from 'react-router-dom'
+import { ROUTES } from '@shared/constants/routes'
+import { PaymentReceiptPage } from '@shared/pages/PaymentReceiptPage'
 import { OwnerDashboard } from '../pages/OwnerDashboard'
 import { OwnerPortfolio } from '../pages/OwnerPortfolio'
 import { OwnerProperties } from '../pages/OwnerProperties'
@@ -6,6 +8,8 @@ import { OwnerPropertyDetail } from '../pages/OwnerPropertyDetail'
 import { OwnerRegisterProperty } from '../pages/OwnerRegisterProperty'
 import { OwnerMaintenanceTickets } from '../pages/OwnerMaintenanceTickets'
 import { OwnerLeases } from '../pages/OwnerLeases'
+import { OwnerLeaseDocuments } from '../pages/OwnerLeaseDocuments'
+import { OwnerListingPromotionPaymentPage } from '../pages/OwnerListingPromotionPaymentPage'
 import { OwnerTenants } from '../pages/OwnerTenants'
 import { OwnerAnalytics } from '../pages/OwnerAnalytics'
 import { OwnerPayments } from '../pages/OwnerPayments'
@@ -22,19 +26,25 @@ export const ownerRoutes: RouteObject[] = [
   { index: true, element: <OwnerDashboard /> },
   { path: 'dashboard', element: <OwnerDashboard /> },
   { path: 'portfolio', element: <OwnerPortfolio /> },
+  { path: 'portfolio/promote/:propertyId/payment', element: <OwnerListingPromotionPaymentPage /> },
   { path: 'properties', element: <OwnerProperties /> },
   { path: 'properties/register', element: <OwnerRegisterProperty /> },
+  { path: 'properties/:propertyId/edit', element: <OwnerProperties /> },
   { path: 'properties/:propertyId', element: <OwnerPropertyDetail /> },
   { path: 'maintenance', element: <OwnerMaintenanceTickets /> },
   { path: 'leases', element: <OwnerLeases /> },
+  { path: 'leases/:onboardingId/documents', element: <OwnerLeaseDocuments /> },
   { path: 'tenants', element: <OwnerTenants /> },
   { path: 'payments', element: <OwnerPayments /> },
   { path: 'analytics', element: <OwnerAnalytics /> },
   { path: 'plans-rules', element: <OwnerPlansRules /> },
   { path: 'premium-payment', element: <OwnerPremiumPaymentPage /> },
+  { path: 'payments', element: <OwnerPayments /> },
+  { path: 'payments/:paymentId', element: <PaymentReceiptPage backRoute={ROUTES.OWNER.PAYMENTS} backLabel="Back to Payments" audience="owner" /> },
   { path: 'settings', element: <OwnerSettings /> },
   { path: 'profile', element: <OwnerProfile /> },
   { path: 'notifications', element: <OwnerNotifications /> },
   { path: 'messages', element: <OwnerMessages /> },
   { path: 'brokers/:brokerId', element: <OwnerBrokerProfile /> },
 ]
+

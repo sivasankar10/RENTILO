@@ -1,10 +1,9 @@
-import { useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart3,
   Bath,
   Bed,
-  Calendar,
   CheckCircle2,
   Circle,
   Crown,
@@ -13,15 +12,24 @@ import {
   MessageSquare,
   Pencil,
   Ruler,
+<<<<<<< HEAD
   Sparkles,
   TrendingUp,
+=======
+>>>>>>> main
   Users,
   Zap,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+<<<<<<< HEAD
 import { useOwnerStore } from '../store/ownerStore'
 import { PLAN_CONFIG } from '../config/features'
 import { formatSubscriptionDate } from '../services/subscription.service'
+=======
+import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
+import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
+import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
+>>>>>>> main
 
 const tenantSignals = [
   {
@@ -31,7 +39,7 @@ const tenantSignals = [
     state: 'active',
   },
   {
-    icon: Calendar,
+    icon: CheckCircle2,
     title: 'New viewing request',
     description: 'Request received 15 mins ago',
     state: 'restricted',
@@ -52,6 +60,21 @@ const advantageItems = [
 
 export function OwnerDashboard() {
   const navigate = useNavigate()
+  const onboardingRecords = useOnboardingStore((state) => state.records)
+  const activeLease = useMemo(
+    () =>
+      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, ['active']),
+    [onboardingRecords],
+  )
+  const leaseWithPayment = useMemo(
+    () =>
+      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, [
+        'payment_completed',
+        'active',
+      ]),
+    [onboardingRecords],
+  )
+  const propertyOccupied = Boolean(activeLease)
   const [activityItems, setActivityItems] = useState(initialActivityItems)
   const completedCount = activityItems.filter((item) => item.complete).length
   
@@ -88,10 +111,18 @@ export function OwnerDashboard() {
                 </span>
               </div>
               <p className="mt-2 text-body text-text-muted">
+<<<<<<< HEAD
                 {isPremium 
                   ? 'Full access to all premium features and analytics.'
                   : 'Manage your active listing and monitor tenant signals.'
                 }
+=======
+                {propertyOccupied
+                  ? 'Your property is occupied. Manage the active tenant from the property overview.'
+                  : leaseWithPayment
+                    ? 'Payment received — complete tenant onboarding from Leases.'
+                    : 'Manage your active listing and monitor tenant signals.'}
+>>>>>>> main
               </p>
             </div>
 
@@ -114,7 +145,7 @@ export function OwnerDashboard() {
               <article className="overflow-hidden rounded-card border border-outline bg-white shadow-surface">
                 <button
                   type="button"
-                  onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL('opus-tower-14b'))}
+                  onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(PRIMARY_OWNER_PROPERTY_ID))}
                   className="block w-full text-left"
                 >
                   <div className="relative h-64 overflow-hidden bg-slate-100">
@@ -123,8 +154,16 @@ export function OwnerDashboard() {
                     alt="Modern rental property with pool and glass facade"
                     className="h-full w-full object-cover"
                   />
-                  <span className="absolute left-6 top-6 rounded-pill bg-primary-50 px-2.5 py-1 text-badge uppercase text-primary">
-                    Active
+                  <span
+                    className={
+                      propertyOccupied
+                        ? 'absolute left-6 top-6 rounded-pill bg-primary-50 px-2.5 py-1 text-badge uppercase text-primary'
+                        : leaseWithPayment
+                          ? 'absolute left-6 top-6 rounded-pill bg-status-warning-bg px-2.5 py-1 text-badge uppercase text-status-warning-text'
+                          : 'absolute left-6 top-6 rounded-pill bg-status-success-bg px-2.5 py-1 text-badge uppercase text-status-success-text'
+                    }
+                  >
+                    {propertyOccupied ? 'Occupied' : leaseWithPayment ? 'Pending onboarding' : 'Vacant'}
                   </span>
                   {isPremium && (
                     <span className="absolute right-6 top-6 rounded-pill bg-amber-500 px-2.5 py-1 text-badge uppercase text-white flex items-center gap-1">
@@ -153,6 +192,14 @@ export function OwnerDashboard() {
                           1,200 sqft
                         </span>
                       </div>
+                      {leaseWithPayment && (
+                        <p className="mt-3 inline-flex items-center gap-2 text-label font-semibold text-navy">
+                          <Users size={14} />
+                          {propertyOccupied
+                            ? `Tenant: ${leaseWithPayment.tenant.name}`
+                            : `Paid by ${leaseWithPayment.tenant.name}`}
+                        </p>
+                      )}
                     </div>
 
                     <div className="text-left sm:text-right">
@@ -166,7 +213,7 @@ export function OwnerDashboard() {
                 <div className="border-t border-outline px-6 pb-6 pt-0 text-left sm:text-right">
                     <button
                       type="button"
-                      onClick={() => navigate(ROUTES.OWNER.PROPERTIES)}
+                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_EDIT(PRIMARY_OWNER_PROPERTY_ID))}
                       className="mt-2 inline-flex items-center gap-2 text-label font-bold text-primary transition-colors duration-200 hover:text-primary-700"
                     >
                       Edit Details
@@ -175,6 +222,7 @@ export function OwnerDashboard() {
                 </div>
               </article>
 
+              {!leaseWithPayment && (
               <article className="rounded-card border border-outline bg-white p-6 shadow-surface">
                 <div className="flex items-center justify-between gap-4 border-b border-outline pb-4">
                   <h2 className="text-body-lg font-semibold text-text-primary">Tenant Signals</h2>
@@ -223,17 +271,54 @@ export function OwnerDashboard() {
                   })}
                 </div>
               </article>
+              )}
+
+              {leaseWithPayment && (
+                <article className="rounded-card border border-primary/20 bg-primary-50/50 p-6 shadow-surface">
+                  <h2 className="text-body-lg font-semibold text-navy">Active tenant application</h2>
+                  <p className="mt-2 text-body text-text-muted">
+                    {propertyOccupied
+                      ? `${leaseWithPayment.tenant.name} is onboarded. Open the property overview for chat and lease documents.`
+                      : `${leaseWithPayment.tenant.name} has paid. Confirm onboarding from Leases to mark the unit occupied.`}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(PRIMARY_OWNER_PROPERTY_ID))}
+                      className="rounded-button bg-navy px-4 py-2.5 text-label font-bold text-white"
+                    >
+                      View tenant & documents
+                    </button>
+                    {!propertyOccupied && (
+                      <button
+                        type="button"
+                        onClick={() => navigate(ROUTES.OWNER.LEASES)}
+                        className="rounded-button border border-outline bg-white px-4 py-2.5 text-label font-bold text-navy"
+                      >
+                        Go to Leases
+                      </button>
+                    )}
+                  </div>
+                </article>
+              )}
 
               <p className="flex items-center gap-2 text-label text-slate-400">
                 <Info size={14} />
+<<<<<<< HEAD
                 {isPremium 
                   ? 'Your listings are boosted with premium visibility in search results.'
                   : 'Your listing is currently ranked based on daily activity.'
                 }
+=======
+                {leaseWithPayment
+                  ? 'Broker assignment is closed after the tenant completes onboarding payment.'
+                  : 'Your listing is currently ranked based on daily activity.'}
+>>>>>>> main
               </p>
             </div>
 
             <aside className="space-y-6">
+<<<<<<< HEAD
               {/* Show different sidebar based on subscription */}
               {isPremium ? (
                 <PremiumSidebar />
@@ -258,6 +343,29 @@ export function OwnerDashboard() {
                         Complete these to boost visibility in local searches.
                       </p>
                     </div>
+=======
+              <ListingPromotionPromoCard compact />
+
+              <article className="rounded-card border border-navy bg-navy p-6 text-white shadow-modal">
+                <h2 className="text-body-lg font-semibold">Daily Activity</h2>
+                <div className="mt-6">
+                  <div className="flex items-center justify-between text-label">
+                    <span>Visibility Boost</span>
+                    <span>
+                      {completedCount}/{activityItems.length} Completed
+                    </span>
+                  </div>
+                  <div className="mt-3 h-2 rounded-pill bg-slate-800">
+                    <div
+                      className="h-full rounded-pill bg-primary transition-all duration-200"
+                      style={{ width: `${(completedCount / activityItems.length) * 100}%` }}
+                    />
+                  </div>
+                  <p className="mt-4 text-label leading-5 text-slate-400">
+                    Complete these to boost visibility in local searches.
+                  </p>
+                </div>
+>>>>>>> main
 
                     <div className="mt-8 space-y-4">
                       {activityItems.map((item) => (

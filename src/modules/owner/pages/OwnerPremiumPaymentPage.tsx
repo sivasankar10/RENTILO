@@ -13,9 +13,13 @@ import {
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+<<<<<<< HEAD
 import { useOwnerStore } from '../store/ownerStore'
 import { PLAN_CONFIG, FEATURE_LABELS } from '../config/features'
 import type { OwnerFeature } from '../config/features'
+=======
+import { usePaymentsStore } from '@shared/store/paymentsStore'
+>>>>>>> main
 
 /* ─────────────────────────────────────────────
    Types
@@ -78,6 +82,7 @@ function ProcessingOverlay({
   const currentIndex = steps.findIndex(s => s.key === progress)
   
   return (
+<<<<<<< HEAD
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-sm mx-4 bg-white rounded-2xl p-8 text-center">
         {progress === 'success' ? (
@@ -517,5 +522,37 @@ export function OwnerPremiumPaymentPage() {
         </div>
       </div>
     </>
+=======
+    <CheckoutPaymentPage
+      backLabel="Back to plans"
+      backRoute={ROUTES.OWNER.PLANS_RULES}
+      eyebrow="Owner Premium Plan"
+      title="Complete Premium Payment"
+      description="This is a dummy checkout page for now. Choose a payment method and submit to preview the premium activation flow."
+      amount="$149"
+      submitLabel="Pay $149"
+      successTitle="Premium plan payment successful"
+      successDescription="Your Owner Premium plan activation has been completed in this dummy flow."
+      successActionLabel="Go to Portfolio"
+      successActionRoute={ROUTES.OWNER.PORTFOLIO}
+      productTitle="Owner Premium"
+      productSubtitle="Monthly plan"
+      productIcon="workspace_premium"
+      benefits={ownerPremiumBenefits}
+      lineItems={[
+        { label: 'Premium plan', value: '$149' },
+        { label: 'Taxes', value: '$0' },
+      ]}
+      total="$149"
+      onPaymentComplete={({ method }) => {
+        usePaymentsStore.getState().addOwnerOutgoingPayment({
+          amount: 149,
+          amountDisplay: '$149',
+          method,
+          description: 'Owner Premium Plan — monthly subscription',
+        })
+      }}
+    />
+>>>>>>> main
   )
 }

@@ -3,7 +3,6 @@ import { Filter, Shield } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore, type ApprovalRequest } from '../store/adminStore'
 import { toast } from '../components/Toast'
-
 type ApprovalStatusFilter = ApprovalRequest['status'] | 'All'
 type ApprovalDecision = Exclude<ApprovalRequest['status'], 'Pending'>
 
@@ -28,6 +27,7 @@ export function AdminPlatformConfiguration() {
   const promotedApprovals = useAdminStore((state) => state.promotedApprovals)
   const decideListingApproval = useAdminStore((state) => state.decideListingApproval)
   const decidePromotedApproval = useAdminStore((state) => state.decidePromotedApproval)
+  const addListing = useAdminStore((state) => state.addListing)
   const [listingFilter, setListingFilter] = useState<ApprovalStatusFilter>('Pending')
   const [promotedFilter, setPromotedFilter] = useState<ApprovalStatusFilter>('Pending')
   const [showListingFilters, setShowListingFilters] = useState(false)
@@ -54,10 +54,34 @@ export function AdminPlatformConfiguration() {
 
   const handleListingDecision = (request: ApprovalRequest, decision: ApprovalDecision) => {
     decideListingApproval(request.id, decision)
-    toast.success(
-      decision === 'Approved' ? 'Listing approved' : 'Listing rejected',
-      `${request.id} has been marked ${decision.toLowerCase()}.`,
-    )
+
+    if (decision === 'Approved') {
+      // Build a non-enterprise listing from the approval request data
+      const slug = request.id.replace(/[^a-z0-9]/gi, '-').toLowerCase()
+      addListing({
+        id: request.id,
+        slug,
+        segment: 'non-enterprise',
+        image: request.image,
+        owner: request.owner,
+        location: request.location,
+        rent: '₹0',
+        status: 'Active',
+        propertyType: request.metaLabel,           // e.g. "1 BHK"
+        postedDate: new Date().toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
+        updated: 'Just now',
+      })
+      toast.success(
+        'Listing approved & published',
+        `${request.id} is now live in Non-Enterprise listings.`,
+      )
+    } else {
+      toast.success('Listing rejected', `${request.id} has been marked rejected.`)
+    }
   }
 
   const handlePromotedDecision = (request: ApprovalRequest, decision: ApprovalDecision) => {

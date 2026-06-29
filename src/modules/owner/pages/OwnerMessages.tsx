@@ -13,15 +13,19 @@ import {
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { useOwnerChatStore } from '../store/chatStore'
 
 export function OwnerMessages() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const conversations = useOwnerChatStore((state) => state.conversations)
+  const leaseThreads = useLeaseChatStore((state) => state.threads)
   const storeSendMessage = useOwnerChatStore((state) => state.sendMessage)
   const markConversationRead = useOwnerChatStore((state) => state.markConversationRead)
-  const requestedConversationId = Number(searchParams.get('conversation'))
+  const requestedConversationId = Number(
+    searchParams.get('conversationId') ?? searchParams.get('conversation') ?? NaN,
+  )
   const initialConversationId = conversations.some(
     (conversation) => conversation.id === requestedConversationId
   )
@@ -34,6 +38,23 @@ export function OwnerMessages() {
 
   const activeConversation =
     conversations.find((conversation) => conversation.id === activeId) ?? conversations[0]
+
+  const leaseThread = useMemo(
+    () =>
+      activeConversation?.onboardingId
+        ? leaseThreads.find((thread) => thread.onboardingId === activeConversation.onboardingId)
+        : undefined,
+    [activeConversation?.onboardingId, leaseThreads],
+  )
+
+  const displayMessages = leaseThread?.messages.length
+    ? leaseThread.messages.map((message, index) => ({
+        id: index + 1,
+        sender: message.sender === 'owner' ? ('owner' as const) : ('tenant' as const),
+        text: message.text,
+        time: message.time,
+      }))
+    : activeConversation?.messages ?? []
 
   useEffect(() => {
     if (activeConversation) {
@@ -304,7 +325,7 @@ export function OwnerMessages() {
               </span>
             </div>
 
-            {activeConversation.messages.map((message) => (
+            {displayMessages.map((message) => (
               <div
                 key={message.id}
                 className={cn(

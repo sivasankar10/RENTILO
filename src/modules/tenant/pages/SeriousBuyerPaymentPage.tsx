@@ -63,6 +63,7 @@ type CheckoutPaymentPageProps = {
   benefits: string[]
   lineItems: CheckoutLineItem[]
   total: string
+  onPaymentComplete?: (details: { method: string; amount: string }) => void
 }
 
 export function CheckoutPaymentPage({
@@ -83,6 +84,7 @@ export function CheckoutPaymentPage({
   benefits,
   lineItems,
   total,
+  onPaymentComplete,
 }: CheckoutPaymentPageProps) {
   const navigate = useNavigate()
   const [activeMethod, setActiveMethod] = useState<PaymentMethodId>('credit-card')
@@ -91,6 +93,7 @@ export function CheckoutPaymentPage({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    onPaymentComplete?.({ method: selectedMethod.label, amount })
     setPaymentComplete(true)
   }
 

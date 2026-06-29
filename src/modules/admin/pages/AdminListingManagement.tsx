@@ -8,6 +8,7 @@ import { ActionMenu } from '../components/ActionMenu'
 import { confirm } from '../components/ConfirmDialog'
 import { toast } from '../components/Toast'
 import { exportToCsv } from '../utils/exportCsv'
+import { AdminNewListingModal } from '../components/AdminNewListingModal'
 
 type ListingTab = 'Enterprise' | 'Non-Enterprise'
 type SortKey = 'latest' | 'highest-rent' | 'lowest-rent' | 'updated'
@@ -36,6 +37,7 @@ export function AdminListingManagement() {
   const [sortBy, setSortBy] = useState<SortKey>('latest')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [newListingModalOpen, setNewListingModalOpen] = useState(false)
 
   const segment = activeTab === 'Enterprise' ? 'enterprise' : 'non-enterprise'
 
@@ -118,21 +120,7 @@ export function AdminListingManagement() {
   }
 
   const handleNewListing = () => {
-    const id = `#NEW-${Math.floor(10000 + Math.random() * 90000)}`
-    const slug = id.replace('#', '').toLowerCase()
-    addListing({
-      id,
-      slug,
-      segment,
-      image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=120&q=80',
-      owner: 'New Owner',
-      location: 'To be configured',
-      rent: '₹0',
-      status: 'Paused',
-      postedDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-      updated: 'Just now',
-    })
-    toast.success('Draft listing created', `${id} is ready for configuration.`)
+    setNewListingModalOpen(true)
   }
 
   const handleExport = () => {
@@ -341,6 +329,18 @@ export function AdminListingManagement() {
           <SummaryCard tone="error" Icon={ShieldAlert} value={stats.flagged} label="Pending Flags" />
         </div>
       </div>
+
+      {newListingModalOpen && (
+        <AdminNewListingModal
+          segment={segment}
+          onClose={() => setNewListingModalOpen(false)}
+          onSubmit={(listing) => {
+            addListing(listing)
+            setNewListingModalOpen(false)
+            toast.success('Listing created', `${listing.id} has been added as Paused.`)
+          }}
+        />
+      )}
     </div>
   )
 }

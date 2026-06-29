@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+﻿import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import type { RouteObject } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
@@ -15,6 +15,11 @@ import { NotificationsPage } from '../pages/NotificationsPage'
 import { MessagesPage } from '../pages/MessagesPage'
 import { SeriousBuyerBadgePage } from '../pages/SeriousBuyerBadgePage'
 import { SeriousBuyerPaymentPage } from '../pages/SeriousBuyerPaymentPage'
+import { TenantAgreementReview } from '../pages/TenantAgreementReview'
+import { TenantOnboardingPayment } from '../pages/TenantOnboardingPayment'
+import { TenantMyLease } from '../pages/TenantMyLease'
+import { TenantMaintenanceDetail } from '../pages/TenantMaintenanceDetail'
+import { PaymentReceiptPage } from '@shared/pages/PaymentReceiptPage'
 
 function TenantPageShell({ children }: { children: ReactNode }) {
   return (
@@ -59,10 +64,26 @@ export const tenantRoutes: RouteObject[] = [
     ),
   },
   {
+    path: 'payments/:paymentId',
+    element: (
+      <TenantPageShell>
+        <PaymentReceiptPage backRoute={ROUTES.TENANT.PAYMENTS} backLabel="Back to Payments" audience="tenant" />
+      </TenantPageShell>
+    ),
+  },
+  {
     path: 'maintenance',
     element: (
       <TenantPageShell>
         <TenantMaintenance />
+      </TenantPageShell>
+    ),
+  },
+  {
+    path: 'maintenance/:ticketId',
+    element: (
+      <TenantPageShell>
+        <TenantMaintenanceDetail />
       </TenantPageShell>
     ),
   },
@@ -74,4 +95,27 @@ export const tenantRoutes: RouteObject[] = [
       </TenantPageShell>
     ),
   },
-]
+  {
+    path: 'agreements/:onboardingId',
+    element: (
+      <TenantPageShell>
+        <TenantAgreementReview />
+      </TenantPageShell>
+    ),
+  },
+  {
+    path: 'onboarding/:onboardingId/payment',
+    element: (
+      <TenantPageShell>
+        <TenantOnboardingPayment />
+      </TenantPageShell>
+    ),
+  },
+  {
+    path: 'my-lease',
+    element: (
+      <TenantPageShell>
+        <TenantMyLease />
+      </TenantPageShell>
+    ),
+  },]
