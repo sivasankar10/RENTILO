@@ -8,11 +8,13 @@ import { OwnerMaintenanceTickets } from '../pages/OwnerMaintenanceTickets'
 import { OwnerLeases } from '../pages/OwnerLeases'
 import { OwnerTenants } from '../pages/OwnerTenants'
 import { OwnerAnalytics } from '../pages/OwnerAnalytics'
+import { OwnerPayments } from '../pages/OwnerPayments'
 import { OwnerPlansRules } from '../pages/OwnerPlansRules'
 import { OwnerSettings } from '../pages/OwnerSettings'
 import { OwnerNotifications } from '../pages/OwnerNotifications'
 import { OwnerMessages } from '../pages/OwnerMessages'
 import { OwnerPremiumPaymentPage } from '../pages/OwnerPremiumPaymentPage'
+<<<<<<< HEAD
 // Premium pages (migrated from premium-owner module)
 import { OwnerInquiries } from '../pages/OwnerInquiries'
 import { OwnerViewings } from '../pages/OwnerViewings'
@@ -20,6 +22,9 @@ import { OwnerBrokerManagement } from '../pages/OwnerBrokerManagement'
 import { OwnerPromotions } from '../pages/OwnerPromotions'
 import { OwnerFinancials } from '../pages/OwnerFinancials'
 import { OwnerProfile } from '../pages/OwnerProfile'
+=======
+import { OwnerBrokerProfile } from '../pages/OwnerBrokerProfile'
+>>>>>>> main
 
 export const ownerRoutes: RouteObject[] = [
   // Base routes (available to all)
@@ -32,12 +37,18 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'maintenance', element: <OwnerMaintenanceTickets /> },
   { path: 'leases', element: <OwnerLeases /> },
   { path: 'tenants', element: <OwnerTenants /> },
+<<<<<<< HEAD
+=======
+  { path: 'payments', element: <OwnerPayments /> },
+  { path: 'analytics', element: <OwnerAnalytics /> },
+>>>>>>> main
   { path: 'plans-rules', element: <OwnerPlansRules /> },
   { path: 'premium-payment', element: <OwnerPremiumPaymentPage /> },
   { path: 'settings', element: <OwnerSettings /> },
   { path: 'profile', element: <OwnerProfile /> },
   { path: 'notifications', element: <OwnerNotifications /> },
   { path: 'messages', element: <OwnerMessages /> },
+<<<<<<< HEAD
   
   // Premium routes (feature-gated in components)
   { path: 'analytics', element: <OwnerAnalytics /> },
@@ -46,4 +57,7 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'broker-management', element: <OwnerBrokerManagement /> },
   { path: 'promotions', element: <OwnerPromotions /> },
   { path: 'financials', element: <OwnerFinancials /> },
+=======
+  { path: 'brokers/:brokerId', element: <OwnerBrokerProfile /> },
+>>>>>>> main
 ]

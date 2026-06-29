@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   LogOut,
   Menu,
+  MessageSquare,
   Settings,
   Users,
   UserCog,
@@ -41,6 +42,7 @@ const mainNavItems: AdminNavItem[] = [
   { label: 'Broker Management', href: ROUTES.ADMIN.BROKER_MANAGEMENT, icon: UserCog },
   { label: 'Listing Management', href: ROUTES.ADMIN.LISTING_MANAGEMENT, icon: FileText },
   { label: 'Maintenance Tickets', href: ROUTES.ADMIN.MAINTENANCE_TICKETS, icon: Wrench },
+  { label: 'Messages', href: ROUTES.ADMIN.MESSAGES, icon: MessageSquare },
   { label: 'User Management', href: ROUTES.ADMIN.USER_MANAGEMENT, icon: Users },
   { label: 'Finance & Payments', href: ROUTES.ADMIN.FINANCE_PAYMENTS, icon: CreditCard },
   { label: 'Platform Configuration', href: ROUTES.ADMIN.PLATFORM_CONFIGURATION, icon: Settings },
@@ -99,6 +101,7 @@ export function AdminLayout() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const isNotificationsPage = pathname.startsWith(ROUTES.ADMIN.NOTIFICATIONS)
+  const isMessagesPage = pathname.startsWith(ROUTES.ADMIN.MESSAGES)
   const logout = useAuthStore((s) => s.logout)
 
   return (
@@ -118,15 +121,28 @@ export function AdminLayout() {
           )}
 
           <div className="hidden lg:block sidebar-width shrink-0">
-            <span className="text-[18px] font-extrabold tracking-tight text-white">
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.ADMIN.DASHBOARD)}
+              className="border-0 bg-transparent p-0 text-[18px] font-extrabold tracking-tight text-white hover:text-white/80"
+              aria-label="Go to admin dashboard"
+            >
               RENTILO
-            </span>
+            </button>
           </div>
 
           {isMobile && (
-            <span className="text-[18px] font-extrabold tracking-tight text-white shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                navigate(ROUTES.ADMIN.DASHBOARD)
+                setSidebarOpen(false)
+              }}
+              className="shrink-0 border-0 bg-transparent p-0 text-[18px] font-extrabold tracking-tight text-white hover:text-white/80"
+              aria-label="Go to admin dashboard"
+            >
               RENTILO
-            </span>
+            </button>
           )}
 
           <div className="flex-1" />
@@ -147,6 +163,21 @@ export function AdminLayout() {
             >
               <Bell size={20} strokeWidth={1.75} />
               <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                navigate(ROUTES.ADMIN.MESSAGES)
+                setHelpOpen(false)
+              }}
+              className={cn(
+                'p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors',
+                isMessagesPage && 'bg-white/15 text-white',
+              )}
+              aria-label="Messages"
+              aria-current={isMessagesPage ? 'page' : undefined}
+            >
+              <MessageSquare size={20} strokeWidth={1.75} />
             </button>
             <div className="relative">
               <button

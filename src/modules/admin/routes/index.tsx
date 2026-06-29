@@ -6,11 +6,16 @@ import { AdminEnterprisePropertyDetail } from '../pages/AdminEnterprisePropertyD
 import { AdminNonEnterprisePropertyDetail } from '../pages/AdminNonEnterprisePropertyDetail'
 import { AdminUserManagement } from '../pages/AdminUserManagement'
 import { AdminFinancePayments } from '../pages/AdminFinancePayments'
+import { AdminPaymentReceipt } from '../pages/AdminPaymentReceipt'
 import { AdminPlatformConfiguration } from '../pages/AdminPlatformConfiguration'
 import { AdminAssignmentManagement } from '../pages/AdminAssignmentManagement'
 import { AdminNotifications } from '../pages/AdminNotifications'
 import { AdminMaintenanceTickets } from '../pages/AdminMaintenanceTickets'
+<<<<<<< HEAD
 import { AdminPropertyOverview } from '../pages/AdminPropertyOverview'
+=======
+import { AdminMessages } from '../pages/AdminMessages'
+>>>>>>> main
 
 export const adminRoutes: RouteObject[] = [
   { index: true, element: <AdminDashboard /> },
@@ -21,10 +26,15 @@ export const adminRoutes: RouteObject[] = [
   { path: 'listing-management/non-enterprise/:propertyId', element: <AdminNonEnterprisePropertyDetail /> },
   { path: 'user-management', element: <AdminUserManagement /> },
   { path: 'finance-payments', element: <AdminFinancePayments /> },
+  { path: 'finance-payments/receipt/:transactionId', element: <AdminPaymentReceipt /> },
   { path: 'platform-configuration', element: <AdminPlatformConfiguration /> },
   { path: 'assignment-management', element: <AdminAssignmentManagement /> },
   { path: 'maintenance-tickets', element: <AdminMaintenanceTickets /> },
   { path: 'notifications', element: <AdminNotifications /> },
+<<<<<<< HEAD
   { path: 'property-overview/:propertyId', element: <AdminPropertyOverview /> },
   { path: 'property-overview', element: <AdminPropertyOverview /> },
+=======
+  { path: 'messages', element: <AdminMessages /> },
+>>>>>>> main
 ]

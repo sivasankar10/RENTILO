@@ -82,9 +82,13 @@ export interface OwnerRegisterPropertyFormData {
   photos: string[]
   virtualTourUrl: string
   baseRent: string
+  priceNegotiable: boolean
   securityDeposit: string
   depositUnit: string
   availableFrom: string
+  visitWeekday: string
+  visitStartTime: string
+  visitEndTime: string
   leaseDuration: number
   noticePeriod: string
   utilities: {
@@ -230,9 +234,13 @@ const initialRegisterPropertyDraft: OwnerRegisterPropertyFormData = {
   ],
   virtualTourUrl: '',
   baseRent: '2400',
+  priceNegotiable: true,
   securityDeposit: '1.5',
   depositUnit: 'Months',
   availableFrom: '06/01/2024',
+  visitWeekday: 'Saturday',
+  visitStartTime: '10:00 AM',
+  visitEndTime: '1:00 PM',
   leaseDuration: 12,
   noticePeriod: '30',
   utilities: { electricity: true, water: true, internet: false, gas: false },

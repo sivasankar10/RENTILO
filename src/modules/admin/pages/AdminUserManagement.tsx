@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Ban, ChevronLeft, ChevronRight, Eye, Filter, Info, Mail, Search, Send, Trash2, UserCheck } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Ban, ChevronLeft, ChevronRight, Eye, Filter, Info, MessageSquare, Search, Send, Trash2, UserCheck } from 'lucide-react'
+import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore } from '../store/adminStore'
 import type { AdminUser } from '../store/adminStore'
@@ -26,6 +28,7 @@ const statusColors = {
 } as const
 
 export function AdminUserManagement() {
+  const navigate = useNavigate()
   const users = useAdminStore((s) => s.users)
   const broadcasts = useAdminStore((s) => s.broadcasts)
   const toggleUserStatus = useAdminStore((s) => s.toggleUserStatus)
@@ -75,8 +78,8 @@ export function AdminUserManagement() {
     toast.info(`Viewing ${user.name}`, `Role: ${user.role} • Status: ${user.status}`)
   }
 
-  const handleSendEmail = (user: AdminUser) => {
-    toast.success('Email drafted', `New message to ${user.email}`)
+  const handleOpenChat = (user: AdminUser) => {
+    navigate(`${ROUTES.ADMIN.MESSAGES}?user=${encodeURIComponent(user.id)}`)
   }
 
   const handleToggleBan = (user: AdminUser) => {
@@ -316,7 +319,7 @@ export function AdminUserManagement() {
                           ariaLabel={`Actions for ${user.name}`}
                           items={[
                             { label: 'View profile', icon: Eye, onClick: () => handleViewProfile(user) },
-                            { label: 'Send email', icon: Mail, onClick: () => handleSendEmail(user) },
+                            { label: 'Chat', icon: MessageSquare, onClick: () => handleOpenChat(user) },
                             {
                               label: user.status === 'Active' ? 'Temporarily ban' : 'Reinstate',
                               icon: user.status === 'Active' ? Ban : UserCheck,

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Download, Eye, Filter, RefreshCw, RotateCcw, TrendingUp } from 'lucide-react'
+import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore } from '../store/adminStore'
 import type { AdminTransaction, TransactionStatus, TransactionType } from '../store/adminStore'
@@ -16,6 +18,7 @@ const statusColors: Record<TransactionStatus, string> = {
 }
 
 export function AdminFinancePayments() {
+  const navigate = useNavigate()
   const transactions = useAdminStore((s) => s.transactions)
   const refundTransaction = useAdminStore((s) => s.refundTransaction)
   const retryTransaction = useAdminStore((s) => s.retryTransaction)
@@ -67,7 +70,7 @@ export function AdminFinancePayments() {
   }
 
   const handleViewReceipt = (txn: AdminTransaction) => {
-    toast.info('Receipt opened', `${txn.id} • ${txn.amount} • ${txn.date}`)
+    navigate(ROUTES.ADMIN.PAYMENT_RECEIPT(txn.id))
   }
 
   const handleExport = () => {

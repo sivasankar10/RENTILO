@@ -7,12 +7,12 @@ import {
   Bath,
   Bed,
   BriefcaseBusiness,
+  CalendarClock,
   CheckCircle2,
   CircleDollarSign,
   Info,
   MessageCircle,
   Phone,
-  PlusCircle,
   Ruler,
   Search,
   ShieldCheck,
@@ -24,9 +24,11 @@ import {
   X,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { useOwnerStore } from '../store/ownerStore'
 
 type BrokerCandidate = {
   id: string
+  conversationId: number
   name: string
   title: string
   rating: number
@@ -55,6 +57,7 @@ const portfolioProperty = {
 
 const suggestedBroker: BrokerCandidate = {
   id: 'alexander-pierce',
+  conversationId: 6,
   name: 'Alexander Pierce',
   title: 'Senior Portfolio Manager',
   rating: 4.9,
@@ -73,6 +76,7 @@ const brokerCandidates: BrokerCandidate[] = [
   suggestedBroker,
   {
     id: 'maya-deshpande',
+    conversationId: 2,
     name: 'Maya Deshpande',
     title: 'Tenant Acquisition Lead',
     rating: 4.8,
@@ -88,6 +92,7 @@ const brokerCandidates: BrokerCandidate[] = [
   },
   {
     id: 'jordan-lee',
+    conversationId: 1,
     name: 'Jordan Lee',
     title: 'Residential Leasing Specialist',
     rating: 4.7,
@@ -103,6 +108,7 @@ const brokerCandidates: BrokerCandidate[] = [
   },
   {
     id: 'priya-menon',
+    conversationId: 7,
     name: 'Priya Menon',
     title: 'Premium Homes Advisor',
     rating: 4.6,
@@ -164,6 +170,7 @@ const benefits = [
 
 export function OwnerPortfolio() {
   const navigate = useNavigate()
+  const registerPropertyDraft = useOwnerStore((state) => state.registerPropertyDraft)
   const [brokerStatus, setBrokerStatus] = useState('Awaiting broker decision.')
   const [propertyPosted, setPropertyPosted] = useState(false)
   const [brokerPickerOpen, setBrokerPickerOpen] = useState(false)
@@ -196,6 +203,7 @@ export function OwnerPortfolio() {
     setBrokerStatus(`${broker.name} has been assigned to ${portfolioProperty.name}.`)
     setPropertyPosted(true)
     setBrokerPickerOpen(false)
+    navigate(`${ROUTES.OWNER.MESSAGES}?conversation=${broker.conversationId}`)
   }
 
   const rejectBroker = (broker: BrokerCandidate) => {
@@ -239,14 +247,6 @@ export function OwnerPortfolio() {
                 <BadgeInfo size={16} />
                 Free Plan: 1/1 Property Listed
               </div>
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.OWNER.REGISTER_PROPERTY)}
-                className="inline-flex items-center justify-center gap-2 rounded-button bg-slate-200 px-4 py-3 text-body font-semibold text-text-primary transition-colors duration-200 hover:bg-outline"
-              >
-                <PlusCircle size={16} />
-                Post New Property
-              </button>
             </div>
           </div>
 
@@ -292,8 +292,21 @@ export function OwnerPortfolio() {
                 </div>
 
                 <p className="mt-8 text-heading-2 font-bold tracking-tight text-primary">
-                  $4,500 <span className="text-label font-medium text-text-muted">/ mo</span>
+                  ${Number(registerPropertyDraft.baseRent || 4500).toLocaleString('en-US')}{' '}
+                  <span className="text-label font-medium text-text-muted">/ mo</span>
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2 text-label font-semibold">
+                  <span className="inline-flex items-center gap-1.5 rounded-pill bg-canvas-alt px-3 py-1.5 text-text-primary">
+                    <CalendarClock size={14} />
+                    Visits: {registerPropertyDraft.visitWeekday}, {registerPropertyDraft.visitStartTime} - {registerPropertyDraft.visitEndTime}
+                  </span>
+                  <span className="inline-flex items-center gap-2 text-text-primary">
+                    Price
+                    <span className="rounded-pill bg-canvas-alt px-3 py-1.5">
+                      {registerPropertyDraft.priceNegotiable ? 'negotiable' : 'non negotiable'}
+                    </span>
+                  </span>
+                </div>
 
                 {assignedBroker && (
                   <div className="mt-4 inline-flex items-center gap-2 rounded-button bg-primary-50 px-3 py-2 text-label font-semibold text-primary">
@@ -455,7 +468,7 @@ export function OwnerPortfolio() {
                     ? 'Assigned'
                     : suggestedBrokerRejected
                       ? 'Rejected'
-                      : 'Auto Assign'}
+                      : 'Assign'}
                   <ArrowRight size={18} />
                 </button>
                 <button

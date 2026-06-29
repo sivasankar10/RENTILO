@@ -173,15 +173,28 @@ export function BrokerDashboardLayout() {
           )}
 
           <div className="hidden lg:block sidebar-width shrink-0">
-            <span className="text-[18px] font-extrabold tracking-tight text-white">
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.BROKER.DASHBOARD)}
+              className="border-0 bg-transparent p-0 text-[18px] font-extrabold tracking-tight text-white hover:text-white/80"
+              aria-label="Go to broker dashboard"
+            >
               RENTILO
-            </span>
+            </button>
           </div>
 
-          {!isMobile && (
-            <span className="lg:hidden text-[18px] font-extrabold tracking-tight text-white shrink-0">
+          {isMobile && (
+            <button
+              type="button"
+              onClick={() => {
+                navigate(ROUTES.BROKER.DASHBOARD)
+                setSidebarOpen(false)
+              }}
+              className="shrink-0 border-0 bg-transparent p-0 text-[18px] font-extrabold tracking-tight text-white hover:text-white/80 lg:hidden"
+              aria-label="Go to broker dashboard"
+            >
               RENTILO
-            </span>
+            </button>
           )}
 
           <div className="flex-1 flex justify-center min-w-0 px-2 lg:px-8">

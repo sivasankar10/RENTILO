@@ -39,12 +39,14 @@ export const ROUTES = {
     MAINTENANCE: '/owner/maintenance',
     LEASES: '/owner/leases',
     TENANTS: '/owner/tenants',
+    PAYMENTS: '/owner/payments',
     ANALYTICS: '/owner/analytics',
     PLANS_RULES: '/owner/plans-rules',
     PREMIUM_PAYMENT: '/owner/premium-payment',
     SETTINGS: '/owner/settings',
     NOTIFICATIONS: '/owner/notifications',
     MESSAGES: '/owner/messages',
+    BROKER_PROFILE: (id: string | number) => `/owner/brokers/${id}`,
   },
 
   // Broker
@@ -82,10 +84,15 @@ export const ROUTES = {
     LISTING_MANAGEMENT: '/admin/listing-management',
     USER_MANAGEMENT: '/admin/user-management',
     FINANCE_PAYMENTS: '/admin/finance-payments',
+    PAYMENT_RECEIPT: (id: string) => `/admin/finance-payments/receipt/${encodeURIComponent(id.replace(/^#/, ''))}`,
     PLATFORM_CONFIGURATION: '/admin/platform-configuration',
     ASSIGNMENT_MANAGEMENT: '/admin/assignment-management',
     MAINTENANCE_TICKETS: '/admin/maintenance-tickets',
     NOTIFICATIONS: '/admin/notifications',
+<<<<<<< HEAD
     PROPERTY_OVERVIEW: '/admin/property-overview',
+=======
+    MESSAGES: '/admin/messages',
+>>>>>>> main
   },
 } as const

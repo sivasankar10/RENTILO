@@ -17,6 +17,22 @@ import { cn } from '@shared/utils/cn'
 import { MOCK_PROPERTY_GROUPS, getAllConversations } from '../constants/mockMessages'
 import type { PropertyGroup, Conversation, ViewMode, Message, UserRole } from '../types/messages'
 
+type LeadConversationNavigationState = {
+  id: string
+  leadName: string
+  leadAvatar: string
+  propertyId: string
+  propertyName: string
+  lastMessage: string
+  note: string
+}
+
+type BrokerMessagesLocationState = {
+  ownerName?: string
+  propertyId?: string
+  leadConversation?: LeadConversationNavigationState
+}
+
 export function BrokerMessagesPage() {
   const location = useLocation()
   const [viewMode, setViewMode] = useState<ViewMode>('property')
@@ -36,7 +52,7 @@ export function BrokerMessagesPage() {
 
   // Handle navigation from "Contact Owner" button
   useEffect(() => {
-    const state = location.state as { ownerName?: string; propertyId?: string } | null
+    const state = location.state as BrokerMessagesLocationState | null
     if (state?.ownerName && state?.propertyId) {
       // Find and select the owner conversation for this property
       const allConvs = getAllConversations(groups)
@@ -88,6 +104,139 @@ export function BrokerMessagesPage() {
   }
 
   const allConversations = useMemo(() => getAllConversations(groups), [groups])
+  const requestedConversationId = useMemo(
+    () => new URLSearchParams(location.search).get('conversation'),
+    [location.search],
+  )
+
+  useEffect(() => {
+    const state = location.state as BrokerMessagesLocationState | null
+    const leadConversation = state?.leadConversation
+
+    if (!leadConversation) {
+      return
+    }
+
+    const existingConversation = getAllConversations(groups).find(
+      (conversation) => conversation.id === leadConversation.id
+    )
+
+    if (existingConversation) {
+      setSelectedConversation(existingConversation)
+      setViewMode('property')
+      return
+    }
+
+    const newConversation: Conversation = {
+      id: leadConversation.id,
+      userId: `tenant-${leadConversation.id}`,
+      userName: leadConversation.leadName,
+      userRole: 'tenant',
+      userAvatar: leadConversation.leadAvatar,
+      propertyId: leadConversation.propertyId,
+      propertyName: leadConversation.propertyName,
+      lastMessage: leadConversation.lastMessage || leadConversation.note,
+      lastMessageTime: new Date(),
+      unreadCount: 0,
+      isOnline: true,
+      messages: [
+        {
+          id: `${leadConversation.id}-intro`,
+          senderId: `tenant-${leadConversation.id}`,
+          senderName: leadConversation.leadName,
+          senderRole: 'tenant',
+          text: leadConversation.note || `Interested in ${leadConversation.propertyName}`,
+          timestamp: new Date(),
+          status: 'sent',
+        },
+      ],
+    }
+
+    setGroups((currentGroups) => {
+      if (getAllConversations(currentGroups).some((conversation) => conversation.id === newConversation.id)) {
+        return currentGroups
+      }
+
+      let propertyMatched = false
+      const groupsWithLead = currentGroups.map((group) => {
+        let groupHasMatch = false
+        const updatedProperties = group.properties.map((property) => {
+          if (property.id === leadConversation.propertyId || property.name === leadConversation.propertyName) {
+            propertyMatched = true
+            groupHasMatch = true
+            return {
+              ...property,
+              tenantConversations: [newConversation, ...property.tenantConversations],
+            }
+          }
+          return property
+        })
+
+        return {
+          ...group,
+          isExpanded: groupHasMatch ? true : group.isExpanded,
+          properties: updatedProperties,
+        }
+      })
+
+      if (propertyMatched) {
+        return groupsWithLead
+      }
+
+      const generatedGroupId = 'generated-lead-conversations'
+      const generatedProperty = {
+        id: leadConversation.propertyId,
+        name: leadConversation.propertyName,
+        address: 'Lead generated from broker property view',
+        groupId: generatedGroupId,
+        ownerConversation: undefined,
+        tenantConversations: [newConversation],
+      }
+
+      const generatedGroupIndex = groupsWithLead.findIndex((group) => group.id === generatedGroupId)
+      if (generatedGroupIndex >= 0) {
+        return groupsWithLead.map((group, index) =>
+          index === generatedGroupIndex
+            ? {
+                ...group,
+                unreadCount: group.unreadCount,
+                isExpanded: true,
+                properties: [generatedProperty, ...group.properties],
+              }
+            : group
+        )
+      }
+
+      return [
+        {
+          id: generatedGroupId,
+          name: 'Lead Conversations',
+          unreadCount: 0,
+          isExpanded: true,
+          properties: [generatedProperty],
+        },
+        ...groupsWithLead,
+      ]
+    })
+
+    setSelectedConversation(newConversation)
+    setViewMode('property')
+  }, [location.key])
+
+  useEffect(() => {
+    if (!requestedConversationId) {
+      return
+    }
+
+    const conversation = allConversations.find(
+      (item) => item.id === requestedConversationId
+    )
+
+    if (conversation) {
+      setSelectedConversation(conversation)
+      setViewMode('property')
+    }
+  }, [allConversations, requestedConversationId])
 
   const filteredConversations = useMemo(() => {
     if (!searchQuery) return allConversations

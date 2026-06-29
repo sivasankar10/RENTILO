@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  BarChart3,
   Bell,
   Building2,
   Calendar,
@@ -48,6 +47,7 @@ const baseSidebarItems: OwnerSidebarItem[] = [
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
   { label: 'Maintenance', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
+<<<<<<< HEAD
 ]
 
 // Premium items - require subscription
@@ -68,6 +68,19 @@ const mobileNavItems: OwnerSidebarItem[] = [
   { label: 'Settings', href: ROUTES.OWNER.SETTINGS, icon: Settings },
 ]
 
+=======
+  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
+]
+
+const mobileNavItems = [
+  { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
+  { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
+  { label: 'Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
+  { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
+  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
+]
+
+>>>>>>> main
 interface OwnerProfileMenuProps {
   open: boolean
   onClose: () => void
@@ -210,6 +223,11 @@ export function OwnerLayout() {
   const notificationsActive = pathname.startsWith(ROUTES.OWNER.NOTIFICATIONS)
   const messagesActive = pathname.startsWith(ROUTES.OWNER.MESSAGES)
   const profileActive = pathname.startsWith(ROUTES.OWNER.SETTINGS)
+<<<<<<< HEAD
+=======
+  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
+>>>>>>> main
   const currentPropertyId = selectedPropertyId ?? OWNER_MANAGED_PROPERTIES[0]?.id ?? ''
   const canSwitchMode =
     Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
@@ -248,7 +266,11 @@ export function OwnerLayout() {
             <Menu size={20} />
           </button>
 
-          <NavLink to={ROUTES.OWNER.DASHBOARD} className="flex items-center gap-2">
+          <NavLink
+            to={ROUTES.OWNER.DASHBOARD}
+            className="flex items-center gap-2 no-underline hover:opacity-80"
+            aria-label="Go to owner dashboard"
+          >
             <span className="font-display text-2xl font-black tracking-tight text-brand">RENTILO</span>
           </NavLink>
 
@@ -256,6 +278,7 @@ export function OwnerLayout() {
             <RoleModeSwitcher className="hidden sm:inline-flex" />
             <button
               type="button"
+<<<<<<< HEAD
               disabled={propertyLimitReached}
               onClick={() => {
                 if (propertyLimitReached) {
@@ -275,6 +298,11 @@ export function OwnerLayout() {
                   ? 'cursor-not-allowed border border-brand-outline/30 bg-transparent text-brand-outline opacity-60'
                   : 'bg-brand text-white hover:opacity-90'
               )}
+=======
+              onClick={() => navigate(ROUTES.OWNER.REGISTER_PROPERTY)}
+              title="Post a new property"
+              className="hidden rounded-button bg-brand px-4 py-2 text-label font-semibold text-white shadow-sm transition-all duration-200 hover:opacity-90 sm:inline-flex"
+>>>>>>> main
             >
               Post New Property
             </button>
