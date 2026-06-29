@@ -38,6 +38,7 @@ const sidebarItems: OwnerSidebarItem[] = [
   { label: 'Owner Plans & Rules', href: ROUTES.OWNER.PLANS_RULES, icon: Settings },
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
   { label: 'Maintenance Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
+  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
   { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
@@ -46,6 +47,7 @@ const mobileNavItems = [
   { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
   { label: 'Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
+  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
   { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]

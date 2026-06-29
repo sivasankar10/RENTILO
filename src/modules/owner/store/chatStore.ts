@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 
 export interface OwnerChatMessage {
   id: number
@@ -12,6 +14,8 @@ export type OwnerChatContactType = 'broker' | 'tenant'
 export interface OwnerChatConversation {
   id: number
   contactType: OwnerChatContactType
+  tenantId?: string
+  onboardingId?: string
   name: string
   role: string
   preview: string
@@ -30,6 +34,16 @@ interface OwnerChatState {
   conversations: OwnerChatConversation[]
   sendMessage: (conversationId: number, text: string) => void
   markConversationRead: (conversationId: number) => void
+  ensureTenantConversation: (payload: {
+    tenantId: string
+    onboardingId: string
+    name: string
+    propertyName: string
+    unit: string
+    address: string
+    monthlyRent: string
+    avatar: string
+  }) => number
 }
 
 const initialConversations: OwnerChatConversation[] = [
@@ -241,12 +255,19 @@ function formatTime(date = new Date()) {
   })
 }
 
-export const useOwnerChatStore = create<OwnerChatState>((set) => ({
+export const useOwnerChatStore = create<OwnerChatState>()(
+  persist(
+    (set, get) => ({
   conversations: initialConversations,
 
   sendMessage: (conversationId, text) => {
     const trimmedText = text.trim()
     if (!trimmedText) return
+
+    const conversation = get().conversations.find((item) => item.id === conversationId)
+    if (conversation?.onboardingId) {
+      useLeaseChatStore.getState().sendMessage(conversation.onboardingId, 'owner', trimmedText)
+    }
 
     const now = formatTime()
     const message: OwnerChatMessage = {
@@ -280,4 +301,43 @@ export const useOwnerChatStore = create<OwnerChatState>((set) => ({
       ),
     }))
   },
-}))
+
+  ensureTenantConversation: (payload) => {
+    const existing = get().conversations.find(
+      (conversation) =>
+        conversation.contactType === 'tenant' && conversation.tenantId === payload.tenantId,
+    )
+    if (existing) return existing.id
+
+    const nextId = Math.max(0, ...get().conversations.map((conversation) => conversation.id)) + 1
+    const conversation: OwnerChatConversation = {
+      id: nextId,
+      contactType: 'tenant',
+      tenantId: payload.tenantId,
+      onboardingId: payload.onboardingId,
+      role: 'Current Tenant',
+      name: payload.name,
+      preview: 'Lease conversation started',
+      time: formatTime(),
+      unread: 0,
+      avatar: payload.avatar,
+      property: `${payload.propertyName} - ${payload.unit}`,
+      propertyImage:
+        'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=180&q=80',
+      listing: payload.propertyName,
+      location: payload.address,
+      price: payload.monthlyRent,
+      messages: [],
+    }
+
+    set((state) => ({ conversations: [conversation, ...state.conversations] }))
+    return nextId
+  },
+    }),
+    {
+      name: 'rentilo-owner-chat-session',
+      storage: createJSONStorage(() => sessionStorage),
+      version: 1,
+    },
+  ),
+)

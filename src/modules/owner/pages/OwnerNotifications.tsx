@@ -1,211 +1,59 @@
 import { useState } from 'react'
-import { CheckCircle2, Megaphone, ReceiptText, Star, Wrench } from 'lucide-react'
+import { Bell, Check, Star } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { DEMO_OWNER, useOnboardingStore } from '@shared/store/onboardingStore'
 
-const filters = ['All', 'Unread', 'Important']
-
-const notifications = [
-  {
-    id: 'owner-notification-maintenance',
-    icon: Wrench,
-    title: 'Owner responded to your request',
-    description:
-      "Regarding the plumbing maintenance at 402 Redwood Grove. Status updated to 'In Progress'.",
-    time: '2 mins ago',
-    tone: 'blue',
-    unread: true,
-    important: true,
-  },
-  {
-    id: 'owner-notification-payment',
-    icon: ReceiptText,
-    title: 'Rent Payment Confirmed',
-    description: 'Your payment for October has been successfully processed. View your receipt in the billing section.',
-    time: 'Yesterday',
-    tone: 'amber',
-    unread: false,
-    important: false,
-  },
-  {
-    id: 'owner-notification-building',
-    icon: Megaphone,
-    title: 'Building Maintenance Notice',
-    description: 'Routine elevator inspection scheduled for Monday morning between 8 AM and 11 AM.',
-    time: '3 days ago',
-    tone: 'slate',
-    unread: false,
-    important: true,
-  },
-  {
-    id: 'owner-notification-lease',
-    icon: CheckCircle2,
-    title: 'Lease Renewal Signed',
-    description: 'All parties have signed the lease renewal for Unit 204. You can download the final PDF in your documents.',
-    time: 'Oct 12',
-    tone: 'blue',
-    unread: false,
-    important: false,
-  },
-]
+const filters = ['All', 'Unread', 'Important'] as const
 
 export function OwnerNotifications() {
-  const [activeFilter, setActiveFilter] = useState('All')
-  const [items, setItems] = useState(notifications)
-  const unreadCount = items.filter((item) => item.unread).length
-  const visibleItems = items.filter((item) => {
-    if (activeFilter === 'Unread') return item.unread
-    if (activeFilter === 'Important') return item.important
-    return true
-  })
+  const navigate = useNavigate()
+  const [filter, setFilter] = useState<(typeof filters)[number]>('All')
+  const notifications = useOnboardingStore((state) => state.notifications.filter((item) => item.audience === 'owner'))
+  const markRead = useOnboardingStore((state) => state.markNotificationRead)
+  const toggleImportant = useOnboardingStore((state) => state.toggleNotificationImportant)
+  const confirmOnboarding = useOnboardingStore((state) => state.confirmTenantOnboarding)
+  const records = useOnboardingStore((state) => state.records)
+  const visible = notifications.filter((item) => filter === 'All' || (filter === 'Unread' ? item.unread : item.important))
+  const unreadCount = notifications.filter((item) => item.unread).length
 
-  const markAsRead = (id: string) => {
-    setItems((current) =>
-      current.map((item) => (item.id === id ? { ...item, unread: false } : item))
-    )
-  }
-
-  const markAllAsRead = () => {
-    if (unreadCount === 0) return
-    setItems((current) => current.map((item) => ({ ...item, unread: false })))
-  }
-
-  const toggleImportant = (id: string) => {
-    setItems((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, important: !item.important } : item
-      )
-    )
+  const openNotification = (id: string, onboardingId: string) => {
+    markRead(id)
+    navigate(`/owner/leases?tab=applications&application=${onboardingId}`)
   }
 
   return (
-    <div className="min-h-screen bg-canvas-alt px-6 py-12">
+    <div className="min-h-screen bg-canvas-alt px-5 py-10">
       <div className="mx-auto max-w-5xl">
-        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h1 className="text-heading-1 font-bold tracking-tight text-navy">Notifications</h1>
-            <p className="mt-2 text-body text-text-primary">
-              Manage your property alerts, payment updates, and messages from landlords.
-            </p>
+        <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div><h1 className="text-heading-1 font-extrabold text-navy">Notifications</h1><p className="mt-2 text-body text-text-muted">Application approvals, agreement signatures, and tenant onboarding actions.</p></div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex rounded-button bg-slate-100 p-1">{filters.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={filter === item ? 'rounded-button bg-white px-4 py-2 text-label font-bold text-navy shadow-sm' : 'px-4 py-2 text-label font-semibold text-text-muted'}>{item}{item === 'Unread' && unreadCount > 0 ? ` (${unreadCount})` : ''}</button>)}</div>
+            <button type="button" disabled={!unreadCount} onClick={() => notifications.forEach((item) => item.unread && markRead(item.id))} className="text-label font-bold text-primary disabled:opacity-40">Mark all as read</button>
           </div>
+        </header>
 
-          <div className="flex flex-col items-start gap-3 md:items-end">
-            <div className="inline-flex w-fit rounded-button bg-slate-100 p-1">
-              {filters.map((filter) => (
-                <button
-                  key={filter}
-                  type="button"
-                  onClick={() => setActiveFilter(filter)}
-                  className={
-                    activeFilter === filter
-                      ? 'rounded-button bg-white px-5 py-2 text-label font-bold text-navy shadow-sm'
-                      : 'rounded-button px-5 py-2 text-label font-semibold text-text-primary transition-colors duration-200 hover:bg-white'
-                  }
-                >
-                  {filter}
-                  {filter === 'Unread' && unreadCount > 0 && (
-                    <span className="ml-1.5 inline-flex min-w-4 h-4 items-center justify-center rounded-pill bg-primary px-1 text-[10px] font-bold text-white">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={markAllAsRead}
-              disabled={unreadCount === 0}
-              className={
-                unreadCount > 0
-                  ? 'text-label font-semibold text-primary transition-colors hover:text-primary-700'
-                  : 'cursor-not-allowed text-label font-semibold text-text-muted opacity-60'
-              }
-            >
-              {unreadCount > 0 ? 'Mark all as read' : 'All notifications read'}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-10 space-y-6">
-          {visibleItems.map((notification) => {
-            const Icon = notification.icon
-
+        <section className="mt-8 space-y-4">
+          {visible.map((notification) => {
+            const record = records.find((item) => item.id === notification.onboardingId && item.owner.id === DEMO_OWNER.id)
             return (
-              <article
-                key={notification.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => markAsRead(notification.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    markAsRead(notification.id)
-                  }
-                }}
-                aria-label={`${notification.title}. Click to mark as read.`}
-                className={
-                  notification.unread
-                    ? 'flex w-full cursor-pointer items-center gap-5 rounded-card border border-primary/30 bg-white px-5 py-4 text-left shadow-sm transition-all duration-200 hover:shadow-surface focus:outline-none focus:ring-2 focus:ring-primary-100'
-                    : 'flex w-full cursor-pointer items-center gap-5 rounded-card border border-outline bg-white px-5 py-4 text-left shadow-sm transition-all duration-200 hover:shadow-surface focus:outline-none focus:ring-2 focus:ring-primary-100'
-                }
-              >
-                <div
-                  className={
-                    notification.tone === 'amber'
-                      ? 'flex h-10 w-10 items-center justify-center rounded-button bg-status-warning-bg text-status-warning-text'
-                      : notification.tone === 'slate'
-                        ? 'flex h-10 w-10 items-center justify-center rounded-button bg-slate-100 text-text-primary'
-                        : 'flex h-10 w-10 items-center justify-center rounded-button bg-primary-100 text-primary'
-                  }
-                >
-                  <Icon size={18} />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <h2 className="flex flex-wrap items-center gap-2 text-body font-bold text-text-primary">
-                    {notification.title}
-                    {notification.unread && <span className="h-2 w-2 rounded-full bg-primary" />}
-                    {notification.important && (
-                      <span className="rounded-pill bg-status-warning-bg px-2 py-0.5 text-[10px] font-bold uppercase text-status-warning-text">
-                        Important
-                      </span>
+              <article key={notification.id} onClick={() => openNotification(notification.id, notification.onboardingId)} className={notification.unread ? 'cursor-pointer rounded-card border border-primary/30 bg-white p-5 shadow-surface' : 'cursor-pointer rounded-card border border-outline bg-white p-5'}>
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-button bg-primary-50 text-primary"><Bell size={19} /></div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2"><h2 className="text-body font-bold text-navy">{notification.title}</h2>{notification.unread && <span className="h-2 w-2 rounded-full bg-primary" />}{notification.important && <span className="rounded-pill bg-status-warning-bg px-2 py-0.5 text-[10px] font-bold uppercase text-status-warning-text">Important</span>}</div>
+                    <p className="mt-1 text-label text-text-primary">{notification.description}</p>
+                    <p className="mt-2 text-filter-label uppercase text-text-muted">{notification.createdAt}</p>
+                    {notification.action === 'onboard' && record?.status === 'payment_completed' && (
+                      <button type="button" onClick={(event) => { event.stopPropagation(); confirmOnboarding(notification.onboardingId); markRead(notification.id) }} className="mt-4 flex items-center gap-2 rounded-button bg-status-success px-4 py-2.5 text-label font-bold text-white"><Check size={16} /> Yes, onboard tenant</button>
                     )}
-                  </h2>
-                  <p className="mt-1 truncate text-label text-text-primary">{notification.description}</p>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-3">
-                  <span className="text-filter-label uppercase text-text-primary">
-                    {notification.time}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      toggleImportant(notification.id)
-                    }}
-                    aria-pressed={notification.important}
-                    title={notification.important ? 'Remove from important' : 'Mark as important'}
-                    className={
-                      notification.important
-                        ? 'rounded-button p-2 text-status-warning-text transition-colors hover:bg-status-warning-bg'
-                        : 'rounded-button p-2 text-text-muted transition-colors hover:bg-slate-100 hover:text-status-warning-text'
-                    }
-                  >
-                    <Star size={18} fill={notification.important ? 'currentColor' : 'none'} />
-                  </button>
+                  </div>
+                  <button type="button" onClick={(event) => { event.stopPropagation(); toggleImportant(notification.id) }} title={notification.important ? 'Remove important' : 'Mark important'} className={notification.important ? 'rounded-button p-2 text-status-warning-text' : 'rounded-button p-2 text-text-muted hover:bg-slate-100'}><Star size={18} fill={notification.important ? 'currentColor' : 'none'} /></button>
                 </div>
               </article>
             )
           })}
-          {visibleItems.length === 0 && (
-            <div className="rounded-card border border-outline bg-white p-8 text-center text-body text-text-muted">
-              No notifications match this filter.
-            </div>
-          )}
-        </div>
-
-        <p className="mt-24 text-center text-filter-label uppercase tracking-wider text-text-muted">
-          Property ID: RTL-882-DAN • Lease active until Oct 2024
-        </p>
+          {visible.length === 0 && <div className="rounded-card border border-dashed border-outline bg-white p-12 text-center"><Bell className="mx-auto text-text-muted" /><h2 className="mt-3 text-heading-3 font-bold text-navy">No notifications</h2><p className="mt-2 text-body text-text-muted">Tenant workflow updates will appear here during this browser session.</p></div>}
+        </section>
       </div>
     </div>
   )

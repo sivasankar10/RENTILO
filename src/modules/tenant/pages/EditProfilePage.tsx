@@ -4,6 +4,7 @@ import { cn } from '@shared/utils/cn'
 import { MaterialIcon } from '../components/MaterialIcon'
 import { tenantStyles } from '../utils/tenantStyles'
 import { EnableOwnerModeCard } from '../components/EnableOwnerModeCard'
+import { TenantKycSection } from '../components/TenantKycSection'
 
 const AVATAR_SRC =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBsjFwGI8TSSdoEXUZWAE-nRGmK8p1eH8KgYLjT3Urn8_obEczpwXsONy_TGRwKE0xPxoIiwJBviAzhbr8_8hIDA4l_kLNXdDbBX6-QfmRcjzG89x6vzPJXOX37ffQJu6xx0_zNwcREd9vf8PK0Du-IaTWhO6oVo0nqBbRArkk5eIc0SIYI174D3jXGPi3s-g82-4iFdrt9-Rhjwsej9Y7K0PTNiC4gdcsm5cL4dCFxk6wfXLf_ncUSgwvGRPdp_YbPZzioXRLYcnuV'
@@ -49,6 +50,8 @@ export function EditProfilePage() {
           <div className="h-px bg-brand-outline-variant mb-7" />
 
           <EnableOwnerModeCard />
+
+          <TenantKycSection />
 
           <div className="flex items-center gap-6 mb-8 max-sm:flex-col max-sm:items-start">
             <img
@@ -108,16 +111,6 @@ export function EditProfilePage() {
               <button type="button" className="mt-2 border-0 bg-transparent p-0 font-body text-[13px] font-medium text-brand-secondary underline cursor-pointer text-left hover:text-brand">
                 Click here to generate email verification mail
               </button>
-            </div>
-
-            <div>
-              <label className="block text-[13px] font-semibold text-brand-on-surface-variant mb-2">
-                KYC Update
-              </label>
-              <div className="flex items-center gap-2.5 px-4 py-3 rounded-lg bg-brand-pending-bg text-brand-pending-text border border-brand-pending-border text-[13px] font-bold tracking-wide">
-                <MaterialIcon name="schedule" className="!text-xl" />
-                <span>PENDING</span>
-              </div>
             </div>
 
             <div>

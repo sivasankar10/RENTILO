@@ -13,7 +13,7 @@ export const PROPERTIES: Property[] = [
     baths: 2,
     sqft: '1,200',
     posted: 'Posted 2 days ago',
-    badge: 'Recommended',
+    badge: null,
     image:
       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
     gallery: [
@@ -251,3 +251,4 @@ export const PROPERTIES: Property[] = [
 export function getPropertyById(id: string): Property | null {
   return PROPERTIES.find((p) => p.id === id) ?? null
 }
+

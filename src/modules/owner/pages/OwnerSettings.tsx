@@ -1,5 +1,6 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import {
+  BadgeCheck,
   Bell,
   Building2,
   ChevronRight,
@@ -9,6 +10,7 @@ import {
   ShieldCheck,
   User,
 } from 'lucide-react'
+import { useOwnerStore } from '../store/ownerStore'
 
 const bankFields = [
   { label: 'Account Holder Name', placeholder: 'Enter full name' },
@@ -31,6 +33,8 @@ export function OwnerSettings() {
     accountNumber: '',
     ifsc: '',
   }
+  const kycStatus = useOwnerStore((state) => state.kycStatus)
+  const isKycVerified = kycStatus === 'Verified'
   const [profile, setProfile] = useState(initialProfile)
   const [prefs, setPrefs] = useState({
     'Email Notifications': true,
@@ -88,8 +92,8 @@ export function OwnerSettings() {
                   <User size={18} className="text-primary" />
                   Personal Information
                 </h2>
-                <span className="rounded-pill bg-status-success-bg px-3 py-1 text-badge text-status-success-text">
-                  Verified Profile
+                <span className={isKycVerified ? 'rounded-pill bg-status-success-bg px-3 py-1 text-badge text-status-success-text' : 'rounded-pill bg-status-warning-bg px-3 py-1 text-badge text-status-warning-text'}>
+                  {isKycVerified ? 'KYC Verified' : `KYC ${kycStatus}`}
                 </span>
               </div>
 
@@ -146,6 +150,27 @@ export function OwnerSettings() {
               </div>
             </article>
 
+            <article className="rounded-card border border-outline bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-outline px-6 py-5">
+                <h2 className="inline-flex items-center gap-2 text-heading-3 font-bold text-text-primary">
+                  <BadgeCheck size={18} className="text-primary" />
+                  KYC Verification
+                </h2>
+                <span className={isKycVerified ? 'rounded-pill bg-status-success-bg px-3 py-1 text-badge text-status-success-text' : 'rounded-pill bg-status-error-bg px-3 py-1 text-badge text-status-error-text'}>
+                  {isKycVerified ? 'Verified' : 'Required'}
+                </span>
+              </div>
+              <div className="grid gap-4 p-6 md:grid-cols-2">
+                <div className="rounded-button bg-canvas-alt p-4">
+                  <p className="text-filter-label uppercase text-text-muted">Identity Document</p>
+                  <p className="mt-1 text-body font-bold text-text-primary">{kycStatus}</p>
+                </div>
+                <div className="rounded-button bg-canvas-alt p-4">
+                  <p className="text-filter-label uppercase text-text-muted">Business Registration</p>
+                  <p className="mt-1 text-body font-bold text-text-primary">{isKycVerified ? 'Verified' : 'Pending KYC'}</p>
+                </div>
+              </div>
+            </article>
             <article className="rounded-card border border-outline bg-white shadow-sm">
               <div className="border-b border-outline px-6 py-5">
                 <h2 className="inline-flex items-center gap-2 text-heading-3 font-bold text-text-primary">
@@ -321,3 +346,6 @@ export function OwnerSettings() {
     </div>
   )
 }
+
+
+

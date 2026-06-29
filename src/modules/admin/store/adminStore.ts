@@ -1,6 +1,6 @@
-import { create } from 'zustand'
+﻿import { create } from 'zustand'
 
-// ───────── Types ─────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export type BrokerStatus = 'ACTIVE' | 'BANNED'
 
 export interface AdminBroker {
@@ -32,6 +32,7 @@ export interface AdminQueueItem {
   name: string
   location: string
   assigned: boolean
+  type: 'enterprise' | 'standard'
 }
 
 export type ListingStatus = 'Active' | 'Paused' | 'Flagged' | 'Removed'
@@ -57,6 +58,7 @@ export interface AdminListing {
   residentialZoning?: boolean
   mixedUse?: boolean
   description?: string
+  virtualTourUrl?: string
   bedrooms?: string
   bathrooms?: string
   furnishing?: string
@@ -118,7 +120,7 @@ export interface ApprovalRequest {
   status: 'Pending' | 'Approved' | 'Rejected'
 }
 
-// ───────── Initial data ─────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€ Initial data â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const initialBrokers: AdminBroker[] = [
   { id: 'br-1', name: 'Arjun Mehta', role: 'Premium Broker', avatar: 'AM', brokerId: '#BRK-9281', status: 'ACTIVE', activeDeals: 12, dealsClosed: 148, successRate: 98, avgTime: '14 Days' },
   { id: 'br-2', name: 'Priya Sharma', role: 'Senior Associate', avatar: 'PS', brokerId: '#BRK-4412', status: 'ACTIVE', activeDeals: 8, dealsClosed: 92, successRate: 92, avgTime: '18 Days' },
@@ -133,22 +135,26 @@ const initialEnterpriseBrokers: AdminEnterpriseBroker[] = [
   { id: 'eb-4', name: 'Rohan Desai', role: 'Associate Broker', avatar: 'RD', commission: '27%', property: 'Sarjapur', valuation: 64, status: 'Closed' },
 ]
 
+
 const initialQueue: AdminQueueItem[] = [
-  { id: 'q-1', name: 'Skyline Heights II', location: 'Whitefield, Bangalore', assigned: false },
-  { id: 'q-2', name: 'Retail Complex', location: 'Banjara Hills', assigned: false },
+  { id: 'q-1', name: 'Vertex Plaza South', location: 'London, Canary Wharf', assigned: false, type: 'enterprise' },
+  { id: 'q-2', name: 'The Meridian Atrium', location: 'New York, Hudson Yards', assigned: false, type: 'enterprise' },
+  { id: 'q-3', name: 'Skyview Unit 402', location: 'Chicago, River North', assigned: false, type: 'standard' },
+  { id: 'q-4', name: 'Oak Ridge Residences', location: 'Austin, TX', assigned: false, type: 'standard' },
+  { id: 'q-5', name: 'The Loft Collective', location: 'Portland, Pearl District', assigned: false, type: 'standard' },
 ]
 
 const initialListings: AdminListing[] = [
-  { id: '#ENT-55201', slug: 'ent-55201', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=120&q=80', owner: 'Skyline Corp', location: 'Whitefield, Bangalore', rent: '₹4,50,000', status: 'Active', postedDate: '12 Oct 2023', updated: 'Just now' },
-  { id: '#ENT-55202', slug: 'ent-55202', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=120&q=80', owner: 'Prestige Group', location: 'Indiranagar, Bangalore', rent: '₹3,20,000', status: 'Active', postedDate: '08 Oct 2023', updated: '1 day ago' },
-  { id: '#ENT-55203', slug: 'ent-55203', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=120&q=80', owner: 'Brigade Enterprises', location: 'Bandra West, Mumbai', rent: '₹6,80,000', status: 'Paused', postedDate: '01 Oct 2023', updated: '3 days ago' },
-  { id: '#ENT-55204', slug: 'ent-55204', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=120&q=80', owner: 'DLF Limited', location: 'Cyber City, Gurgaon', rent: '₹8,50,000', status: 'Active', postedDate: '25 Sep 2023', updated: '5 hours ago' },
-  { id: '#ENT-55205', slug: 'ent-55205', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=120&q=80', owner: 'Godrej Properties', location: 'Worli, Mumbai', rent: '₹5,20,000', status: 'Flagged', postedDate: '18 Sep 2023', updated: '1 week ago' },
-  { id: '#LST-88210', slug: 'lst-88210', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=120&q=80', owner: 'Arjun Raghavan', location: 'Koramangala 4th B', rent: '₹85,000', status: 'Active', postedDate: '12 Oct 2023', updated: 'Just now' },
-  { id: '#LST-45902', slug: 'lst-45902', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=120&q=80', owner: 'Priya Sharma', location: 'EPIP Zone, Whitefield', rent: '₹1,20,000', status: 'Paused', postedDate: '05 Oct 2023', updated: '2 days ago' },
-  { id: '#LST-22314', slug: 'lst-22314', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=120&q=80', owner: 'Vikram Malhotra', location: 'Indiranagar, Doublewood', rent: '₹45,000', status: 'Flagged', postedDate: '28 Sep 2023', updated: '5 days ago' },
-  { id: '#LST-11005', slug: 'lst-11005', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=120&q=80', owner: 'Sanya Reddy', location: 'Sarjapur Road, Bangalore', rent: '₹32,000', status: 'Removed', postedDate: '15 Sep 2023', updated: '1 week ago' },
-  { id: '#LST-99203', slug: 'lst-99203', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=120&q=80', owner: 'Karan Singh', location: 'HSR Layout Sector 7', rent: '₹32,500', status: 'Active', postedDate: '10 Sep 2023', updated: '3 hours ago' },
+  { id: '#ENT-55201', slug: 'ent-55201', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=120&q=80', owner: 'Skyline Corp', location: 'Whitefield, Bangalore', rent: 'â‚¹4,50,000', status: 'Active', postedDate: '12 Oct 2023', updated: 'Just now' },
+  { id: '#ENT-55202', slug: 'ent-55202', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=120&q=80', owner: 'Prestige Group', location: 'Indiranagar, Bangalore', rent: 'â‚¹3,20,000', status: 'Active', postedDate: '08 Oct 2023', updated: '1 day ago' },
+  { id: '#ENT-55203', slug: 'ent-55203', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=120&q=80', owner: 'Brigade Enterprises', location: 'Bandra West, Mumbai', rent: 'â‚¹6,80,000', status: 'Paused', postedDate: '01 Oct 2023', updated: '3 days ago' },
+  { id: '#ENT-55204', slug: 'ent-55204', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=120&q=80', owner: 'DLF Limited', location: 'Cyber City, Gurgaon', rent: 'â‚¹8,50,000', status: 'Active', postedDate: '25 Sep 2023', updated: '5 hours ago' },
+  { id: '#ENT-55205', slug: 'ent-55205', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=120&q=80', owner: 'Godrej Properties', location: 'Worli, Mumbai', rent: 'â‚¹5,20,000', status: 'Flagged', postedDate: '18 Sep 2023', updated: '1 week ago' },
+  { id: '#LST-88210', slug: 'lst-88210', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=120&q=80', owner: 'Arjun Raghavan', location: 'Koramangala 4th B', rent: 'â‚¹85,000', status: 'Active', postedDate: '12 Oct 2023', updated: 'Just now' },
+  { id: '#LST-45902', slug: 'lst-45902', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=120&q=80', owner: 'Priya Sharma', location: 'EPIP Zone, Whitefield', rent: 'â‚¹1,20,000', status: 'Paused', postedDate: '05 Oct 2023', updated: '2 days ago' },
+  { id: '#LST-22314', slug: 'lst-22314', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=120&q=80', owner: 'Vikram Malhotra', location: 'Indiranagar, Doublewood', rent: 'â‚¹45,000', status: 'Flagged', postedDate: '28 Sep 2023', updated: '5 days ago' },
+  { id: '#LST-11005', slug: 'lst-11005', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=120&q=80', owner: 'Sanya Reddy', location: 'Sarjapur Road, Bangalore', rent: 'â‚¹32,000', status: 'Removed', postedDate: '15 Sep 2023', updated: '1 week ago' },
+  { id: '#LST-99203', slug: 'lst-99203', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=120&q=80', owner: 'Karan Singh', location: 'HSR Layout Sector 7', rent: 'â‚¹32,500', status: 'Active', postedDate: '10 Sep 2023', updated: '3 hours ago' },
 ]
 
 const initialUsers: AdminUser[] = [
@@ -158,10 +164,10 @@ const initialUsers: AdminUser[] = [
 ]
 
 const initialTransactions: AdminTransaction[] = [
-  { id: '#TRX-82910', user: 'Amit Kumar', userInitials: 'AK', avatarColor: 'bg-teal-500', type: 'Rent', amount: '₹ 45,000', status: 'Success', date: 'Oct 24, 2023' },
-  { id: '#TRX-82911', user: 'Sneha Patil', userInitials: 'SP', avatarColor: 'bg-slate-400', type: 'Commission', amount: '₹ 8,400', status: 'Pending', date: 'Oct 23, 2023' },
-  { id: '#TRX-82912', user: 'Rajesh Khanna', userInitials: 'RK', avatarColor: 'bg-blue-500', type: 'Subscription', amount: '₹ 2,499', status: 'Failed', date: 'Oct 22, 2023' },
-  { id: '#TRX-82913', user: 'Maanav D.', userInitials: 'MD', avatarColor: 'bg-indigo-400', type: 'Rent', amount: '₹ 32,500', status: 'Success', date: 'Oct 22, 2023' },
+  { id: '#TRX-82910', user: 'Amit Kumar', userInitials: 'AK', avatarColor: 'bg-teal-500', type: 'Rent', amount: 'â‚¹ 45,000', status: 'Success', date: 'Oct 24, 2023' },
+  { id: '#TRX-82911', user: 'Sneha Patil', userInitials: 'SP', avatarColor: 'bg-slate-400', type: 'Commission', amount: 'â‚¹ 8,400', status: 'Pending', date: 'Oct 23, 2023' },
+  { id: '#TRX-82912', user: 'Rajesh Khanna', userInitials: 'RK', avatarColor: 'bg-blue-500', type: 'Subscription', amount: 'â‚¹ 2,499', status: 'Failed', date: 'Oct 22, 2023' },
+  { id: '#TRX-82913', user: 'Maanav D.', userInitials: 'MD', avatarColor: 'bg-indigo-400', type: 'Rent', amount: 'â‚¹ 32,500', status: 'Success', date: 'Oct 22, 2023' },
 ]
 
 const initialListingApprovals: ApprovalRequest[] = [
@@ -323,3 +329,4 @@ export const useAdminStore = create<AdminState>((set) => ({
 
   toggleKyc: () => set((s) => ({ kycConnected: !s.kycConnected })),
 }))
+

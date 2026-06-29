@@ -1,18 +1,17 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@shared/utils/cn'
-import { MaterialIcon } from '../components/MaterialIcon'
+import { ROUTES } from '@shared/constants/routes'
+import { useOnboardingStore } from '@shared/store/onboardingStore'
+import {
+  useOwnerMaintenanceStore,
+  type OwnerMaintenanceTicket,
+  type TicketCategory,
+  type TicketStatus,
+} from '../../owner/store/maintenanceStore'
+import { useTenantId } from '../hooks/useTenantId'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type TicketStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed'
-type TicketCategory =
-  | 'Plumbing'
-  | 'Electrical'
-  | 'Appliance'
-  | 'Structural'
-  | 'Pest Control'
-  | 'HVAC'
-  | 'Other'
 
 interface Ticket {
   id: string
@@ -25,18 +24,22 @@ interface Ticket {
   images: string[]
 }
 
-// ─── Mock seed data ───────────────────────────────────────────────────────────
-
-const SEED_TICKETS: Ticket[] = [
-  { id: '1', ticketNo: 'MNT-4421', category: 'Plumbing',     problem: 'Kitchen sink is leaking under the cabinet. Water pooling on the floor.',         status: 'Resolved',    date: '10 Apr 2026', time: '9:15 AM',  images: [] },
-  { id: '2', ticketNo: 'MNT-4398', category: 'Electrical',   problem: 'Living room circuit breaker trips every time the AC and microwave run together.', status: 'In Progress', date: '06 Apr 2026', time: '3:40 PM',  images: [] },
-  { id: '3', ticketNo: 'MNT-4375', category: 'Appliance',    problem: 'Washing machine makes loud grinding noise during spin cycle.',                    status: 'Open',        date: '01 Apr 2026', time: '11:00 AM', images: [] },
-  { id: '4', ticketNo: 'MNT-4310', category: 'Pest Control', problem: 'Cockroach infestation noticed in the kitchen and bathroom.',                      status: 'Closed',      date: '18 Mar 2026', time: '8:30 AM',  images: [] },
-  { id: '5', ticketNo: 'MNT-4280', category: 'Structural',   problem: 'Crack appearing on the bedroom ceiling near the window frame.',                   status: 'Resolved',    date: '05 Mar 2026', time: '2:00 PM',  images: [] },
-]
-
 const PAGE_SIZE = 4
 const CATEGORIES: TicketCategory[] = ['Plumbing', 'Electrical', 'Appliance', 'Structural', 'Pest Control', 'HVAC', 'Other']
+
+function mapStoreTicket(ticket: OwnerMaintenanceTicket): Ticket {
+  const [date = ticket.submittedAt, time = ''] = ticket.submittedAt.split(', ')
+  return {
+    id: ticket.id,
+    ticketNo: ticket.ticketNo,
+    category: ticket.category,
+    problem: ticket.problem,
+    status: ticket.status,
+    date,
+    time,
+    images: ticket.images ?? [],
+  }
+}
 
 // ─── Lookup maps ──────────────────────────────────────────────────────────────
 
@@ -66,8 +69,6 @@ const categoryIcons: Record<TicketCategory, string> = {
   'HVAC':        'ac_unit',
   'Other':       'build',
 }
-
-/** Tickets in these statuses cannot be edited */
 const LOCKED_STATUSES: TicketStatus[] = ['Resolved', 'Closed']
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -87,14 +88,26 @@ function StatusBadge({ status }: { status: TicketStatus }) {
 interface TicketRowProps {
   ticket: Ticket
   onEdit: (ticket: Ticket) => void
+  onOpen: (ticket: Ticket) => void
 }
 
-function TicketRow({ ticket, onEdit }: TicketRowProps) {
+function TicketRow({ ticket, onEdit, onOpen }: TicketRowProps) {
   const [expanded, setExpanded] = useState(false)
   const isLocked = LOCKED_STATUSES.includes(ticket.status)
 
   return (
-    <div className="px-6 py-5 border-b border-[#f1f5f9] last:border-0 hover:bg-[#fafbfc] transition-colors">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(ticket)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onOpen(ticket)
+        }
+      }}
+      className="cursor-pointer px-6 py-5 border-b border-[#f1f5f9] last:border-0 hover:bg-[#fafbfc] transition-colors"
+    >
       <div className="flex items-start justify-between gap-4 flex-wrap">
 
         {/* ── Left ── */}
@@ -111,7 +124,7 @@ function TicketRow({ ticket, onEdit }: TicketRowProps) {
             {ticket.problem}
           </p>
           {ticket.problem.length > 90 && (
-            <button type="button" onClick={() => setExpanded((v) => !v)}
+            <button type="button" onClick={(event) => { event.stopPropagation(); setExpanded((v) => !v) }}
               className="mt-1 text-[12px] font-semibold text-[#2563eb] border-0 bg-transparent cursor-pointer p-0 hover:underline">
               {expanded ? 'Show less' : 'Read more'}
             </button>
@@ -149,7 +162,10 @@ function TicketRow({ ticket, onEdit }: TicketRowProps) {
           <div className="relative group/edit mt-0.5">
             <button
               type="button"
-              onClick={() => !isLocked && onEdit(ticket)}
+              onClick={(event) => {
+                event.stopPropagation()
+                if (!isLocked) onEdit(ticket)
+              }}
               disabled={isLocked}
               aria-label={isLocked ? `Cannot edit — ticket is ${ticket.status}` : `Edit ticket ${ticket.ticketNo}`}
               className={cn(
@@ -383,16 +399,39 @@ function TicketFormModal({ initialData, onClose, onSubmit }: TicketFormModalProp
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-let ticketCounter = SEED_TICKETS.length + 1
-
 export function TenantMaintenance() {
-  const [tickets, setTickets] = useState<Ticket[]>(SEED_TICKETS)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const tenantId = useTenantId()
+  const activeLease = useOnboardingStore((state) =>
+    state.records.find((record) => record.tenant.id === tenantId && record.status === 'active')
+  )
+  const storeTickets = useOwnerMaintenanceStore((state) => state.tickets)
+  const createOwnerTicket = useOwnerMaintenanceStore((state) => state.createTenantTicket)
+  const updateTenantTicket = useOwnerMaintenanceStore((state) => state.updateTenantTicket)
+
+  const tickets = useMemo(
+    () =>
+      storeTickets
+        .filter((ticket) => ticket.tenantId === tenantId)
+        .map(mapStoreTicket),
+    [storeTickets, tenantId],
+  )
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'All'>('All')
   const [page, setPage] = useState(1)
 
   // Modal state — null = closed, undefined = new, Ticket = edit
   const [modalTicket, setModalTicket] = useState<Ticket | null | undefined>(null)
+
+  useEffect(() => {
+    const editTicketId = (location.state as { editTicketId?: string } | null)?.editTicketId
+    if (!editTicketId) return
+    const ticket = tickets.find((item) => item.id === editTicketId)
+    if (ticket) setModalTicket(ticket)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate, tickets])
 
   // Toast
   const [toast, setToast] = useState<{ message: string; sub: string } | null>(null)
@@ -402,29 +441,42 @@ export function TenantMaintenance() {
     setTimeout(() => setToast(null), 5000)
   }
 
-  // ── Create ──────────────────────────────────────────────────────────────────
   function handleCreate(data: Pick<Ticket, 'category' | 'problem' | 'images'>) {
-    const now = new Date()
-    const ticketNo = `MNT-${4421 + ticketCounter++}`
-    const newTicket: Ticket = {
-      id: String(Date.now()),
-      ticketNo,
-      status: 'Open',
-      date: now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      time: now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      ...data,
+    if (!activeLease?.lease) {
+      showToast('Active lease required', 'Maintenance requests are available after owner completes onboarding.')
+      return
     }
-    setTickets((prev) => [newTicket, ...prev])
+    const ticketNo = createOwnerTicket({
+      propertyId: activeLease.ownerPropertyId,
+      tenantId: activeLease.tenant.id,
+      leaseId: activeLease.lease.id,
+      tenantName: activeLease.tenant.name,
+      tenantPhone: activeLease.tenant.phone,
+      tenantAvatar: activeLease.tenant.avatar,
+      unit: activeLease.unit,
+      category: data.category,
+      priority: 'Medium',
+      problem: data.problem,
+      preferredSlot: 'Coordinate with tenant',
+      assignedTo: 'Not assigned',
+      ownerNote: 'Raised from the active tenant lease.',
+      images: data.images,
+    })
     setPage(1)
-    showToast('Request submitted!', `Ticket ${ticketNo} has been raised. We'll be in touch shortly.`)
+    showToast('Request submitted!', `Ticket ${ticketNo} is now visible to ${activeLease.owner.name}.`)
   }
 
-  // ── Update ──────────────────────────────────────────────────────────────────
   function handleUpdate(data: Pick<Ticket, 'category' | 'problem' | 'images'>) {
     if (!modalTicket) return
-    setTickets((prev) =>
-      prev.map((t) => t.id === modalTicket.id ? { ...t, ...data } : t)
-    )
+    const updated = updateTenantTicket(modalTicket.id, tenantId, {
+      category: data.category,
+      problem: data.problem,
+      images: data.images,
+    })
+    if (!updated) {
+      showToast('Unable to update', 'Only open tickets can be edited.')
+      return
+    }
     showToast('Ticket updated!', `Changes to ${modalTicket.ticketNo} have been saved.`)
   }
 
@@ -510,7 +562,12 @@ export function TenantMaintenance() {
       <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)] overflow-hidden mb-6">
         {paginated.length > 0 ? (
           paginated.map((t) => (
-            <TicketRow key={t.id} ticket={t} onEdit={(ticket) => setModalTicket(ticket)} />
+            <TicketRow
+              key={t.id}
+              ticket={t}
+              onEdit={(ticket) => setModalTicket(ticket)}
+              onOpen={(ticket) => navigate(ROUTES.TENANT.MAINTENANCE_DETAIL(ticket.id))}
+            />
           ))
         ) : (
           <div className="py-16 text-center">
@@ -562,9 +619,11 @@ export function TenantMaintenance() {
       )}
 
       {/* ── Footer ── */}
-      <p className="text-center text-[11px] font-semibold tracking-wider text-[#94a3b8] uppercase pb-2">
-        Property ID: RTL-882-DAN • Lease Active Until Oct 2024
-      </p>
+      {activeLease?.lease && (
+        <p className="text-center text-[11px] font-semibold tracking-wider text-[#94a3b8] uppercase pb-2">
+          Lease {activeLease.lease.id} · {activeLease.propertyName}
+        </p>
+      )}
 
       {/* ── Modal ── */}
       {modalTicket !== null && (
@@ -596,3 +655,5 @@ export function TenantMaintenance() {
     </div>
   )
 }
+
+

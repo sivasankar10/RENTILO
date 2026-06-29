@@ -1,5 +1,6 @@
 import { CheckoutPaymentPage } from '@modules/tenant/pages/SeriousBuyerPaymentPage'
 import { ROUTES } from '@shared/constants/routes'
+import { usePaymentsStore } from '@shared/store/paymentsStore'
 
 const ownerPremiumBenefits = [
   'Unlimited property listings',
@@ -31,6 +32,14 @@ export function OwnerPremiumPaymentPage() {
         { label: 'Taxes', value: '$0' },
       ]}
       total="$149"
+      onPaymentComplete={({ method }) => {
+        usePaymentsStore.getState().addOwnerOutgoingPayment({
+          amount: 149,
+          amountDisplay: '$149',
+          method,
+          description: 'Owner Premium Plan — monthly subscription',
+        })
+      }}
     />
   )
 }

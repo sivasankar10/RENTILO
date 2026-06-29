@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AlertTriangle, Building2, CheckCircle2, Download, Home, Plus, Search, TrendingUp, UserCheck, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore, type AdminBroker } from '../store/adminStore'
@@ -147,6 +148,7 @@ function createInitialStandardRows(property: StandardProperty): StandardAssignme
 
 export function AdminAssignmentManagement() {
   const brokers = useAdminStore((state) => state.brokers)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [assignModalOpen, setAssignModalOpen] = useState(false)
   const [standardAssignModalOpen, setStandardAssignModalOpen] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState<EnterpriseProperty | null>(null)
@@ -163,6 +165,29 @@ export function AdminAssignmentManagement() {
         standardQueue.map((property) => [property.name, createInitialStandardRows(property)])
       )
   )
+
+  // Auto-open assign modal when navigated from broker management queue
+  useEffect(() => {
+    const assignName = searchParams.get('assign')
+    const assignType = searchParams.get('type')
+    if (!assignName) return
+
+    if (assignType === 'enterprise') {
+      const match = enterpriseQueue.find((p) => p.name === assignName)
+      if (match) {
+        setSelectedProperty(match)
+        setAssignModalOpen(true)
+      }
+    } else {
+      const match = standardQueue.find((p) => p.name === assignName)
+      if (match) {
+        setSelectedStandardProperty(match)
+        setStandardAssignModalOpen(true)
+      }
+    }
+    // Clear query params after consuming them
+    setSearchParams({}, { replace: true })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAssignClick = (property: EnterpriseProperty) => {
     setSelectedProperty(property)

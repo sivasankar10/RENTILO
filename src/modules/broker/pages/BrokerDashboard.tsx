@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Building2,
@@ -13,6 +13,10 @@ import {
   TrendingUp,
   Download,
   FileText,
+  Pencil,
+  Plus,
+  Save,
+  Trash2,
   X,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
@@ -151,7 +155,8 @@ function LeadRow({ avatar, name, property, pill, conversationId, onChat }: LeadR
 /* ─────────────────────────────────────────────
    Activity Timeline item
 ───────────────────────────────────────────── */
-interface ActivityItemProps {
+type Activity = {
+  id: number
   title: string
   time: string
   description: string
@@ -159,7 +164,19 @@ interface ActivityItemProps {
   dotActive?: boolean
 }
 
-function ActivityItem({ title, time, description, attachment, dotActive }: ActivityItemProps) {
+interface ActivityItemProps extends Activity {
+  onEdit: (activity: Activity) => void
+}
+
+function ActivityItem({
+  id,
+  title,
+  time,
+  description,
+  attachment,
+  dotActive,
+  onEdit,
+}: ActivityItemProps) {
   return (
     <div className="relative pl-6 pb-5 last:pb-0">
       {/* vertical line */}
@@ -170,9 +187,20 @@ function ActivityItem({ title, time, description, attachment, dotActive }: Activ
           dotActive ? 'border-[#0f172a] bg-[#0f172a]' : 'border-outline bg-white'
         }`}
       />
-      <div className="flex items-baseline gap-2 mb-0.5">
+      <div className="flex items-start gap-2 mb-0.5">
         <span className="text-[13px] font-semibold text-[#0f172a]">{title}</span>
-        <span className="text-[10px] text-text-muted ml-auto shrink-0">{time}</span>
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <span className="text-[10px] text-text-muted">{time}</span>
+          <button
+            type="button"
+            onClick={() => onEdit({ id, title, time, description, attachment, dotActive })}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:bg-hover-light hover:text-primary"
+            title={`Edit ${title}`}
+            aria-label={`Edit ${title}`}
+          >
+            <Pencil size={13} />
+          </button>
+        </div>
       </div>
       <p className="text-label text-text-muted leading-relaxed">{description}</p>
       {attachment && (
@@ -187,8 +215,7 @@ function ActivityItem({ title, time, description, attachment, dotActive }: Activ
 
 type Visit = {
   id: number
-  month: string
-  day: string
+  date: string
   title: string
   client: string
   time: string
@@ -198,8 +225,7 @@ type Visit = {
 const initialVisits: Visit[] = [
   {
     id: 1,
-    month: 'OCT',
-    day: '15',
+    date: '2026-10-15',
     title: 'Penthouse Tour',
     client: 'Julianna Smith',
     time: '2:00 PM',
@@ -216,6 +242,46 @@ const last30DayMetrics = [
   { label: 'Visits Scheduled', value: '9', detail: '6 completed, 3 upcoming' },
   { label: 'Closed Deals', value: '3', detail: 'Rs. 45,000 commission' },
 ]
+
+const initialActivities: Activity[] = [
+  {
+    id: 1,
+    title: 'Property assigned',
+    time: '2h ago',
+    description: 'Robert King finalized papers for Unit 14B.',
+    attachment: 'Lease_King_14B.pdf',
+    dotActive: true,
+  },
+  {
+    id: 2,
+    title: 'Lead assigned',
+    time: '5h ago',
+    description: 'Julianna Smith inquired about Penthouse A.',
+  },
+  {
+    id: 3,
+    title: 'Tenant property tour',
+    time: 'Yesterday',
+    description: 'Plumbing issue reported in Loft C.',
+  },
+  {
+    id: 4,
+    title: 'Status',
+    time: 'Oct 12',
+    description: '3 prospects visited the Business Center.',
+  },
+]
+
+const ACTIVITY_STORAGE_KEY = 'rentilo-broker-dashboard-activities'
+
+function loadActivities() {
+  try {
+    const savedActivities = sessionStorage.getItem(ACTIVITY_STORAGE_KEY)
+    return savedActivities ? (JSON.parse(savedActivities) as Activity[]) : initialActivities
+  } catch {
+    return initialActivities
+  }
+}
 
 const last30DayProperties = [
   {
@@ -238,21 +304,6 @@ const last30DayProperties = [
     visits: 1,
     status: 'Follow-up',
     nextStep: 'Owner availability confirmation',
-  },
-]
-
-const last30DayActivities = [
-  {
-    title: 'Lead conversion improved',
-    description: 'Hot lead response time reduced to 18 minutes across assigned properties.',
-  },
-  {
-    title: 'Visits scheduled',
-    description: 'Three new tenant visits were scheduled for Skyline Heights and Penthouse Loft A.',
-  },
-  {
-    title: 'Deal progress',
-    description: 'Three deals are in closing review with owner approval pending.',
   },
 ]
 
@@ -299,12 +350,6 @@ function buildBrokerDashboardExportRows() {
       value: `${property.leads} leads / ${property.visits} visits`,
       detail: `${property.status} - ${property.nextStep}`,
     })),
-    ...last30DayActivities.map((activity) => ({
-      section: 'Activity',
-      item: activity.title,
-      value: 'Last 30 Days',
-      detail: activity.description,
-    })),
   ]
 }
 
@@ -312,11 +357,15 @@ function buildBrokerDashboardExportRows() {
    Upcoming Visit Card
 ───────────────────────────────────────────── */
 function UpcomingVisitCard({ visit }: { visit: Visit }) {
+  const visitDate = new Date(`${visit.date}T00:00:00`)
+  const month = visitDate.toLocaleString('en-US', { month: 'short' }).toUpperCase()
+  const day = String(visitDate.getDate()).padStart(2, '0')
+
   return (
     <div className="border-l-4 border-primary rounded-r-xl bg-white shadow-ambient p-4 flex items-start gap-4">
       <div className="text-center min-w-[48px]">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{visit.month}</p>
-        <p className="text-[2rem] font-bold leading-none text-[#0f172a]">{visit.day}</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{month}</p>
+        <p className="text-[2rem] font-bold leading-none text-[#0f172a]">{day}</p>
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-bold text-[#0f172a]">{visit.title}</p>
@@ -393,7 +442,7 @@ function Last30DaysReportModal({
             ))}
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div>
             <section className="overflow-hidden rounded-xl border border-outline">
               <div className="border-b border-outline bg-canvas px-5 py-4">
                 <h3 className="text-[15px] font-bold text-[#0f172a]">Property Performance</h3>
@@ -430,22 +479,149 @@ function Last30DaysReportModal({
               </div>
             </section>
 
-            <aside className="rounded-xl border border-outline bg-canvas p-5">
-              <h3 className="text-[15px] font-bold text-[#0f172a]">Activity Highlights</h3>
-              <div className="mt-5 space-y-4">
-                {last30DayActivities.map((activity) => (
-                  <div key={activity.title} className="rounded-lg bg-white p-4 shadow-ambient">
-                    <p className="text-[13px] font-bold text-[#0f172a]">{activity.title}</p>
-                    <p className="mt-1 text-[12px] leading-relaxed text-text-muted">
-                      {activity.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </aside>
           </div>
         </div>
       </section>
+    </div>
+  )
+}
+
+function ActivityEditorModal({
+  activity,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  activity: Activity | null
+  onClose: () => void
+  onSave: (activity: Activity) => void
+  onDelete: (activityId: number) => void
+}) {
+  const [title, setTitle] = useState(activity?.title ?? '')
+  const [time, setTime] = useState(activity?.time ?? 'Just now')
+  const [description, setDescription] = useState(activity?.description ?? '')
+  const [attachment, setAttachment] = useState(activity?.attachment ?? '')
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    onSave({
+      id: activity?.id ?? Date.now(),
+      title: title.trim(),
+      time: time.trim(),
+      description: description.trim(),
+      attachment: attachment.trim() || undefined,
+      dotActive: activity?.dotActive ?? true,
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0f172a]/60 px-4 py-6 backdrop-blur-sm">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-card"
+      >
+        <div className="flex items-center justify-between border-b border-outline px-5 py-4">
+          <div>
+            <h2 className="text-[18px] font-bold text-[#0f172a]">
+              {activity ? 'Edit Activity' : 'Add Activity'}
+            </h2>
+            <p className="mt-0.5 text-[12px] text-text-muted">
+              Keep the broker timeline accurate and up to date.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-text-muted hover:bg-hover-light hover:text-[#0f172a]"
+            aria-label="Close activity editor"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="grid gap-4 p-5 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Activity
+            </span>
+            <input
+              required
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="e.g. Follow-up completed"
+              className="h-11 w-full rounded-lg border border-outline px-3.5 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Time Label
+            </span>
+            <input
+              required
+              value={time}
+              onChange={(event) => setTime(event.target.value)}
+              placeholder="e.g. 10 mins ago"
+              className="h-11 w-full rounded-lg border border-outline px-3.5 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Description
+            </span>
+            <textarea
+              required
+              rows={4}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Add the activity details"
+              className="w-full resize-none rounded-lg border border-outline px-3.5 py-3 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
+              Attachment Name (Optional)
+            </span>
+            <input
+              value={attachment}
+              onChange={(event) => setAttachment(event.target.value)}
+              placeholder="e.g. Lease_Agreement.pdf"
+              className="h-11 w-full rounded-lg border border-outline px-3.5 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-outline px-5 py-4">
+          {activity ? (
+            <button
+              type="button"
+              onClick={() => onDelete(activity.id)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+              title="Delete activity"
+              aria-label="Delete activity"
+            >
+              <Trash2 size={16} />
+            </button>
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-10 rounded-lg border border-outline px-4 text-[13px] font-bold text-text-muted hover:bg-hover-light"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0f172a] px-4 text-[13px] font-bold text-white hover:bg-navy/90"
+            >
+              <Save size={15} />
+              Save Activity
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   )
 }
@@ -457,19 +633,21 @@ function ScheduleVisitModal({
   onClose: () => void
   onSchedule: (visit: Visit) => void
 }) {
+  const defaultDate = new Date()
+  defaultDate.setDate(defaultDate.getDate() + 1)
   const [client, setClient] = useState(visitClients[0])
   const [property, setProperty] = useState(visitProperties[0])
-  const [date, setDate] = useState('2024-10-16')
+  const [date, setDate] = useState(
+    `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, '0')}-${String(defaultDate.getDate()).padStart(2, '0')}`,
+  )
   const [time, setTime] = useState('11:30 AM')
   const [visitType, setVisitType] = useState('Guided property tour')
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const visitDate = new Date(`${date}T00:00:00`)
     onSchedule({
       id: Date.now(),
-      month: visitDate.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
-      day: String(visitDate.getDate()).padStart(2, '0'),
+      date,
       title: visitType,
       client,
       time,
@@ -537,6 +715,7 @@ function ScheduleVisitModal({
               type="date"
               value={date}
               onChange={(event) => setDate(event.target.value)}
+              min={new Date().toISOString().slice(0, 10)}
               className="h-11 w-full rounded-lg border border-outline bg-white px-3 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </label>
@@ -589,12 +768,38 @@ function ScheduleVisitModal({
 /* ─────────────────────────────────────────────
    Main Dashboard
 ───────────────────────────────────────────── */
+function visitTimeInMinutes(time: string) {
+  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (!match) return 0
+
+  let hours = Number(match[1]) % 12
+  if (match[3].toUpperCase() === 'PM') hours += 12
+  return hours * 60 + Number(match[2])
+}
+
 export function BrokerDashboard() {
   const navigate = useNavigate()
   const [visits, setVisits] = useState(initialVisits)
+  const [activities, setActivities] = useState<Activity[]>(loadActivities)
+  const [activityEditorOpen, setActivityEditorOpen] = useState(false)
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [exportStatus, setExportStatus] = useState('')
+
+  const sortedVisits = useMemo(
+    () =>
+      [...visits].sort(
+        (firstVisit, secondVisit) =>
+          firstVisit.date.localeCompare(secondVisit.date) ||
+          visitTimeInMinutes(firstVisit.time) - visitTimeInMinutes(secondVisit.time),
+      ),
+    [visits],
+  )
+
+  useEffect(() => {
+    sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(activities))
+  }, [activities])
 
   const openLeadChat = (conversationId: string) => {
     navigate(`${ROUTES.BROKER.MESSAGES}?conversation=${encodeURIComponent(conversationId)}`)
@@ -606,8 +811,32 @@ export function BrokerDashboard() {
   }
 
   const handleScheduleVisit = (visit: Visit) => {
-    setVisits((currentVisits) => [visit, ...currentVisits])
+    setVisits((currentVisits) => [...currentVisits, visit])
     setScheduleOpen(false)
+  }
+
+  const openActivityEditor = (activity: Activity | null) => {
+    setSelectedActivity(activity)
+    setActivityEditorOpen(true)
+  }
+
+  const saveActivity = (activity: Activity) => {
+    setActivities((currentActivities) => {
+      const exists = currentActivities.some((item) => item.id === activity.id)
+      return exists
+        ? currentActivities.map((item) => (item.id === activity.id ? activity : item))
+        : [activity, ...currentActivities]
+    })
+    setActivityEditorOpen(false)
+    setSelectedActivity(null)
+  }
+
+  const deleteActivity = (activityId: number) => {
+    setActivities((currentActivities) =>
+      currentActivities.filter((activity) => activity.id !== activityId),
+    )
+    setActivityEditorOpen(false)
+    setSelectedActivity(null)
   }
 
   return (
@@ -707,29 +936,27 @@ export function BrokerDashboard() {
 
         {/* Activity Timeline */}
         <div className="bg-white border border-outline rounded-xl p-5 shadow-ambient">
-          <h2 className="text-[15px] font-bold text-[#0f172a] mb-4">Activity Timeline</h2>
-          <ActivityItem
-            title="property assigned"
-            time="2h ago"
-            description="Robert King finalized papers for Unit 14B."
-            attachment="Lease_King_14B.pdf"
-            dotActive
-          />
-          <ActivityItem
-            title="Lead assigned"
-            time="5h ago"
-            description="Julianna Smith inquired about Penthouse A."
-          />
-          <ActivityItem
-            title="Tenant Property tour"
-            time="Yesterday"
-            description="Plumbing issue reported in Loft C."
-          />
-          <ActivityItem
-            title="Status"
-            time="Oct 12"
-            description="3 prospects visited the Business Center."
-          />
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-[15px] font-bold text-[#0f172a]">Activity Timeline</h2>
+            <button
+              type="button"
+              onClick={() => openActivityEditor(null)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline text-text-muted hover:bg-hover-light hover:text-primary"
+              title="Add activity"
+              aria-label="Add activity"
+            >
+              <Plus size={15} />
+            </button>
+          </div>
+          {activities.length > 0 ? (
+            activities.map((activity) => (
+              <ActivityItem key={activity.id} {...activity} onEdit={openActivityEditor} />
+            ))
+          ) : (
+            <div className="rounded-lg border border-dashed border-outline px-4 py-6 text-center">
+              <p className="text-[12px] font-medium text-text-muted">No activity recorded yet.</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -767,7 +994,7 @@ export function BrokerDashboard() {
           </div>
 
           <div className="space-y-3">
-            {visits.map((visit) => (
+            {sortedVisits.map((visit) => (
               <UpcomingVisitCard key={visit.id} visit={visit} />
             ))}
           </div>
@@ -793,6 +1020,18 @@ export function BrokerDashboard() {
         <ScheduleVisitModal
           onClose={() => setScheduleOpen(false)}
           onSchedule={handleScheduleVisit}
+        />
+      )}
+
+      {activityEditorOpen && (
+        <ActivityEditorModal
+          activity={selectedActivity}
+          onClose={() => {
+            setActivityEditorOpen(false)
+            setSelectedActivity(null)
+          }}
+          onSave={saveActivity}
+          onDelete={deleteActivity}
         />
       )}
 
