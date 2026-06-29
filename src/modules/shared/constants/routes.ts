@@ -86,5 +86,6 @@ export const ROUTES = {
     ASSIGNMENT_MANAGEMENT: '/admin/assignment-management',
     MAINTENANCE_TICKETS: '/admin/maintenance-tickets',
     NOTIFICATIONS: '/admin/notifications',
+    PROPERTY_OVERVIEW: '/admin/property-overview',
   },
 } as const

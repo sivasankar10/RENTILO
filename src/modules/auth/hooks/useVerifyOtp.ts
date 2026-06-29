@@ -8,15 +8,19 @@ import type { UserRole } from '@shared/constants/roles'
 import type { VerifyOtpPayload } from '../types'
 import type { User } from '@shared/types'
 import { normalizeUser } from '@shared/utils/normalizeUser'
+import { useOwnerStore } from '@modules/owner/store/ownerStore'
 
 export function useVerifyOtp() {
   const { setAuth } = useAuth()
   const navigate = useNavigate()
+  const setSubscriptionPlan = useOwnerStore((s) => s.setSubscriptionPlan)
 
   return useMutation({
     mutationFn: (payload: VerifyOtpPayload) => authApi.verifyOtp(payload),
     onSuccess: (response, variables) => {
       const { user, token, isNewUser } = response.data
+      // Get subscriptionPlan from extended response (mock only)
+      const subscriptionPlan = (response.data as { subscriptionPlan?: 'FREE' | 'PREMIUM' }).subscriptionPlan
 
       if (isNewUser || !user) {
         navigate(ROUTES.AUTH.REGISTER, {
@@ -30,6 +34,12 @@ export function useVerifyOtp() {
 
       const normalized = normalizeUser(user as User)
       setAuth(normalized, token)
+      
+      // Set subscription plan for owner users
+      if (normalized.roles.includes('owner') && subscriptionPlan) {
+        setSubscriptionPlan(subscriptionPlan)
+      }
+      
       const homeRole = normalized.primaryRole ?? normalized.roles[0]
       navigate(getRoleHome(homeRole as UserRole))
     },

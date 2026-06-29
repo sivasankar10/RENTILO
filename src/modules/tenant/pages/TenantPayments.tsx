@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { cn } from '@shared/utils/cn'
 import { MaterialIcon } from '../components/MaterialIcon'
-import { tenantStyles } from '../utils/tenantStyles'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -10,7 +10,6 @@ import {
   Mail,
   MapPin,
   ParkingCircle,
-  Pencil,
   PlayCircle,
   Ruler,
   Share2,

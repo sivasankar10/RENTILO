@@ -19,7 +19,6 @@ import { useMediaQuery } from '@shared/hooks/useMediaQuery'
 import { useAuth } from '@shared/hooks/useAuth'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
-import { useAuthStore } from '@app/store/authStore'
 import { BROKER_ASSIGNED_PROPERTIES } from '@modules/broker/constants/assignedProperties'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 
