@@ -11,9 +11,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
-import { KycVerificationModal } from '@modules/tenant/components/KycVerificationModal'
-import { useOwnerStore } from '../store/ownerStore'
-import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
+import { Toast, ToastContainer } from '@shared/ui/Toast'
 
 const tierFeatures = [
   'Up to 50 Properties',
@@ -24,25 +22,52 @@ const tierFeatures = [
 
 export function OwnerPlansRules() {
   const navigate = useNavigate()
-  const kycStatus = useOwnerStore((state) => state.kycStatus)
-  const setKycStatus = useOwnerStore((state) => state.setKycStatus)
-  const brokerIntegrationEnabled = useOwnerStore((state) => state.brokerIntegrationEnabled)
-  const assignedBrokerId = useOwnerStore((state) => state.assignedBrokerId)
-  const enableBrokerIntegration = useOwnerStore((state) => state.enableBrokerIntegration)
-  const [businessStatus, setBusinessStatus] = useState(kycStatus === 'Verified' ? 'Verified' : 'Pending Upload')
-  const [showKycModal, setShowKycModal] = useState(false)
-  const [verificationMessage, setVerificationMessage] = useState('')
-  const isVerified = kycStatus === 'Verified'
-  const brokersEnabled = brokerIntegrationEnabled || Boolean(assignedBrokerId)
+  const [identityStatus, setIdentityStatus] = useState('Not Started')
+  const [businessStatus, setBusinessStatus] = useState('Pending Upload')
+  const [brokersEnabled, setBrokersEnabled] = useState(false)
+  const [notifications, setNotifications] = useState<
+    { id: number; message: string; description?: string }[]
+  >([])
 
-  const handleVerified = () => {
-    setKycStatus('Verified')
-    setBusinessStatus('Verified')
-    setVerificationMessage('Owner KYC verified successfully for this session.')
+  const showNotification = (message: string, description?: string) => {
+    const id = Date.now() + Math.random()
+    setNotifications((current) => [...current, { id, message, description }])
+  }
+
+  const handleBrokerToggle = () => {
+    if (brokersEnabled) {
+      setBrokersEnabled(false)
+      return
+    }
+
+    setBrokersEnabled(true)
+    showNotification('request sent to admin', 'Broker assignment approval is now in review.')
+
+    window.setTimeout(() => {
+      showNotification('admin has approved the request', 'Broker assignment is enabled for your portfolio.')
+    }, 900)
+
+    window.setTimeout(() => {
+      navigate(ROUTES.OWNER.PORTFOLIO)
+    }, 1800)
   }
 
   return (
     <div className="min-h-screen bg-canvas-alt px-6 py-12">
+      <ToastContainer>
+        {notifications.map((notification) => (
+          <Toast
+            key={notification.id}
+            message={notification.message}
+            description={notification.description}
+            variant="success"
+            onClose={() =>
+              setNotifications((current) => current.filter((item) => item.id !== notification.id))
+            }
+          />
+        ))}
+      </ToastContainer>
+
       <div className="mx-auto max-w-7xl">
         <header>
           <p className="text-filter-label uppercase text-text-muted">Management</p>
@@ -135,12 +160,7 @@ export function OwnerPlansRules() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!brokersEnabled) {
-                        enableBrokerIntegration()
-                      }
-                    }}
-                    disabled={brokersEnabled}
+                    onClick={handleBrokerToggle}
                     className={
                       brokersEnabled
                         ? 'flex h-6 w-11 cursor-default items-center justify-end rounded-pill bg-primary p-1'

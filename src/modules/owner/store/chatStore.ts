@@ -110,6 +110,56 @@ const initialConversations: OwnerChatConversation[] = [
     ],
   },
   {
+    id: 6,
+    contactType: 'broker',
+    role: 'Senior Portfolio Manager',
+    name: 'Alexander Pierce',
+    preview: 'I am ready to begin tenant matching for Skyline Heights.',
+    time: 'Now',
+    unread: 0,
+    avatar:
+      'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=120&q=80',
+    property: 'Skyline Heights - Unit 402',
+    propertyImage:
+      'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=180&q=80',
+    listing: 'Modern Penthouse Suite',
+    location: 'Park Avenue, New York',
+    price: '$4,500',
+    messages: [
+      {
+        id: 1,
+        sender: 'broker',
+        text: 'Thanks for assigning me to Skyline Heights. I am ready to begin tenant matching and share qualified leads.',
+        time: 'Now',
+      },
+    ],
+  },
+  {
+    id: 7,
+    contactType: 'broker',
+    role: 'Premium Homes Advisor',
+    name: 'Priya Menon',
+    preview: 'I can start verification calls for Skyline Heights today.',
+    time: 'Now',
+    unread: 0,
+    avatar:
+      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=120&q=80',
+    property: 'Skyline Heights - Unit 402',
+    propertyImage:
+      'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=180&q=80',
+    listing: 'Modern Penthouse Suite',
+    location: 'Park Avenue, New York',
+    price: '$4,500',
+    messages: [
+      {
+        id: 1,
+        sender: 'broker',
+        text: 'I can start verification calls for Skyline Heights today and send the first shortlist once leads respond.',
+        time: 'Now',
+      },
+    ],
+  },
+  {
     id: 3,
     contactType: 'tenant',
     role: 'Tenant Lead',

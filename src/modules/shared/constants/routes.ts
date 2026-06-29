@@ -46,6 +46,7 @@ export const ROUTES = {
     LEASES: '/owner/leases',
     LEASE_DOCUMENTS: (onboardingId: string) => `/owner/leases/${encodeURIComponent(onboardingId)}/documents`,
     TENANTS: '/owner/tenants',
+    PAYMENTS: '/owner/payments',
     ANALYTICS: '/owner/analytics',
     PLANS_RULES: '/owner/plans-rules',
     PREMIUM_PAYMENT: '/owner/premium-payment',
@@ -56,6 +57,7 @@ export const ROUTES = {
     SETTINGS: '/owner/settings',
     NOTIFICATIONS: '/owner/notifications',
     MESSAGES: '/owner/messages',
+    BROKER_PROFILE: (id: string | number) => `/owner/brokers/${id}`,
   },
 
   // Broker

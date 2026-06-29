@@ -112,6 +112,22 @@ export function OwnerMaintenanceTickets() {
     [propertyTickets]
   )
 
+  const assignedVendorOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          'Not assigned',
+          'Kumar Electricals',
+          'HomeServe Appliances',
+          'Site Engineer Review',
+          'Building Maintenance Team',
+          'Pest Control Services',
+          ...tickets.map((ticket) => ticket.assignedTo),
+        ])
+      ),
+    [tickets]
+  )
+
   const handleSendMessage = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!activeTicket || !chatDraft.trim()) return
@@ -267,6 +283,12 @@ export function OwnerMaintenanceTickets() {
                             {ticket.category} issue in {ticket.unit}
                           </h3>
                           <p className="mt-1 line-clamp-2 text-body text-text-muted">{ticket.problem}</p>
+                          {ticket.ownerNote && (
+                            <p className="mt-2 line-clamp-2 rounded-button bg-canvas-alt px-3 py-2 text-label text-text-primary">
+                              <span className="font-bold text-text-muted">Owner Note: </span>
+                              {ticket.ownerNote}
+                            </p>
+                          )}
                           <div className="mt-4 flex flex-wrap gap-3 text-label text-text-muted">
                             <span className="inline-flex items-center gap-1.5">
                               <UserRound size={14} />
@@ -343,11 +365,17 @@ export function OwnerMaintenanceTickets() {
 
                     <label className="block">
                       <span className="text-label font-bold uppercase tracking-widest text-text-muted">Assigned Vendor</span>
-                      <input
+                      <select
                         value={activeTicket.assignedTo}
                         onChange={(event) => updateTicket(activeTicket.id, { assignedTo: event.target.value })}
-                        className="mt-2 h-11 w-full rounded-input border border-outline bg-white px-3 text-body text-text-primary outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary-100"
-                      />
+                        className="mt-2 h-11 w-full rounded-input border border-outline bg-white px-3 text-body font-semibold text-text-primary outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary-100"
+                      >
+                        {assignedVendorOptions.map((vendor) => (
+                          <option key={vendor} value={vendor}>
+                            {vendor}
+                          </option>
+                        ))}
+                      </select>
                     </label>
 
                     <label className="block">

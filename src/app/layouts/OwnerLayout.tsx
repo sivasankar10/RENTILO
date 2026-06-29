@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  BarChart3,
   Bell,
   Building2,
   ChevronRight,
@@ -41,6 +40,7 @@ const sidebarItems: OwnerSidebarItem[] = [
   { label: 'Maintenance Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
+  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
 
 const mobileNavItems = [
@@ -49,14 +49,8 @@ const mobileNavItems = [
   { label: 'Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
-  { label: 'Analytics', href: ROUTES.OWNER.ANALYTICS, icon: BarChart3 },
+  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
-
-const ownerPlan = {
-  name: 'Free',
-  propertyLimit: 1,
-  postedProperties: 1,
-}
 
 interface OwnerProfileMenuProps {
   open: boolean
@@ -188,8 +182,6 @@ export function OwnerLayout() {
   const profileActive = pathname.startsWith(ROUTES.OWNER.SETTINGS)
   const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
   const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
-  const propertyLimitReached =
-    ownerPlan.name === 'Free' && ownerPlan.postedProperties >= ownerPlan.propertyLimit
   const currentPropertyId = selectedPropertyId ?? OWNER_MANAGED_PROPERTIES[0]?.id ?? ''
   const canSwitchMode =
     Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
@@ -224,23 +216,9 @@ export function OwnerLayout() {
             <RoleModeSwitcher className="hidden sm:inline-flex" />
             <button
               type="button"
-              disabled={propertyLimitReached}
-              onClick={() => {
-                if (!propertyLimitReached) {
-                  navigate(ROUTES.OWNER.REGISTER_PROPERTY)
-                }
-              }}
-              title={
-                propertyLimitReached
-                  ? 'Free plan allows one posted property. Upgrade to add more.'
-                  : 'Post a new property'
-              }
-              className={cn(
-                'hidden rounded-button px-4 py-2 text-label font-semibold shadow-sm transition-all duration-200 sm:inline-flex',
-                propertyLimitReached
-                  ? 'cursor-not-allowed border border-brand-outline/30 bg-transparent text-brand-outline opacity-60'
-                  : 'bg-brand text-white hover:opacity-90'
-              )}
+              onClick={() => navigate(ROUTES.OWNER.REGISTER_PROPERTY)}
+              title="Post a new property"
+              className="hidden rounded-button bg-brand px-4 py-2 text-label font-semibold text-white shadow-sm transition-all duration-200 hover:opacity-90 sm:inline-flex"
             >
               Post New Property
             </button>

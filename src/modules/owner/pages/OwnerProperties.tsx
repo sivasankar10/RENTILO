@@ -1,93 +1,34 @@
-﻿import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import {
-  ArrowLeft,
-  ArrowRight,
-  Bath,
-  BedDouble,
-  Building2,
-  Camera,
-  Car,
-  Check,
-  CheckCircle2,
-  Crosshair,
-  Dumbbell,
-  Home,
-  Image,
-  LockKeyhole,
-  MapPin,
-  PawPrint,
-  ShieldCheck,
-  Sparkles,
-  Upload,
-  Video,
-  Waves,
-  Wifi,
-  Zap,
-} from 'lucide-react'
-import { ROUTES } from '@shared/constants/routes'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { ROUTES } from '@shared/constants/routes'
 import { useOwnerStore, type OwnerRegisterPropertyFormData } from '../store/ownerStore'
-
-type StepNumber = 1 | 2 | 3 | 4 | 5
-
-type StepProps = {
-  formData: OwnerRegisterPropertyFormData
-  update: <K extends keyof OwnerRegisterPropertyFormData>(
-    key: K,
-    value: OwnerRegisterPropertyFormData[K]
-  ) => void
-}
-
-const stepLabels = [
-  'Basic Information',
-  'Property Location',
-  'Amenities, Features & Rules',
-  'Media & Gallery',
-  'Pricing & Lease',
-]
-
-const trustCards = [
-  {
-    icon: ShieldCheck,
-    title: 'Verified Listings',
-    description: 'Verified properties receive 2x more views and inquiries.',
-    tone: 'blue',
-  },
-  {
-    icon: Sparkles,
-    title: 'Pricing Insights',
-    description: 'We suggest optimal rent based on local market data.',
-    tone: 'amber',
-  },
-  {
-    icon: LockKeyhole,
-    title: 'Data Privacy',
-    description: 'Your property documents are encrypted and secure.',
-    tone: 'red',
-  },
-]
+import {
+  BottomInfoCards,
+  Step1BasicInfo,
+  Step2Location,
+  Step3Amenities,
+  Step4Media,
+  Step5Pricing,
+  steps,
+  type StepNumber,
+} from './OwnerRegisterProperty'
 
 export function OwnerProperties() {
   const navigate = useNavigate()
-  const { propertyId } = useParams()
-  const editPropertyId = propertyId ?? 'opus-tower-14b'
   const [currentStep, setCurrentStep] = useState<StepNumber>(1)
   const [draftStatus, setDraftStatus] = useState('')
   const [supportStatus, setSupportStatus] = useState('')
-  const [pin, setPin] = useState({ x: 58, y: 46 })
-
-  const formData = useOwnerStore(
-    (state) => state.propertyEditDrafts[editPropertyId] ?? state.getPropertyEditDraft(editPropertyId)
-  )
-  const updatePropertyEditDraft = useOwnerStore((state) => state.updatePropertyEditDraft)
-  const savePropertyEditDraft = useOwnerStore((state) => state.savePropertyEditDraft)
+  const formData = useOwnerStore((state) => state.registerPropertyDraft)
+  const updateRegisterPropertyDraft = useOwnerStore((state) => state.updateRegisterPropertyDraft)
+  const saveRegisterPropertyDraft = useOwnerStore((state) => state.saveRegisterPropertyDraft)
 
   const update = <K extends keyof OwnerRegisterPropertyFormData>(
     key: K,
-    value: OwnerRegisterPropertyFormData[K]
+    val: OwnerRegisterPropertyFormData[K]
   ) => {
-    updatePropertyEditDraft(editPropertyId, key, value)
+    updateRegisterPropertyDraft(key, val)
     setDraftStatus('')
   }
 
@@ -95,32 +36,33 @@ export function OwnerProperties() {
   const goPrev = () => setCurrentStep((step) => Math.max(1, step - 1) as StepNumber)
 
   const handleSaveDraft = () => {
-    savePropertyEditDraft(editPropertyId)
-    setDraftStatus('Draft saved for this session.')
+    saveRegisterPropertyDraft()
+    setDraftStatus('Property details saved locally.')
   }
 
-  const handleSaveChanges = () => {
-    savePropertyEditDraft(editPropertyId)
-    setDraftStatus('Property changes saved for this session.')
+  const handleComplete = () => {
+    saveRegisterPropertyDraft()
+    setDraftStatus('Property details updated.')
+    navigate(ROUTES.OWNER.DASHBOARD)
   }
 
   return (
-    <div className="min-h-screen bg-canvas-alt px-6 py-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+    <div className="min-h-screen bg-canvas-alt px-4 py-8 sm:px-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="flex items-center gap-2 text-label text-text-muted">
-              <button type="button" onClick={() => navigate(ROUTES.OWNER.DASHBOARD)} className="hover:text-primary">
-                Dashboard
+            <p className="text-label text-text-muted">
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.OWNER.DASHBOARD)}
+                className="transition-colors hover:text-primary"
+              >
+                Overview
               </button>
-              <span>/</span>
-              <button type="button" onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(editPropertyId))} className="hover:text-primary">
-                {formData.propertyName || 'Property'}
-              </button>
-              <span>/</span>
+              {' > '}
               <span className="text-text-primary">Edit Details</span>
-            </div>
-            <h1 className="mt-2 text-heading-2 font-bold tracking-tight text-text-primary">
+            </p>
+            <h1 className="mt-2 text-heading-1 font-bold tracking-tight text-text-primary">
               Edit Property Details
             </h1>
             <p className="mt-2 text-body text-text-muted">
@@ -129,128 +71,128 @@ export function OwnerProperties() {
             {draftStatus && <p className="mt-2 text-label font-semibold text-status-success-text">{draftStatus}</p>}
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleSaveDraft}
-              className="rounded-button border border-outline-variant bg-white px-4 py-2 text-label font-semibold text-text-primary transition-all duration-200 hover:bg-hover-light hover:shadow-sm"
+              className="rounded-button border border-outline bg-white px-5 py-2.5 text-body font-medium text-text-primary shadow-sm transition-colors hover:bg-hover-light"
             >
-              Save as Draft
+              Save Changes
             </button>
             <button
               type="button"
-              onClick={handleSaveChanges}
-              className="rounded-button bg-navy px-5 py-2 text-label font-semibold text-white transition-all duration-200 hover:bg-slate-800 hover:shadow-sm"
+              onClick={handleComplete}
+              className="rounded-button bg-navy px-5 py-2.5 text-body font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
             >
-              Save Changes
+              Finish Editing
             </button>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <aside className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
+          <div className="space-y-6">
             <div className="rounded-card border border-outline bg-white p-5 shadow-sm">
-              <ol className="space-y-5">
-                {stepLabels.map((label, index) => {
-                  const stepNumber = (index + 1) as StepNumber
-                  const isDone = stepNumber < currentStep
-                  const isActive = stepNumber === currentStep
+              <nav className="space-y-4">
+                {steps.map((step) => {
+                  const isCompleted = step.number < currentStep
+                  const isActive = step.number === currentStep
                   return (
-                    <li key={label}>
-                      <button type="button" onClick={() => setCurrentStep(stepNumber)} className="flex w-full gap-3 text-left">
-                        <div
-                          className={cn(
-                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-label font-bold',
-                            isDone && 'bg-primary text-white',
-                            isActive && 'bg-navy text-white',
-                            !isDone && !isActive && 'bg-slate-100 text-text-muted'
-                          )}
-                        >
-                          {isDone ? <Check size={14} /> : stepNumber}
-                        </div>
-                        <p className={cn('text-label font-bold leading-4', isActive || isDone ? 'text-text-primary' : 'text-text-muted')}>
-                          {label}
-                        </p>
-                      </button>
-                    </li>
+                    <button
+                      type="button"
+                      key={step.number}
+                      onClick={() => setCurrentStep(step.number)}
+                      className="flex w-full items-start gap-3 text-left"
+                    >
+                      <div
+                        className={cn(
+                          'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-badge font-bold',
+                          isCompleted
+                            ? 'bg-primary text-white'
+                            : isActive
+                              ? 'bg-navy text-white'
+                              : 'bg-slate-100 text-text-muted'
+                        )}
+                      >
+                        {isCompleted ? <Check size={14} /> : step.number}
+                      </div>
+                      <span
+                        className={cn(
+                          'pt-0.5 text-body',
+                          isActive
+                            ? 'font-bold text-text-primary'
+                            : isCompleted
+                              ? 'font-medium text-text-primary'
+                              : 'font-medium text-text-muted'
+                        )}
+                      >
+                        {step.label}
+                      </span>
+                    </button>
                   )
                 })}
-              </ol>
+              </nav>
             </div>
 
-            <div className="rounded-card bg-primary-100 p-5 text-text-primary">
-              <p className="text-label font-bold">Need Assistance?</p>
-              <p className="mt-3 text-label leading-5 text-text-primary">
-                Our onboarding specialists are available 24/7 to help you optimize your listing.
+            <div className="rounded-card bg-primary-100 p-5">
+              <h3 className="text-body font-bold text-text-primary">Need Assistance?</h3>
+              <p className="mt-2 text-label leading-5 text-text-muted">
+                Our onboarding specialists are available 24x7 to help you optimize your listing.
               </p>
-              <button type="button" onClick={() => setSupportStatus('Support request queued.')} className="mt-4 inline-flex items-center gap-2 text-label font-bold text-navy">
-                <ArrowRight size={14} />
+              <button
+                type="button"
+                onClick={() => setSupportStatus('Support request queued.')}
+                className="mt-4 inline-flex items-center gap-2 text-label font-bold text-navy transition-colors hover:text-primary"
+              >
                 Contact Support
               </button>
               {supportStatus && <p className="mt-3 text-label text-primary">{supportStatus}</p>}
             </div>
-          </aside>
+          </div>
 
-          <section className="space-y-6">
-            {currentStep === 1 && <BasicInformationStep formData={formData} update={update} />}
-            {currentStep === 2 && <LocationStep formData={formData} update={update} pin={pin} setPin={setPin} />}
-            {currentStep === 3 && <AmenitiesRulesStep formData={formData} update={update} />}
-            {currentStep === 4 && <MediaStep formData={formData} update={update} />}
-            {currentStep === 5 && <PricingLeaseStep formData={formData} update={update} onSave={handleSaveChanges} />}
+          <div className="space-y-6">
+            {currentStep === 1 && <Step1BasicInfo formData={formData} update={update} />}
+            {currentStep === 2 && <Step2Location formData={formData} update={update} />}
+            {currentStep === 3 && <Step3Amenities formData={formData} update={update} />}
+            {currentStep === 4 && <Step4Media formData={formData} update={update} />}
+            {currentStep === 5 && (
+              <Step5Pricing
+                formData={formData}
+                update={update}
+                onComplete={handleComplete}
+                goPrev={goPrev}
+              />
+            )}
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <button
-                type="button"
-                onClick={goPrev}
-                disabled={currentStep === 1}
-                className={cn(
-                  'inline-flex items-center gap-2 rounded-button px-4 py-3 text-body font-semibold transition-colors duration-200',
-                  currentStep === 1 ? 'cursor-not-allowed text-text-muted/50' : 'text-text-primary hover:bg-hover-light'
+            {currentStep < 5 && (
+              <div className="flex items-center justify-between pt-4">
+                {currentStep > 1 ? (
+                  <button
+                    type="button"
+                    onClick={goPrev}
+                    className="inline-flex items-center gap-2 text-body font-medium text-text-muted transition-colors hover:text-text-primary"
+                  >
+                    <ArrowLeft size={16} />
+                    Previous Step
+                  </button>
+                ) : (
+                  <span />
                 )}
-              >
-                <ArrowLeft size={16} />
-                Previous Step
-              </button>
-
-              {currentStep < 5 ? (
-                <button type="button" onClick={goNext} className="inline-flex items-center justify-center gap-3 rounded-button bg-navy px-8 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-slate-800 hover:shadow-md">
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className="inline-flex items-center gap-2 rounded-button bg-navy px-6 py-3 text-body font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
+                >
                   {currentStep === 1 && 'Continue to Location'}
                   {currentStep === 2 && 'Continue to Amenities'}
                   {currentStep === 3 && 'Continue to Media & Gallery'}
                   {currentStep === 4 && 'Continue to Pricing & Lease'}
                   <ArrowRight size={16} />
                 </button>
-              ) : (
-                <button type="button" onClick={handleSaveChanges} className="inline-flex items-center justify-center gap-3 rounded-button bg-navy px-8 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-slate-800 hover:shadow-md">
-                  Save Changes
-                  <CheckCircle2 size={16} />
-                </button>
-              )}
-            </div>
-          </section>
-        </div>
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
-          {trustCards.map((card) => {
-            const Icon = card.icon
-            return (
-              <article key={card.title} className="flex items-start gap-4 rounded-card border border-outline bg-white p-5 shadow-sm">
-                <div
-                  className={cn(
-                    'flex h-10 w-10 items-center justify-center rounded-button',
-                    card.tone === 'blue' && 'bg-primary-100 text-primary',
-                    card.tone === 'amber' && 'bg-status-warning-bg text-status-warning-text',
-                    card.tone === 'red' && 'bg-status-error-bg text-status-error-text'
-                  )}
-                >
-                  <Icon size={18} />
-                </div>
-                <div>
-                  <h3 className="text-body font-bold text-text-primary">{card.title}</h3>
-                  <p className="mt-1 text-label leading-5 text-text-muted">{card.description}</p>
-                </div>
-              </article>
-            )
-          })}
+              </div>
+            )}
+
+            <BottomInfoCards />
+          </div>
         </div>
       </div>
     </div>
