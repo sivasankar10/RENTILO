@@ -1,15 +1,7 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@shared/utils/cn'
-import { ROUTES } from '@shared/constants/routes'
-import { useOnboardingStore } from '@shared/store/onboardingStore'
-import {
-  useOwnerMaintenanceStore,
-  type OwnerMaintenanceTicket,
-  type TicketCategory,
-  type TicketStatus,
-} from '../../owner/store/maintenanceStore'
-import { useTenantId } from '../hooks/useTenantId'
+import { MaterialIcon } from '../components/MaterialIcon'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,6 +18,20 @@ interface Ticket {
 
 const PAGE_SIZE = 4
 const CATEGORIES: TicketCategory[] = ['Plumbing', 'Electrical', 'Appliance', 'Structural', 'Pest Control', 'HVAC', 'Other']
+
+function mapStoreTicket(ticket: OwnerMaintenanceTicket): Ticket {
+  const [date = ticket.submittedAt, time = ''] = ticket.submittedAt.split(', ')
+  return {
+    id: ticket.id,
+    ticketNo: ticket.ticketNo,
+    category: ticket.category,
+    problem: ticket.problem,
+    status: ticket.status,
+    date,
+    time,
+    images: ticket.images ?? [],
+  }
+}
 
 function mapStoreTicket(ticket: OwnerMaintenanceTicket): Ticket {
   const [date = ticket.submittedAt, time = ''] = ticket.submittedAt.split(', ')
@@ -89,9 +95,10 @@ interface TicketRowProps {
   ticket: Ticket
   onEdit: (ticket: Ticket) => void
   onOpen: (ticket: Ticket) => void
+  onOpen: (ticket: Ticket) => void
 }
 
-function TicketRow({ ticket, onEdit, onOpen }: TicketRowProps) {
+function TicketRow({ ticket, onEdit, onOpen, onOpen }: TicketRowProps) {
   const [expanded, setExpanded] = useState(false)
   const isLocked = LOCKED_STATUSES.includes(ticket.status)
 
@@ -106,7 +113,18 @@ function TicketRow({ ticket, onEdit, onOpen }: TicketRowProps) {
           onOpen(ticket)
         }
       }}
-      className="cursor-pointer px-6 py-5 border-b border-[#f1f5f9] last:border-0 hover:bg-[#fafbfc] transition-colors"
+     
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(ticket)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onOpen(ticket)
+        }
+      }}
+      className="cursor-pointer cursor-pointer px-6 py-5 border-b border-[#f1f5f9] last:border-0 hover:bg-[#fafbfc] transition-colors"
+    
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
 
@@ -124,6 +142,7 @@ function TicketRow({ ticket, onEdit, onOpen }: TicketRowProps) {
             {ticket.problem}
           </p>
           {ticket.problem.length > 90 && (
+            <button type="button" onClick={(event) => { event.stopPropagation(); setExpanded((v) => !v) }}
             <button type="button" onClick={(event) => { event.stopPropagation(); setExpanded((v) => !v) }}
               className="mt-1 text-[12px] font-semibold text-[#2563eb] border-0 bg-transparent cursor-pointer p-0 hover:underline">
               {expanded ? 'Show less' : 'Read more'}
@@ -162,6 +181,10 @@ function TicketRow({ ticket, onEdit, onOpen }: TicketRowProps) {
           <div className="relative group/edit mt-0.5">
             <button
               type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                if (!isLocked) onEdit(ticket)
+              }}
               onClick={(event) => {
                 event.stopPropagation()
                 if (!isLocked) onEdit(ticket)
@@ -418,12 +441,38 @@ export function TenantMaintenance() {
     [storeTickets, tenantId],
   )
 
+  const navigate = useNavigate()
+  const location = useLocation()
+  const tenantId = useTenantId()
+  const activeLease = useOnboardingStore((state) =>
+    state.records.find((record) => record.tenant.id === tenantId && record.status === 'active')
+  )
+  const storeTickets = useOwnerMaintenanceStore((state) => state.tickets)
+  const createOwnerTicket = useOwnerMaintenanceStore((state) => state.createTenantTicket)
+  const updateTenantTicket = useOwnerMaintenanceStore((state) => state.updateTenantTicket)
+
+  const tickets = useMemo(
+    () =>
+      storeTickets
+        .filter((ticket) => ticket.tenantId === tenantId)
+        .map(mapStoreTicket),
+    [storeTickets, tenantId],
+  )
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'All'>('All')
   const [page, setPage] = useState(1)
 
   // Modal state — null = closed, undefined = new, Ticket = edit
   const [modalTicket, setModalTicket] = useState<Ticket | null | undefined>(null)
+
+  useEffect(() => {
+    const editTicketId = (location.state as { editTicketId?: string } | null)?.editTicketId
+    if (!editTicketId) return
+    const ticket = tickets.find((item) => item.id === editTicketId)
+    if (ticket) setModalTicket(ticket)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate, tickets])
 
   useEffect(() => {
     const editTicketId = (location.state as { editTicketId?: string } | null)?.editTicketId
@@ -462,12 +511,42 @@ export function TenantMaintenance() {
       ownerNote: 'Raised from the active tenant lease.',
       images: data.images,
     })
+    if (!activeLease?.lease) {
+      showToast('Active lease required', 'Maintenance requests are available after owner completes onboarding.')
+      return
+    }
+    const ticketNo = createOwnerTicket({
+      propertyId: activeLease.ownerPropertyId,
+      tenantId: activeLease.tenant.id,
+      leaseId: activeLease.lease.id,
+      tenantName: activeLease.tenant.name,
+      tenantPhone: activeLease.tenant.phone,
+      tenantAvatar: activeLease.tenant.avatar,
+      unit: activeLease.unit,
+      category: data.category,
+      priority: 'Medium',
+      problem: data.problem,
+      preferredSlot: 'Coordinate with tenant',
+      assignedTo: 'Not assigned',
+      ownerNote: 'Raised from the active tenant lease.',
+      images: data.images,
+    })
     setPage(1)
+    showToast('Request submitted!', `Ticket ${ticketNo} is now visible to ${activeLease.owner.name}.`)
     showToast('Request submitted!', `Ticket ${ticketNo} is now visible to ${activeLease.owner.name}.`)
   }
 
   function handleUpdate(data: Pick<Ticket, 'category' | 'problem' | 'images'>) {
     if (!modalTicket) return
+    const updated = updateTenantTicket(modalTicket.id, tenantId, {
+      category: data.category,
+      problem: data.problem,
+      images: data.images,
+    })
+    if (!updated) {
+      showToast('Unable to update', 'Only open tickets can be edited.')
+      return
+    }
     const updated = updateTenantTicket(modalTicket.id, tenantId, {
       category: data.category,
       problem: data.problem,
@@ -568,6 +647,12 @@ export function TenantMaintenance() {
               onEdit={(ticket) => setModalTicket(ticket)}
               onOpen={(ticket) => navigate(ROUTES.TENANT.MAINTENANCE_DETAIL(ticket.id))}
             />
+            <TicketRow
+              key={t.id}
+              ticket={t}
+              onEdit={(ticket) => setModalTicket(ticket)}
+              onOpen={(ticket) => navigate(ROUTES.TENANT.MAINTENANCE_DETAIL(ticket.id))}
+            />
           ))
         ) : (
           <div className="py-16 text-center">
@@ -624,6 +709,11 @@ export function TenantMaintenance() {
           Lease {activeLease.lease.id} · {activeLease.propertyName}
         </p>
       )}
+      {activeLease?.lease && (
+        <p className="text-center text-[11px] font-semibold tracking-wider text-[#94a3b8] uppercase pb-2">
+          Lease {activeLease.lease.id} · {activeLease.propertyName}
+        </p>
+      )}
 
       {/* ── Modal ── */}
       {modalTicket !== null && (
@@ -655,5 +745,7 @@ export function TenantMaintenance() {
     </div>
   )
 }
+
+
 
 

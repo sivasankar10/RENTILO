@@ -5,12 +5,17 @@ import {
   Building2,
   ChevronRight,
   CircleCheck,
+  Crown,
   KeyRound,
   LockKeyhole,
+  RotateCcw,
   ShieldCheck,
   User,
+  Wrench,
 } from 'lucide-react'
 import { useOwnerStore } from '../store/ownerStore'
+import { PLAN_CONFIG } from '../config/features'
+import { formatSubscriptionDate, getSubscriptionAge } from '../services/subscription.service'
 
 const bankFields = [
   { label: 'Account Holder Name', placeholder: 'Enter full name' },
@@ -340,6 +345,12 @@ export function OwnerSettings() {
                 </button>
               </div>
             </article>
+
+            {/* Subscription Status Card */}
+            <SubscriptionStatusCard />
+
+            {/* Developer Tools - Only for testing */}
+            <DeveloperToolsCard />
           </aside>
         </div>
       </div>
@@ -347,5 +358,128 @@ export function OwnerSettings() {
   )
 }
 
+/* ─────────────────────────────────────────────
+   Subscription Status Card
+───────────────────────────────────────────── */
+function SubscriptionStatusCard() {
+  const { subscriptionPlan, subscribedAt } = useOwnerStore()
+  const isPremium = subscriptionPlan === 'PREMIUM'
+  const planConfig = PLAN_CONFIG[subscriptionPlan]
+  const subscriptionAge = getSubscriptionAge()
 
+  return (
+    <article className="rounded-card border border-outline bg-white p-5 shadow-sm">
+      <h2 className="inline-flex items-center gap-2 text-body font-bold text-text-primary">
+        <Crown size={16} className={isPremium ? 'text-amber-500' : 'text-text-muted'} />
+        Subscription
+      </h2>
+      <div className="mt-4">
+        <div className={`rounded-xl p-4 ${isPremium ? 'bg-gradient-to-br from-amber-50 to-amber-100' : 'bg-slate-50'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <span className={`text-sm font-bold ${isPremium ? 'text-amber-700' : 'text-slate-600'}`}>
+              {planConfig.name}
+            </span>
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              isPremium 
+                ? 'bg-amber-500 text-white' 
+                : 'bg-slate-200 text-slate-600'
+            }`}>
+              {isPremium ? 'Active' : 'Free'}
+            </span>
+          </div>
+          {isPremium && subscribedAt && (
+            <>
+              <p className="text-xs text-amber-600">
+                Started: {formatSubscriptionDate(subscribedAt)}
+              </p>
+              {subscriptionAge !== null && (
+                <p className="text-xs text-amber-600 mt-0.5">
+                  {subscriptionAge === 0 ? 'Started today' : `${subscriptionAge} days active`}
+                </p>
+              )}
+            </>
+          )}
+          {!isPremium && (
+            <p className="text-xs text-slate-500 mt-1">
+              Upgrade to unlock all premium features
+            </p>
+          )}
+        </div>
+      </div>
+    </article>
+  )
+}
 
+/* ─────────────────────────────────────────────
+   Developer Tools Card (for testing)
+───────────────────────────────────────────── */
+function DeveloperToolsCard() {
+  const { subscriptionPlan, resetSubscriptionState, upgradeToPremium, isUpgrading } = useOwnerStore()
+  const [isResetting, setIsResetting] = useState(false)
+
+  const handleReset = () => {
+    setIsResetting(true)
+    setTimeout(() => {
+      resetSubscriptionState()
+      setIsResetting(false)
+    }, 500)
+  }
+
+  const handleQuickUpgrade = async () => {
+    try {
+      await upgradeToPremium()
+    } catch (error) {
+      console.error('Quick upgrade failed:', error)
+    }
+  }
+
+  return (
+    <article className="rounded-card border-2 border-dashed border-amber-300 bg-amber-50 p-5">
+      <h2 className="inline-flex items-center gap-2 text-body font-bold text-amber-800">
+        <Wrench size={16} />
+        Developer Tools
+      </h2>
+      <p className="text-xs text-amber-700 mt-1 mb-4">
+        Testing utilities - will be removed in production
+      </p>
+      
+      <div className="space-y-3">
+        {/* Current Status */}
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-amber-700">Current Plan:</span>
+          <span className={`font-semibold ${subscriptionPlan === 'PREMIUM' ? 'text-amber-600' : 'text-slate-600'}`}>
+            {subscriptionPlan}
+          </span>
+        </div>
+        
+        {/* Reset Button */}
+        <button
+          type="button"
+          onClick={handleReset}
+          disabled={isResetting || subscriptionPlan === 'FREE'}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-400 bg-white px-4 py-2.5 text-sm font-semibold text-amber-700 transition-colors duration-200 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RotateCcw size={14} className={isResetting ? 'animate-spin' : ''} />
+          {isResetting ? 'Resetting...' : 'Reset to FREE'}
+        </button>
+        
+        {/* Quick Upgrade Button */}
+        {subscriptionPlan === 'FREE' && (
+          <button
+            type="button"
+            onClick={handleQuickUpgrade}
+            disabled={isUpgrading}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Crown size={14} />
+            {isUpgrading ? 'Upgrading...' : 'Quick Upgrade (Skip Payment)'}
+          </button>
+        )}
+      </div>
+      
+      <p className="text-[10px] text-amber-600 mt-4 leading-tight">
+        Note: This card is only visible during development. The subscription state is stored in Local Storage.
+      </p>
+    </article>
+  )
+}

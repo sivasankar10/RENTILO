@@ -11,7 +11,10 @@ import {
 } from '@shared/store/paymentsStore'
 import { useOnboardingStore } from '@shared/store/onboardingStore'
 import { MaterialIcon } from '../components/MaterialIcon'
+<<<<<<< HEAD
+=======
 import { useTenantId } from '../hooks/useTenantId'
+>>>>>>> main
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

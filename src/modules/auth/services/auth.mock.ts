@@ -3,18 +3,22 @@ import type { AuthUserPayload, VerifyOtpResponse } from '../types'
 
 const MOCK_OTP = '123456'
 
+/** Subscription plan type for owner accounts */
+type SubscriptionPlan = 'FREE' | 'PREMIUM'
+
 /** Dev mock: phone (digits only) → account definition */
 const MOCK_ACCOUNTS: Record<
   string,
-  { roles: UserRole[]; firstName: string; lastName: string; email: string }
+  { roles: UserRole[]; firstName: string; lastName: string; email: string; subscriptionPlan?: SubscriptionPlan }
 > = {
   '9000000001': { roles: ['tenant'], firstName: 'Test', lastName: 'Tenant', email: 'tenant@rentilo.com' },
-  '9000000002': { roles: ['owner'], firstName: 'Test', lastName: 'Owner', email: 'owner@rentilo.com' },
+  '9000000002': { roles: ['owner'], firstName: 'Test', lastName: 'Owner', email: 'owner@rentilo.com', subscriptionPlan: 'FREE' },
   '9000000003': {
     roles: ['tenant', 'owner'],
     firstName: 'Test',
     lastName: 'Dual',
     email: 'dual@rentilo.com',
+    subscriptionPlan: 'FREE',
   },
   '9000000004': { roles: ['broker'], firstName: 'Test', lastName: 'Broker', email: 'broker@rentilo.com' },
   '9000000005': {
@@ -28,6 +32,13 @@ const MOCK_ACCOUNTS: Record<
     firstName: 'Test',
     lastName: 'Admin',
     email: 'admin@rentilo.com',
+  },
+  '9000000007': {
+    roles: ['owner'],
+    firstName: 'Victoria',
+    lastName: 'Ashworth',
+    email: 'victoria@ashworthproperties.com',
+    subscriptionPlan: 'PREMIUM',
   },
 }
 
@@ -48,7 +59,7 @@ export function mockVerifyOtp(
   phone: string,
   otp: string,
   otpSessionId: string
-): VerifyOtpResponse {
+): VerifyOtpResponse & { subscriptionPlan?: SubscriptionPlan } {
   const normalized = normalizePhone(phone)
   const session = otpSessions.get(otpSessionId)
 
@@ -87,6 +98,7 @@ export function mockVerifyOtp(
     user,
     token: `mock-jwt-${normalized}`,
     isNewUser: false,
+    subscriptionPlan: account.subscriptionPlan,
   }
 }
 

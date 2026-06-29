@@ -19,8 +19,10 @@ import { OwnerNotifications } from '../pages/OwnerNotifications'
 import { OwnerMessages } from '../pages/OwnerMessages'
 import { OwnerPremiumPaymentPage } from '../pages/OwnerPremiumPaymentPage'
 import { OwnerBrokerProfile } from '../pages/OwnerBrokerProfile'
+import { OwnerProfile } from '../pages/OwnerProfile'
 
 export const ownerRoutes: RouteObject[] = [
+  // Base routes (available to all)
   { index: true, element: <OwnerDashboard /> },
   { path: 'dashboard', element: <OwnerDashboard /> },
   { path: 'portfolio', element: <OwnerPortfolio /> },
@@ -40,6 +42,7 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'payments', element: <OwnerPayments /> },
   { path: 'payments/:paymentId', element: <PaymentReceiptPage backRoute={ROUTES.OWNER.PAYMENTS} backLabel="Back to Payments" audience="owner" /> },
   { path: 'settings', element: <OwnerSettings /> },
+  { path: 'profile', element: <OwnerProfile /> },
   { path: 'notifications', element: <OwnerNotifications /> },
   { path: 'messages', element: <OwnerMessages /> },
   { path: 'brokers/:brokerId', element: <OwnerBrokerProfile /> },

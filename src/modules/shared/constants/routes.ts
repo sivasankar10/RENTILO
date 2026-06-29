@@ -52,7 +52,6 @@ export const ROUTES = {
     PREMIUM_PAYMENT: '/owner/premium-payment',
     LISTING_PROMOTION_PAYMENT: (propertyId: string) =>
       `/owner/portfolio/promote/${encodeURIComponent(propertyId)}/payment`,
-    PAYMENTS: '/owner/payments',
     PAYMENT_RECEIPT: (id: string) => `/owner/payments/${encodeURIComponent(id)}`,
     SETTINGS: '/owner/settings',
     NOTIFICATIONS: '/owner/notifications',
