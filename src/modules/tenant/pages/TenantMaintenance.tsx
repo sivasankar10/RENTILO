@@ -1,9 +1,15 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@shared/utils/cn'
-import { MaterialIcon } from '../components/MaterialIcon'
+import { ROUTES } from '@shared/constants/routes'
+import { useOnboardingStore } from '@shared/store/onboardingStore'
+import { useOwnerMaintenanceStore, type OwnerMaintenanceTicket } from '@modules/owner/store/maintenanceStore'
+import { useTenantId } from '../hooks/useTenantId'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+type TicketCategory = 'Plumbing' | 'Electrical' | 'Appliance' | 'Structural' | 'Pest Control' | 'HVAC' | 'Other'
+type TicketStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed'
 
 interface Ticket {
   id: string
@@ -18,20 +24,6 @@ interface Ticket {
 
 const PAGE_SIZE = 4
 const CATEGORIES: TicketCategory[] = ['Plumbing', 'Electrical', 'Appliance', 'Structural', 'Pest Control', 'HVAC', 'Other']
-
-function mapStoreTicket(ticket: OwnerMaintenanceTicket): Ticket {
-  const [date = ticket.submittedAt, time = ''] = ticket.submittedAt.split(', ')
-  return {
-    id: ticket.id,
-    ticketNo: ticket.ticketNo,
-    category: ticket.category,
-    problem: ticket.problem,
-    status: ticket.status,
-    date,
-    time,
-    images: ticket.images ?? [],
-  }
-}
 
 function mapStoreTicket(ticket: OwnerMaintenanceTicket): Ticket {
   const [date = ticket.submittedAt, time = ''] = ticket.submittedAt.split(', ')
@@ -95,10 +87,9 @@ interface TicketRowProps {
   ticket: Ticket
   onEdit: (ticket: Ticket) => void
   onOpen: (ticket: Ticket) => void
-  onOpen: (ticket: Ticket) => void
 }
 
-function TicketRow({ ticket, onEdit, onOpen, onOpen }: TicketRowProps) {
+function TicketRow({ ticket, onEdit, onOpen }: TicketRowProps) {
   const [expanded, setExpanded] = useState(false)
   const isLocked = LOCKED_STATUSES.includes(ticket.status)
 
@@ -113,21 +104,9 @@ function TicketRow({ ticket, onEdit, onOpen, onOpen }: TicketRowProps) {
           onOpen(ticket)
         }
       }}
-     
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(ticket)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onOpen(ticket)
-        }
-      }}
-      className="cursor-pointer cursor-pointer px-6 py-5 border-b border-[#f1f5f9] last:border-0 hover:bg-[#fafbfc] transition-colors"
-    
+      className="cursor-pointer px-6 py-5 border-b border-[#f1f5f9] last:border-0 hover:bg-[#fafbfc] transition-colors"
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
-
         {/* ── Left ── */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -142,7 +121,6 @@ function TicketRow({ ticket, onEdit, onOpen, onOpen }: TicketRowProps) {
             {ticket.problem}
           </p>
           {ticket.problem.length > 90 && (
-            <button type="button" onClick={(event) => { event.stopPropagation(); setExpanded((v) => !v) }}
             <button type="button" onClick={(event) => { event.stopPropagation(); setExpanded((v) => !v) }}
               className="mt-1 text-[12px] font-semibold text-[#2563eb] border-0 bg-transparent cursor-pointer p-0 hover:underline">
               {expanded ? 'Show less' : 'Read more'}
@@ -185,10 +163,6 @@ function TicketRow({ ticket, onEdit, onOpen, onOpen }: TicketRowProps) {
                 event.stopPropagation()
                 if (!isLocked) onEdit(ticket)
               }}
-              onClick={(event) => {
-                event.stopPropagation()
-                if (!isLocked) onEdit(ticket)
-              }}
               disabled={isLocked}
               aria-label={isLocked ? `Cannot edit — ticket is ${ticket.status}` : `Edit ticket ${ticket.ticketNo}`}
               className={cn(
@@ -212,7 +186,6 @@ function TicketRow({ ticket, onEdit, onOpen, onOpen }: TicketRowProps) {
             )}
           </div>
         </div>
-
       </div>
     </div>
   )
@@ -221,7 +194,6 @@ function TicketRow({ ticket, onEdit, onOpen, onOpen }: TicketRowProps) {
 // ─── Ticket Form Modal (create + edit) ───────────────────────────────────────
 
 interface TicketFormModalProps {
-  /** When provided the modal is in edit mode */
   initialData?: Ticket
   onClose: () => void
   onSubmit: (data: Pick<Ticket, 'category' | 'problem' | 'images'>) => void
@@ -288,7 +260,6 @@ function TicketFormModal({ initialData, onClose, onSubmit }: TicketFormModalProp
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-7 pb-5 border-b border-[#f1f5f9] flex-shrink-0">
           <div className="flex items-center gap-3">
-            {/* Mode indicator pill */}
             <div className={cn(
               'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0',
               isEdit ? 'bg-amber-50' : 'bg-[#f1f5f9]'
@@ -316,7 +287,6 @@ function TicketFormModal({ initialData, onClose, onSubmit }: TicketFormModalProp
 
         {/* Scrollable form */}
         <form onSubmit={handleSubmit} className="px-7 py-6 flex flex-col gap-5 overflow-y-auto flex-1">
-
           {/* Category */}
           <div>
             <label className="block text-[11px] font-bold tracking-widest text-[#64748b] uppercase mb-2">Category</label>
@@ -413,7 +383,6 @@ function TicketFormModal({ initialData, onClose, onSubmit }: TicketFormModalProp
               ) : isEdit ? 'Save Changes' : 'Submit Request'}
             </button>
           </div>
-
         </form>
       </div>
     </div>
@@ -441,38 +410,12 @@ export function TenantMaintenance() {
     [storeTickets, tenantId],
   )
 
-  const navigate = useNavigate()
-  const location = useLocation()
-  const tenantId = useTenantId()
-  const activeLease = useOnboardingStore((state) =>
-    state.records.find((record) => record.tenant.id === tenantId && record.status === 'active')
-  )
-  const storeTickets = useOwnerMaintenanceStore((state) => state.tickets)
-  const createOwnerTicket = useOwnerMaintenanceStore((state) => state.createTenantTicket)
-  const updateTenantTicket = useOwnerMaintenanceStore((state) => state.updateTenantTicket)
-
-  const tickets = useMemo(
-    () =>
-      storeTickets
-        .filter((ticket) => ticket.tenantId === tenantId)
-        .map(mapStoreTicket),
-    [storeTickets, tenantId],
-  )
-
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'All'>('All')
   const [page, setPage] = useState(1)
 
   // Modal state — null = closed, undefined = new, Ticket = edit
   const [modalTicket, setModalTicket] = useState<Ticket | null | undefined>(null)
-
-  useEffect(() => {
-    const editTicketId = (location.state as { editTicketId?: string } | null)?.editTicketId
-    if (!editTicketId) return
-    const ticket = tickets.find((item) => item.id === editTicketId)
-    if (ticket) setModalTicket(ticket)
-    navigate(location.pathname, { replace: true, state: null })
-  }, [location.pathname, location.state, navigate, tickets])
 
   useEffect(() => {
     const editTicketId = (location.state as { editTicketId?: string } | null)?.editTicketId
@@ -511,42 +454,12 @@ export function TenantMaintenance() {
       ownerNote: 'Raised from the active tenant lease.',
       images: data.images,
     })
-    if (!activeLease?.lease) {
-      showToast('Active lease required', 'Maintenance requests are available after owner completes onboarding.')
-      return
-    }
-    const ticketNo = createOwnerTicket({
-      propertyId: activeLease.ownerPropertyId,
-      tenantId: activeLease.tenant.id,
-      leaseId: activeLease.lease.id,
-      tenantName: activeLease.tenant.name,
-      tenantPhone: activeLease.tenant.phone,
-      tenantAvatar: activeLease.tenant.avatar,
-      unit: activeLease.unit,
-      category: data.category,
-      priority: 'Medium',
-      problem: data.problem,
-      preferredSlot: 'Coordinate with tenant',
-      assignedTo: 'Not assigned',
-      ownerNote: 'Raised from the active tenant lease.',
-      images: data.images,
-    })
     setPage(1)
-    showToast('Request submitted!', `Ticket ${ticketNo} is now visible to ${activeLease.owner.name}.`)
     showToast('Request submitted!', `Ticket ${ticketNo} is now visible to ${activeLease.owner.name}.`)
   }
 
   function handleUpdate(data: Pick<Ticket, 'category' | 'problem' | 'images'>) {
     if (!modalTicket) return
-    const updated = updateTenantTicket(modalTicket.id, tenantId, {
-      category: data.category,
-      problem: data.problem,
-      images: data.images,
-    })
-    if (!updated) {
-      showToast('Unable to update', 'Only open tickets can be edited.')
-      return
-    }
     const updated = updateTenantTicket(modalTicket.id, tenantId, {
       category: data.category,
       problem: data.problem,
@@ -588,7 +501,6 @@ export function TenantMaintenance() {
 
   return (
     <div className="space-y-0">
-
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <div>
@@ -641,12 +553,6 @@ export function TenantMaintenance() {
       <div className="bg-white rounded-2xl border border-[#e2e8f0] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)] overflow-hidden mb-6">
         {paginated.length > 0 ? (
           paginated.map((t) => (
-            <TicketRow
-              key={t.id}
-              ticket={t}
-              onEdit={(ticket) => setModalTicket(ticket)}
-              onOpen={(ticket) => navigate(ROUTES.TENANT.MAINTENANCE_DETAIL(ticket.id))}
-            />
             <TicketRow
               key={t.id}
               ticket={t}
@@ -709,11 +615,6 @@ export function TenantMaintenance() {
           Lease {activeLease.lease.id} · {activeLease.propertyName}
         </p>
       )}
-      {activeLease?.lease && (
-        <p className="text-center text-[11px] font-semibold tracking-wider text-[#94a3b8] uppercase pb-2">
-          Lease {activeLease.lease.id} · {activeLease.propertyName}
-        </p>
-      )}
 
       {/* ── Modal ── */}
       {modalTicket !== null && (
@@ -741,11 +642,6 @@ export function TenantMaintenance() {
           </div>
         </div>
       )}
-
     </div>
   )
 }
-
-
-
-

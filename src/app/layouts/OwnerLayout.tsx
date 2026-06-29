@@ -30,7 +30,6 @@ import { cn } from '@shared/utils/cn'
 import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
 import { OWNER_MANAGED_PROPERTIES, useOwnerStore } from '@modules/owner/store/ownerStore'
 import { UpgradeDialog } from '@modules/owner/components/UpgradeDialog'
-import { PLAN_CONFIG } from '@modules/owner/config/features'
 import type { OwnerFeature } from '@modules/owner/config/features'
 
 interface OwnerSidebarItem {
@@ -215,9 +214,9 @@ export function OwnerLayout() {
   const canSwitchMode =
     Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
   
-  const planConfig = PLAN_CONFIG[subscriptionPlan]
+  // const planConfig = PLAN_CONFIG[subscriptionPlan]
   const isPremium = subscriptionPlan === 'PREMIUM'
-  const propertyLimitReached = !isPremium && planConfig.propertyLimit > 0 && planConfig.propertyLimit <= 1
+  // const propertyLimitReached = !isPremium && planConfig.propertyLimit > 0 && planConfig.propertyLimit <= 1
 
   const handleLogout = () => {
     logout()

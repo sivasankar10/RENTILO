@@ -12,6 +12,8 @@ import {
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { Toast, ToastContainer } from '@shared/ui/Toast'
+import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
+import { KycVerificationModal } from '@modules/tenant/components/KycVerificationModal'
 
 const tierFeatures = [
   'Up to 50 Properties',
@@ -22,12 +24,22 @@ const tierFeatures = [
 
 export function OwnerPlansRules() {
   const navigate = useNavigate()
-  const [identityStatus, setIdentityStatus] = useState('Not Started')
+  const [showKycModal, setShowKycModal] = useState(false)
+  const [kycStatus, setKycStatus] = useState('Not Started')
+  const [isVerified, setIsVerified] = useState(false)
+  const [verificationMessage, setVerificationMessage] = useState('')
   const [businessStatus, setBusinessStatus] = useState('Pending Upload')
   const [brokersEnabled, setBrokersEnabled] = useState(false)
   const [notifications, setNotifications] = useState<
     { id: number; message: string; description?: string }[]
   >([])
+
+  const handleVerified = () => {
+    setIsVerified(true)
+    setKycStatus('Verified')
+    setVerificationMessage('Your identity has been verified successfully!')
+    setShowKycModal(false)
+  }
 
   const showNotification = (message: string, description?: string) => {
     const id = Date.now() + Math.random()

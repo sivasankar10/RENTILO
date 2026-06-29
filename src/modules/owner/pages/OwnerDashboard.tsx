@@ -1,7 +1,6 @@
 ﻿import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BarChart3,
   Bath,
   Bed,
   CheckCircle2,
@@ -12,33 +11,18 @@ import {
   MessageSquare,
   Pencil,
   Ruler,
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
   Sparkles,
   TrendingUp,
-=======
->>>>>>> main
->>>>>>> broker-module
   Users,
   Zap,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
-<<<<<<< HEAD
 import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
 import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
 import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
-=======
-<<<<<<< HEAD
-import { useOwnerStore } from '../store/ownerStore'
 import { PLAN_CONFIG } from '../config/features'
 import { formatSubscriptionDate } from '../services/subscription.service'
-=======
-import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
-import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
-import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
->>>>>>> main
->>>>>>> broker-module
+import { useOwnerStore } from '../store/ownerStore'
 
 const tenantSignals = [
   {
@@ -120,24 +104,11 @@ export function OwnerDashboard() {
                 </span>
               </div>
               <p className="mt-2 text-body text-text-muted">
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-                {isPremium 
-                  ? 'Full access to all premium features and analytics.'
-                  : 'Manage your active listing and monitor tenant signals.'
-                }
-=======
->>>>>>> broker-module
                 {propertyOccupied
                   ? 'Your property is occupied. Manage the active tenant from the property overview.'
                   : leaseWithPayment
                     ? 'Payment received — complete tenant onboarding from Leases.'
                     : 'Manage your active listing and monitor tenant signals.'}
-<<<<<<< HEAD
-=======
->>>>>>> main
->>>>>>> broker-module
               </p>
             </div>
 
@@ -319,55 +290,13 @@ export function OwnerDashboard() {
 
               <p className="flex items-center gap-2 text-label text-slate-400">
                 <Info size={14} />
-<<<<<<< HEAD
                 {leaseWithPayment
                   ? 'Broker assignment is closed after the tenant completes onboarding payment.'
                   : 'Your listing is currently ranked based on daily activity.'}
-=======
-<<<<<<< HEAD
-                {isPremium 
-                  ? 'Your listings are boosted with premium visibility in search results.'
-                  : 'Your listing is currently ranked based on daily activity.'
-                }
-=======
-                {leaseWithPayment
-                  ? 'Broker assignment is closed after the tenant completes onboarding payment.'
-                  : 'Your listing is currently ranked based on daily activity.'}
->>>>>>> main
->>>>>>> broker-module
               </p>
             </div>
 
             <aside className="space-y-6">
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-              {/* Show different sidebar based on subscription */}
-              {isPremium ? (
-                <PremiumSidebar />
-              ) : (
-                <>
-                  <article className="rounded-card border border-navy bg-navy p-6 text-white shadow-modal">
-                    <h2 className="text-body-lg font-semibold">Daily Activity</h2>
-                    <div className="mt-6">
-                      <div className="flex items-center justify-between text-label">
-                        <span>Visibility Boost</span>
-                        <span>
-                          {completedCount}/{activityItems.length} Completed
-                        </span>
-                      </div>
-                      <div className="mt-3 h-2 rounded-pill bg-slate-800">
-                        <div
-                          className="h-full rounded-pill bg-primary transition-all duration-200"
-                          style={{ width: `${(completedCount / activityItems.length) * 100}%` }}
-                        />
-                      </div>
-                      <p className="mt-4 text-label leading-5 text-slate-400">
-                        Complete these to boost visibility in local searches.
-                      </p>
-                    </div>
-=======
->>>>>>> broker-module
               <ListingPromotionPromoCard compact />
 
               <article className="rounded-card border border-navy bg-navy p-6 text-white shadow-modal">
@@ -389,58 +318,55 @@ export function OwnerDashboard() {
                     Complete these to boost visibility in local searches.
                   </p>
                 </div>
->>>>>>> main
 
-                    <div className="mt-8 space-y-4">
-                      {activityItems.map((item) => (
-                        <button
-                          key={item.label}
-                          type="button"
-                          onClick={() => toggleActivity(item.label)}
-                          className={
-                            item.complete
-                              ? 'flex w-full items-center gap-3 rounded-button border border-slate-700 bg-white/5 px-4 py-3 text-left text-label font-semibold text-white transition-colors duration-200 hover:bg-white/10'
-                              : 'flex w-full items-center gap-3 rounded-button border border-slate-800 bg-navy px-4 py-3 text-left text-label font-semibold text-slate-500'
-                          }
-                        >
-                          {item.complete ? (
-                            <CheckCircle2 size={18} className="text-status-success" />
-                          ) : (
-                            <Circle size={18} className="text-slate-600" />
-                          )}
-                          <span>{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </article>
-
-                  <article className="rounded-card border border-dashed border-primary-100 bg-white p-6 shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <Zap size={18} className="text-primary" />
-                      <h2 className="text-body-lg font-semibold text-text-primary">Pro Advantage</h2>
-                    </div>
-                    <p className="mt-4 text-label leading-5 text-text-muted">
-                      Unlock full analytics, unlimited listings, and priority tenant communication
-                      tools.
-                    </p>
-                    <ul className="mt-6 space-y-3">
-                      {advantageItems.map((item) => (
-                        <li key={item} className="flex items-center gap-2 text-label text-text-muted">
-                          <CheckCircle2 size={14} className="text-status-success" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+                <div className="mt-8 space-y-4">
+                  {activityItems.map((item) => (
                     <button
+                      key={item.label}
                       type="button"
-                      onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
-                      className="mt-6 w-full rounded-button bg-primary px-4 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
+                      onClick={() => toggleActivity(item.label)}
+                      className={
+                        item.complete
+                          ? 'flex w-full items-center gap-3 rounded-button border border-slate-700 bg-white/5 px-4 py-3 text-left text-label font-semibold text-white transition-colors duration-200 hover:bg-white/10'
+                          : 'flex w-full items-center gap-3 rounded-button border border-slate-800 bg-navy px-4 py-3 text-left text-label font-semibold text-slate-500'
+                      }
                     >
-                      Upgrade to Premium
+                      {item.complete ? (
+                        <CheckCircle2 size={18} className="text-status-success" />
+                      ) : (
+                        <Circle size={18} className="text-slate-600" />
+                      )}
+                      <span>{item.label}</span>
                     </button>
-                  </article>
-                </>
-              )}
+                  ))}
+                </div>
+              </article>
+
+              <article className="rounded-card border border-dashed border-primary-100 bg-white p-6 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Zap size={18} className="text-primary" />
+                  <h2 className="text-body-lg font-semibold text-text-primary">Pro Advantage</h2>
+                </div>
+                <p className="mt-4 text-label leading-5 text-text-muted">
+                  Unlock full analytics, unlimited listings, and priority tenant communication
+                  tools.
+                </p>
+                <ul className="mt-6 space-y-3">
+                  {advantageItems.map((item) => (
+                    <li key={item} className="flex items-center gap-2 text-label text-text-muted">
+                      <CheckCircle2 size={14} className="text-status-success" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
+                  className="mt-6 w-full rounded-button bg-primary px-4 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
+                >
+                  Upgrade to Premium
+                </button>
+              </article>
             </aside>
           </div>
         </section>
@@ -543,91 +469,5 @@ function PremiumStatsRow() {
         )
       })}
     </div>
-  )
-}
-
-/* ─────────────────────────────────────────────
-   Premium Sidebar
-───────────────────────────────────────────── */
-function PremiumSidebar() {
-  const navigate = useNavigate()
-  
-  const quickActions = [
-    { label: 'View Analytics', icon: BarChart3, route: ROUTES.OWNER.ANALYTICS },
-    { label: 'Manage Inquiries', icon: Users, route: `${ROUTES.OWNER.ROOT}/inquiries` },
-    { label: 'Scheduled Viewings', icon: Calendar, route: `${ROUTES.OWNER.ROOT}/viewings` },
-    { label: 'Promotions', icon: Sparkles, route: `${ROUTES.OWNER.ROOT}/promotions` },
-  ]
-
-  return (
-    <>
-      <article className="rounded-card border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-6 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <Crown size={18} className="text-amber-600" />
-          <h2 className="text-body-lg font-semibold text-text-primary">Quick Actions</h2>
-        </div>
-        
-        <div className="space-y-2">
-          {quickActions.map((action) => {
-            const Icon = action.icon
-            return (
-              <button
-                key={action.label}
-                type="button"
-                onClick={() => navigate(action.route)}
-                className="flex w-full items-center gap-3 rounded-lg border border-amber-100 bg-white px-4 py-3 text-left text-label font-semibold text-text-primary transition-all duration-200 hover:border-amber-300 hover:bg-amber-50"
-              >
-                <Icon size={16} className="text-amber-600" />
-                <span className="flex-1">{action.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </article>
-
-      <article className="rounded-card border border-outline bg-white p-6 shadow-sm">
-        <h2 className="text-body-lg font-semibold text-text-primary mb-4">Recent Activity</h2>
-        
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-              <Users size={14} className="text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-text-primary">New inquiry received</p>
-              <p className="text-xs text-text-muted">The Opus Tower, 14B • 2 hours ago</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-              <Calendar size={14} className="text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-text-primary">Viewing scheduled</p>
-              <p className="text-xs text-text-muted">Tomorrow at 2:00 PM • Sarah M.</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-              <MessageSquare size={14} className="text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-text-primary">Message from tenant</p>
-              <p className="text-xs text-text-muted">John D. • 5 hours ago</p>
-            </div>
-          </div>
-        </div>
-        
-        <button
-          type="button"
-          onClick={() => navigate(ROUTES.OWNER.NOTIFICATIONS)}
-          className="mt-4 w-full text-center text-label font-semibold text-primary hover:underline"
-        >
-          View All Activity
-        </button>
-      </article>
-    </>
   )
 }

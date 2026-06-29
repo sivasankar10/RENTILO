@@ -15,7 +15,6 @@ import {
   Users,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
-import { cn } from '@shared/utils/cn'
 import { useOwnerChatStore } from '../store/chatStore'
 
 const fallbackProfile = {
