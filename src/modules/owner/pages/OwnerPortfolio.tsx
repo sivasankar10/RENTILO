@@ -24,6 +24,9 @@ import {
   X,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
+import { OwnerListingPromotionTable } from '../components/OwnerListingPromotionTable'
+import { PRIMARY_OWNER_PROPERTY_ID, primaryPortfolioProperty } from '../constants/portfolioProperty'
 import { useOwnerStore } from '../store/ownerStore'
 
 type BrokerCandidate = {

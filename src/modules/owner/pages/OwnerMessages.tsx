@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { useOwnerChatStore } from '../store/chatStore'
 
 export function OwnerMessages() {
@@ -22,7 +23,9 @@ export function OwnerMessages() {
   const leaseThreads = useLeaseChatStore((state) => state.threads)
   const storeSendMessage = useOwnerChatStore((state) => state.sendMessage)
   const markConversationRead = useOwnerChatStore((state) => state.markConversationRead)
-  const requestedConversationId = Number(searchParams.get('conversation'))
+  const requestedConversationId = Number(
+    searchParams.get('conversationId') ?? searchParams.get('conversation') ?? NaN,
+  )
   const initialConversationId = conversations.some(
     (conversation) => conversation.id === requestedConversationId
   )
@@ -52,12 +55,6 @@ export function OwnerMessages() {
         time: message.time,
       }))
     : activeConversation?.messages ?? []
-
-  useEffect(() => {
-    if (Number.isFinite(paramConversationId) && paramConversationId > 0) {
-      setActiveId(paramConversationId)
-    }
-  }, [paramConversationId])
 
   useEffect(() => {
     if (activeConversation) {
