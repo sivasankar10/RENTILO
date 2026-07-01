@@ -37,11 +37,9 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'analytics', element: <OwnerAnalytics /> },
   { path: 'plans-rules', element: <OwnerPlansRules /> },
   { path: 'premium-payment', element: <OwnerPremiumPaymentPage /> },
-  { path: 'payments', element: <OwnerPayments /> },
   { path: 'payments/:paymentId', element: <PaymentReceiptPage backRoute={ROUTES.OWNER.PAYMENTS} backLabel="Back to Payments" audience="owner" /> },
   { path: 'settings', element: <OwnerSettings /> },
   { path: 'notifications', element: <OwnerNotifications /> },
   { path: 'messages', element: <OwnerMessages /> },
   { path: 'brokers/:brokerId', element: <OwnerBrokerProfile /> },
 ]
-

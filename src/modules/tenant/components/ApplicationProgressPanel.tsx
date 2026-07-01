@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check, FileText, KeyRound, RefreshCw, WalletCards } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
@@ -23,12 +23,15 @@ export function ApplicationProgressPanel({ propertyId }: { propertyId: string })
   const confirmPropertyVisit = useOnboardingStore((state) => state.confirmPropertyVisit)
   const processDueOwnerApprovals = useOnboardingStore((state) => state.processDueOwnerApprovals)
   const requestLeaseAgreement = useOnboardingStore((state) => state.requestLeaseAgreement)
+  const recordId = record?.id
+  const recordStatus = record?.status
+  const ownerApprovalDueAt = record?.ownerApprovalDueAt
 
   useEffect(() => {
     processDueOwnerApprovals()
-    if (!record || record.status !== 'awaiting_owner_approval' || !record.ownerApprovalDueAt) return
+    if (!recordId || recordStatus !== 'awaiting_owner_approval' || !ownerApprovalDueAt) return
 
-    const dueMs = new Date(record.ownerApprovalDueAt).getTime() - Date.now()
+    const dueMs = new Date(ownerApprovalDueAt).getTime() - Date.now()
     if (dueMs <= 0) {
       processDueOwnerApprovals()
       return
@@ -36,7 +39,7 @@ export function ApplicationProgressPanel({ propertyId }: { propertyId: string })
 
     const timer = window.setTimeout(() => processDueOwnerApprovals(), dueMs)
     return () => window.clearTimeout(timer)
-  }, [record?.id, record?.status, record?.ownerApprovalDueAt, processDueOwnerApprovals])
+  }, [recordId, recordStatus, ownerApprovalDueAt, processDueOwnerApprovals])
 
   const stateFor = (target: OnboardingStatus): StepState => {
     if (!record) return 'pending'

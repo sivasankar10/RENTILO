@@ -11,6 +11,8 @@ import {
   User,
 } from 'lucide-react'
 import { useOwnerStore } from '../store/ownerStore'
+import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 
 const bankFields = [
   { label: 'Account Holder Name', placeholder: 'Enter full name' },
@@ -20,11 +22,12 @@ const bankFields = [
 ]
 
 export function OwnerSettings() {
+  const { user } = useAuth()
   const initialProfile = {
-    firstName: 'Alexander',
-    lastName: 'Westminster',
-    email: 'alexander.w@rentilo.com',
-    phone: '+1 (555) 000-0000',
+    firstName: user?.firstName ?? 'Owner',
+    lastName: user?.lastName ?? '',
+    email: user?.email ?? '',
+    phone: user?.phone ?? '',
     timezone: 'GMT -5:00 Eastern Time',
     gstin: '87155XXXXXXXXX887',
     gstEntity: 'Alexander LLP Sons Pvt Ltd',
@@ -75,7 +78,10 @@ export function OwnerSettings() {
             </button>
             <button
               type="button"
-              onClick={() => setStatus('Profile saved locally.')}
+              onClick={() => {
+                if (user) usePrototypeStore.setState((state) => ({ users: state.users.map((item) => item.id === user.id ? { ...item, firstName: profile.firstName, lastName: profile.lastName, email: profile.email, phone: profile.phone.replace(/\D/g, '').slice(-10), updatedAt: new Date().toISOString() } : item) }))
+                setStatus('Profile saved for this session.')
+              }}
               className="rounded-button bg-navy px-6 py-3 text-label font-semibold text-white transition-all duration-200 hover:bg-slate-800 hover:shadow-md"
             >
               Save Profiles
@@ -346,6 +352,3 @@ export function OwnerSettings() {
     </div>
   )
 }
-
-
-

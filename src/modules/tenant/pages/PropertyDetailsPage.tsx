@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { useAuth } from '@shared/hooks/useAuth'
-import { getPropertyById } from '../constants/properties'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
+import { useTenantMarketplace } from '../hooks/useTenantMarketplace'
 import type { NearbyPlace } from '../types/property'
 import { MaterialIcon } from '../components/MaterialIcon'
 import { tenantStyles } from '../utils/tenantStyles'
@@ -55,7 +56,8 @@ export function PropertyDetailsPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const property = id ? getPropertyById(id) : null
+  const { getProperty } = useTenantMarketplace()
+  const property = getProperty(id)
   const tenant = useMemo(() => buildTenantParty(user), [user])
 
   const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -72,7 +74,9 @@ export function PropertyDetailsPage() {
   const onboardingRecords = useOnboardingStore((state) => state.records)
   const showInterest = useOnboardingStore((state) => state.showInterest)
   const scheduleVisit = useOnboardingStore((state) => state.scheduleVisit)
-  const kycVerified = useTenantKycStore((state) => state.status === 'verified')
+  const localKycVerified = useTenantKycStore((state) => state.status === 'verified')
+  const sharedKycVerified = usePrototypeStore((state) => state.users.find((item) => item.id === user?.id)?.kycStatus === 'Verified')
+  const kycVerified = localKycVerified || sharedKycVerified
   const setKycVerified = useTenantKycStore((state) => state.setVerified)
 
   const onboardingRecord = property

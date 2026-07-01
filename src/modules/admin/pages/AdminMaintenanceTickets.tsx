@@ -16,6 +16,8 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { OWNER_MANAGED_PROPERTIES } from '@modules/owner/store/ownerStore'
 import {
   useOwnerMaintenanceStore,
@@ -58,7 +60,8 @@ function getPropertyAddress(ticket: OwnerMaintenanceTicket) {
 export function AdminMaintenanceTickets() {
   const tickets = useOwnerMaintenanceStore((state) => state.tickets)
   const updateTicket = useOwnerMaintenanceStore((state) => state.updateTicket)
-  const sendTicketMessage = useOwnerMaintenanceStore((state) => state.sendTicketMessage)
+  const { user } = useAuth()
+  const sendMaintenanceMessage = usePrototypeStore((state) => state.sendMaintenanceMessage)
 
   const [activeTicketId, setActiveTicketId] = useState('')
   const [search, setSearch] = useState('')
@@ -124,7 +127,7 @@ export function AdminMaintenanceTickets() {
     event.preventDefault()
     if (!activeTicket || !chatDraft.trim()) return
 
-    sendTicketMessage(activeTicket.id, chatDraft.trim())
+    sendMaintenanceMessage(activeTicket.id, user?.id ?? 'user-admin-1', chatDraft.trim())
     setChatDraft('')
   }
 

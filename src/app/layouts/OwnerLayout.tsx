@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -23,7 +23,8 @@ import { useAuth } from '@shared/hooks/useAuth'
 import { useMediaQuery } from '@shared/hooks/useMediaQuery'
 import { cn } from '@shared/utils/cn'
 import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
-import { OWNER_MANAGED_PROPERTIES, useOwnerStore } from '@modules/owner/store/ownerStore'
+import { useOwnerStore } from '@modules/owner/store/ownerStore'
+import { useOwnerPrototype } from '@modules/owner/hooks/useOwnerPrototype'
 
 interface OwnerSidebarItem {
   label: string
@@ -40,7 +41,6 @@ const sidebarItems: OwnerSidebarItem[] = [
   { label: 'Maintenance Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
-  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
 
 const mobileNavItems = [
@@ -49,7 +49,6 @@ const mobileNavItems = [
   { label: 'Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
-  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
 
 interface OwnerProfileMenuProps {
@@ -180,9 +179,16 @@ export function OwnerLayout() {
   const notificationsActive = pathname.startsWith(ROUTES.OWNER.NOTIFICATIONS)
   const messagesActive = pathname.startsWith(ROUTES.OWNER.MESSAGES)
   const profileActive = pathname.startsWith(ROUTES.OWNER.SETTINGS)
+  const { properties } = useOwnerPrototype()
   const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
   const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
-  const currentPropertyId = selectedPropertyId ?? OWNER_MANAGED_PROPERTIES[0]?.id ?? ''
+  const currentPropertyId = properties.some((property) => property.id === selectedPropertyId)
+    ? selectedPropertyId ?? ''
+    : properties[0]?.id ?? ''
+
+  useEffect(() => {
+    if (currentPropertyId && currentPropertyId !== selectedPropertyId) setSelectedProperty(currentPropertyId)
+  }, [currentPropertyId, selectedPropertyId, setSelectedProperty])
   const canSwitchMode =
     Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
 
@@ -322,9 +328,9 @@ export function OwnerLayout() {
             onChange={(event) => setSelectedProperty(event.target.value)}
             className="mt-4 w-full rounded-input border border-outline bg-white px-3 py-2 text-label font-medium text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
           >
-            {OWNER_MANAGED_PROPERTIES.map((property) => (
+            {properties.map((property) => (
               <option key={property.id} value={property.id}>
-                {property.name}
+                {property.title}
               </option>
             ))}
           </select>

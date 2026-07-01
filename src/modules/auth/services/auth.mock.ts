@@ -1,35 +1,8 @@
 import type { UserRole } from '@shared/constants/roles'
 import type { AuthUserPayload, VerifyOtpResponse } from '../types'
+import { PROTOTYPE_OTP, prototypeUsers } from '@shared/data/prototypeSeed'
 
-const MOCK_OTP = '123456'
-
-/** Dev mock: phone (digits only) → account definition */
-const MOCK_ACCOUNTS: Record<
-  string,
-  { roles: UserRole[]; firstName: string; lastName: string; email: string }
-> = {
-  '9000000001': { roles: ['tenant'], firstName: 'Test', lastName: 'Tenant', email: 'tenant@rentilo.com' },
-  '9000000002': { roles: ['owner'], firstName: 'Test', lastName: 'Owner', email: 'owner@rentilo.com' },
-  '9000000003': {
-    roles: ['tenant', 'owner'],
-    firstName: 'Test',
-    lastName: 'Dual',
-    email: 'dual@rentilo.com',
-  },
-  '9000000004': { roles: ['broker'], firstName: 'Test', lastName: 'Broker', email: 'broker@rentilo.com' },
-  '9000000005': {
-    roles: ['enterprise'],
-    firstName: 'Test',
-    lastName: 'Enterprise',
-    email: 'enterprise@rentilo.com',
-  },
-  '9000000006': {
-    roles: ['admin'],
-    firstName: 'Test',
-    lastName: 'Admin',
-    email: 'admin@rentilo.com',
-  },
-}
+const MOCK_ACCOUNTS = new Map(prototypeUsers.map((user) => [user.phone, user]))
 
 const otpSessions = new Map<string, { phone: string; createdAt: number }>()
 
@@ -56,11 +29,11 @@ export function mockVerifyOtp(
     throw new Error('Invalid or expired OTP session')
   }
 
-  if (otp !== MOCK_OTP) {
+  if (otp !== PROTOTYPE_OTP) {
     throw new Error('Invalid OTP. Use 123456 for demo.')
   }
 
-  const account = MOCK_ACCOUNTS[normalized]
+  const account = MOCK_ACCOUNTS.get(normalized)
 
   if (!account) {
     return {
@@ -71,16 +44,17 @@ export function mockVerifyOtp(
   }
 
   const user: AuthUserPayload = {
-    id: `mock-${normalized}`,
+    id: account.id,
     email: account.email,
     firstName: account.firstName,
     lastName: account.lastName,
     roles: account.roles,
-    primaryRole: account.roles[0],
+    primaryRole: account.primaryRole,
+    avatar: account.avatar,
     phone: normalized,
     isVerified: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: account.createdAt,
+    updatedAt: account.updatedAt,
   }
 
   return {
@@ -126,4 +100,4 @@ export function mockEnableRole(
 }
 
 export const AUTH_MOCK_HINT =
-  'Demo: OTP is 123456. Phones 9000000001 (tenant), 9000000002 (owner), 9000000003 (tenant+owner).'
+  'Demo OTP: 123456. Tenant1 9000001001, Tenant2 9000001002, MultiPropertyOwner 9000002001, Owner1 9000002002, Owner2 9000002003, Broker1 9000003001, Broker2 9000003002, Admin1 9000009001, TenantOwner 9000004001.'

@@ -1,4 +1,4 @@
-﻿/** Centralized route path constants for all modules */
+/** Centralized route path constants for all modules */
 
 export const ROUTES = {
   HOME: '/',
@@ -46,7 +46,6 @@ export const ROUTES = {
     LEASES: '/owner/leases',
     LEASE_DOCUMENTS: (onboardingId: string) => `/owner/leases/${encodeURIComponent(onboardingId)}/documents`,
     TENANTS: '/owner/tenants',
-    PAYMENTS: '/owner/payments',
     ANALYTICS: '/owner/analytics',
     PLANS_RULES: '/owner/plans-rules',
     PREMIUM_PAYMENT: '/owner/premium-payment',
@@ -103,6 +102,3 @@ export const ROUTES = {
     MESSAGES: '/admin/messages',
   },
 } as const
-
-
-

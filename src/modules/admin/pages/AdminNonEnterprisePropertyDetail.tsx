@@ -174,7 +174,7 @@ export function AdminNonEnterprisePropertyDetail() {
     }
 
     setForm(createForm(listing))
-  }, [listing?.id])
+  }, [listing])
 
   useEffect(() => {
     setEditing(routeEditMode)

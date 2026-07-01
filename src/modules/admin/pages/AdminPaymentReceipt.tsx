@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { confirm } from '../components/ConfirmDialog'
 import { toast } from '../components/Toast'
 import {
@@ -121,9 +122,39 @@ function getTimeline(payment: AdminPayment): TimelineStep[] {
 export function AdminPaymentReceipt() {
   const { transactionId } = useParams<{ transactionId: string }>()
   const navigate = useNavigate()
-  const [payment, setPayment] = useState<AdminPayment | undefined>(() =>
+  const sharedPayment = usePrototypeStore((state) =>
+    state.payments.find((payment) => payment.txnId === decodeURIComponent(transactionId ?? '')),
+  )
+  const users = usePrototypeStore((state) => state.users)
+  const properties = usePrototypeStore((state) => state.properties)
+  const setPaymentStatus = usePrototypeStore((state) => state.setPaymentStatus)
+  const [fallbackPayment, setFallbackPayment] = useState<AdminPayment | undefined>(() =>
     findPayment(transactionId ?? '')
   )
+  const sharedUser = sharedPayment
+    ? users.find((user) => user.id === (sharedPayment.brokerId ?? sharedPayment.tenantId ?? sharedPayment.ownerId))
+    : undefined
+  const sharedProperty = sharedPayment
+    ? properties.find((property) => property.id === sharedPayment.propertyId)
+    : undefined
+  const payment: AdminPayment | undefined = sharedPayment ? {
+    id: sharedPayment.id,
+    txnId: sharedPayment.txnId,
+    refId: sharedPayment.refId,
+    user: sharedUser?.accountName ?? sharedPayment.counterparty,
+    userInitials: sharedUser ? `${sharedUser.firstName[0] ?? ''}${sharedUser.lastName[0] ?? ''}` : 'SU',
+    avatarColor: 'bg-primary',
+    role: sharedPayment.brokerId ? 'Broker' : sharedPayment.tenantId ? 'Tenant' : 'Owner',
+    type: sharedPayment.category === 'COMMISSION' ? 'Commission' : sharedPayment.category === 'SECURITY DEPOSIT' ? 'Security Deposit' : sharedPayment.category === 'PREMIUM' ? 'Subscription' : 'Rent',
+    direction: sharedPayment.flow === 'tenant_to_owner' ? 'inbound' : 'outbound',
+    amount: sharedPayment.amount,
+    via: sharedPayment.method,
+    status: sharedPayment.status === 'Successful' ? 'Success' : sharedPayment.status,
+    date: new Date(sharedPayment.paidAtIso).toLocaleDateString('en-IN'),
+    time: new Date(sharedPayment.paidAtIso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    property: sharedProperty?.title,
+    note: sharedPayment.description,
+  } : fallbackPayment
 
   // Not found state
   if (!payment) {
@@ -158,7 +189,8 @@ export function AdminPaymentReceipt() {
       confirmLabel: 'Issue refund',
       variant: 'danger',
       onConfirm: () => {
-        setPayment({ ...payment, status: 'Refunded' })
+        if (sharedPayment) setPaymentStatus(sharedPayment.id, 'Refunded')
+        else setFallbackPayment({ ...payment, status: 'Refunded' })
         toast.success('Refund issued', `${payment.txnId} has been refunded.`)
       },
     })
@@ -170,7 +202,8 @@ export function AdminPaymentReceipt() {
       description: `Retry ₹${payment.amount.toLocaleString('en-IN')} for ${payment.user}?`,
       confirmLabel: 'Retry',
       onConfirm: () => {
-        setPayment({ ...payment, status: 'Pending' })
+        if (sharedPayment) setPaymentStatus(sharedPayment.id, 'Pending')
+        else setFallbackPayment({ ...payment, status: 'Pending' })
         toast.success('Payment retried', `${payment.txnId} is now Pending.`)
       },
     })

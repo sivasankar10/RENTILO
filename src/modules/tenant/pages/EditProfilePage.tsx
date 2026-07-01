@@ -1,5 +1,6 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { cn } from '@shared/utils/cn'
 import { MaterialIcon } from '../components/MaterialIcon'
 import { tenantStyles } from '../utils/tenantStyles'
@@ -18,7 +19,7 @@ export function EditProfilePage() {
     user ? `${user.firstName} ${user.lastName}`.trim() : 'Danush'
   )
   const [email, setEmail] = useState(user?.email ?? 'danush@example.com')
-  const [phone, setPhone] = useState('+1 (555) 012-3456')
+  const [phone, setPhone] = useState(user?.phone ?? '')
   const [whatsappEnabled, setWhatsappEnabled] = useState(false)
   const [accountHolder, setAccountHolder] = useState('')
   const [bankName, setBankName] = useState('')
@@ -28,6 +29,19 @@ export function EditProfilePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (user) {
+      const [firstName, ...rest] = name.trim().split(/\s+/)
+      usePrototypeStore.setState((state) => ({
+        users: state.users.map((item) => item.id === user.id ? {
+          ...item,
+          firstName: firstName || item.firstName,
+          lastName: rest.join(' ') || item.lastName,
+          email: email.trim() || item.email,
+          phone: phone.replace(/\D/g, '').slice(-10) || item.phone,
+          updatedAt: new Date().toISOString(),
+        } : item),
+      }))
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -195,7 +209,7 @@ export function EditProfilePage() {
         </form>
 
         <p className="mt-6 text-[11px] font-semibold tracking-wider text-brand-outline text-center">
-          PROPERTY ID: RTL-882-DAN • LEASE ACTIVE UNTIL OCT 2024
+          PROPERTY ID: RTL-882-DAN â€¢ LEASE ACTIVE UNTIL OCT 2024
         </p>
       </main>
     </div>

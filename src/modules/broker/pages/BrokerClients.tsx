@@ -15,10 +15,8 @@ import {
   UserPlus,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
-import brokerProfileImg from '@/assets/images/broker_profile.png'
-import julianVaneImg from '@/assets/images/julian_vane_owner.png'
-import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 import { ManagementTiersModal } from '../components/ManagementTiersModal'
+import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 
 type LeadStatus = 'New' | 'Contacted' | 'Visit Scheduled'
 type StatusFilter = 'All' | LeadStatus
@@ -39,91 +37,6 @@ type Lead = {
 const STATUS_OPTIONS: StatusFilter[] = ['All', 'New', 'Contacted', 'Visit Scheduled']
 const RECEIVED_OPTIONS: ReceivedFilter[] = ['Last 30 Days', 'Last 7 Days', 'Today', 'All Time']
 const LEADS_PER_PAGE = 3
-
-const leadSeeds = [
-  {
-    avatar: sarahJenkinsImg,
-    name: 'Eleonor Vance',
-    email: 'e.vance@example.com',
-    interestedProperty: 'Zenith Penthouse',
-    conversationId: 'lead-eleonor-vance',
-  },
-  {
-    avatar: julianVaneImg,
-    name: 'Julian Thorne',
-    email: 'j.thorne@archeweb.com',
-    interestedProperty: 'Harbor View',
-    conversationId: 'lead-julian-thorne',
-  },
-  {
-    avatar: brokerProfileImg,
-    name: 'Marcus Chen',
-    email: 'ch.m@agency.org',
-    interestedProperty: 'Industrial Loft',
-    conversationId: 'lead-marcus-chen',
-  },
-  {
-    avatar: sarahJenkinsImg,
-    name: 'Nisha Rao',
-    email: 'n.rao@example.com',
-    interestedProperty: 'Skyline Heights 14B',
-    conversationId: 'lead-eleonor-vance',
-  },
-  {
-    avatar: julianVaneImg,
-    name: 'Arjun Patel',
-    email: 'arjun.patel@example.com',
-    interestedProperty: 'Canary Wharf',
-    conversationId: 'lead-julian-thorne',
-  },
-  {
-    avatar: brokerProfileImg,
-    name: 'Meera Iyer',
-    email: 'meera.iyer@example.com',
-    interestedProperty: 'Greenwich Modern Home',
-    conversationId: 'lead-marcus-chen',
-  },
-]
-
-function formatLeadDate(daysAgo: number) {
-  const date = new Date(2023, 9, 24)
-  date.setDate(date.getDate() - daysAgo)
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
-function formatLeadMeta(daysAgo: number) {
-  if (daysAgo === 0) return '2 hours ago'
-  if (daysAgo === 1) return '1 day ago'
-  return `${daysAgo} days ago`
-}
-
-const allLeads: Lead[] = Array.from({ length: 42 }, (_, index) => {
-  const seed = leadSeeds[index % leadSeeds.length]
-  const daysAgo = index < 3 ? [0, 1, 3][index] : (index * 2) % 45
-  const status: LeadStatus =
-    index % 3 === 0 ? 'New' : index % 3 === 1 ? 'Contacted' : 'Visit Scheduled'
-  const duplicateCount = Math.floor(index / leadSeeds.length)
-
-  return {
-    ...seed,
-    id: `lead-${index + 1}`,
-    name: duplicateCount ? `${seed.name} ${duplicateCount + 1}` : seed.name,
-    email: duplicateCount
-      ? seed.email.replace('@', `+${duplicateCount + 1}@`)
-      : seed.email,
-    receivedDate: {
-      date: formatLeadDate(daysAgo),
-      meta: formatLeadMeta(daysAgo),
-    },
-    daysAgo,
-    status,
-  }
-})
 
 function escapeCsvValue(value: string | number) {
   const text = String(value)
@@ -259,6 +172,33 @@ function Pagination({
 
 export function BrokerClients() {
   const navigate = useNavigate()
+  const { leads: applications, users, properties, chats } = useBrokerPrototype()
+  const allLeads = useMemo<Lead[]>(() => applications.map((application) => {
+    const tenant = users.find((user) => user.id === application.tenantId)
+    const property = properties.find((item) => item.id === application.propertyId)
+    const thread = chats.find((item) => item.applicationId === application.id)
+    const created = new Date(application.createdAt)
+    const daysAgo = Math.max(0, Math.floor((Date.now() - created.getTime()) / 86400000))
+    const status: LeadStatus = application.status === 'interest_shown'
+      ? 'New'
+      : application.status === 'visit_scheduled' || application.status === 'visit_confirmed'
+        ? 'Visit Scheduled'
+        : 'Contacted'
+    return {
+      id: application.id,
+      avatar: tenant?.avatar ?? '',
+      name: tenant ? `${tenant.firstName} ${tenant.lastName}` : application.tenantId,
+      email: tenant?.email ?? '',
+      interestedProperty: property?.title ?? application.propertyId,
+      receivedDate: {
+        date: created.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        meta: daysAgo === 0 ? 'Today' : `${daysAgo} days ago`,
+      },
+      daysAgo,
+      status,
+      conversationId: thread?.id ?? application.id,
+    }
+  }), [applications, chats, properties, users])
   const [page, setPage] = useState(1)
   const [plansModalOpen, setPlansModalOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -288,7 +228,7 @@ export function BrokerClients() {
 
       return matchesSearch && matchesStatus && matchesReceived
     })
-  }, [search, statusFilter, receivedFilter])
+  }, [allLeads, search, statusFilter, receivedFilter])
 
   const totalLeads = filteredLeads.length
   const totalPages = Math.max(1, Math.ceil(totalLeads / LEADS_PER_PAGE))

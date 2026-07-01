@@ -1,11 +1,9 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
-import { useOwnerStore } from '@modules/owner/store/ownerStore'
 import { useListingPromotionStore } from '@shared/store/listingPromotionStore'
-import { PROPERTIES } from '../constants/properties'
 import type { Property } from '../types/property'
-import { useSavedPropertiesStore } from '../store/savedPropertiesStore'
+import { useTenantMarketplace } from '../hooks/useTenantMarketplace'
 import { ListingCard } from '../components/ListingCard'
 import { TenantFooter } from '../components/TenantFooter'
 import { MaterialIcon } from '../components/MaterialIcon'
@@ -14,9 +12,9 @@ type TenantTypeKey = 'family' | 'bachelors' | 'couples'
 type BhkConfigKey = '1RK' | '1BHK' | '2BHK' | '3BHK' | '4BHK+'
 type SortOption = 'recommended' | 'price-low' | 'price-high' | 'newest'
 
-const RENT_MIN = 1500
-const RENT_MAX = 8000
-const RENT_STEP = 500
+const RENT_MIN = 0
+const RENT_MAX = 150000
+const RENT_STEP = 5000
 
 const DEFAULT_TENANT_TYPES: Record<TenantTypeKey, boolean> = {
   family: false,
@@ -40,7 +38,7 @@ function parseRent(price: string) {
 }
 
 function formatRent(amount: number) {
-  return `$${amount.toLocaleString()}`
+  return `Rs. ${amount.toLocaleString('en-IN')}`
 }
 
 function getSelectedKeys<T extends string>(record: Record<T, boolean>) {
@@ -107,14 +105,13 @@ function postedDaysAgo(property: Property) {
 
 export function ListingsPage() {
   const navigate = useNavigate()
-  const { saveProperty, isSaved } = useSavedPropertiesStore()
+  const { listings: sessionListings, save: saveProperty, isSaved } = useTenantMarketplace()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeSearchTerms, setActiveSearchTerms] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<SortOption>('recommended')
   const [rentRange, setRentRange] = useState({ min: RENT_MIN, max: RENT_MAX })
   const [tenantTypes, setTenantTypes] = useState(DEFAULT_TENANT_TYPES)
   const [bhkConfig, setBhkConfig] = useState(DEFAULT_BHK_CONFIG)
-  const assignedBrokerId = useOwnerStore((state) => state.assignedBrokerId)
   const promotedListingIds = useListingPromotionStore((state) => state.getActivePromotedTenantListingIds())
 
   const selectedTenantTypes = useMemo(() => getSelectedKeys(tenantTypes), [tenantTypes])
@@ -123,18 +120,15 @@ export function ListingsPage() {
   const maxRentPercent = ((rentRange.max - RENT_MIN) / (RENT_MAX - RENT_MIN)) * 100
   const promotedIdSet = useMemo(() => new Set(promotedListingIds), [promotedListingIds])
   const tenantProperties = useMemo(() => {
-    return PROPERTIES.map((property) => {
+    return sessionListings.map((property) => {
       if (promotedIdSet.has(property.id)) {
         return { ...property, badge: 'Suggested' as const }
       }
 
-      if (assignedBrokerId && property.id === 'prop-1') {
-        return { ...property, badge: 'Recommended' as const }
-      }
 
       return property
     })
-  }, [assignedBrokerId, promotedIdSet])
+  }, [promotedIdSet, sessionListings])
 
   const hasActiveFilters =
     activeSearchTerms.length > 0 ||
@@ -488,5 +482,3 @@ export function ListingsPage() {
     </div>
   )
 }
-
-

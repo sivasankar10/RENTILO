@@ -46,7 +46,7 @@ export function ChatWindow({ conversation, onSendMessage }: ChatWindowProps) {
             {conversation.ownerName && contactRole !== 'owner' && (
               <>
                 <span className="text-brand-outline" aria-hidden>
-                  Â·
+                  -
                 </span>
                 <span className="inline-flex items-center gap-1.5 font-medium">
                   Owner: {conversation.ownerName}

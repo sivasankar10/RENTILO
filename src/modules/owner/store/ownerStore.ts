@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand'
+import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
 export interface OwnerManagedProperty {
@@ -216,9 +216,13 @@ const seededPropertyEditDrafts: Record<string, OwnerRegisterPropertyFormData> = 
     ],
     virtualTourUrl: 'https://rentilo.example/tours/opus-14b',
     baseRent: '4500',
+    priceNegotiable: true,
     securityDeposit: '9000',
     depositUnit: 'Fixed',
     availableFrom: '06/24/2026',
+    visitWeekday: 'Saturday',
+    visitStartTime: '10:00 AM',
+    visitEndTime: '1:00 PM',
     leaseDuration: 12,
     noticePeriod: '30',
     utilities: { electricity: false, water: true, internet: true, gas: false },
@@ -335,9 +339,3 @@ export const useOwnerStore = create<OwnerState>()(
     }
   )
 )
-
-
-
-
-
-

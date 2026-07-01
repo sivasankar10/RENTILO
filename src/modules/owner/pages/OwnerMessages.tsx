@@ -13,14 +13,54 @@ import {
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { useAuth } from '@shared/hooks/useAuth'
 import { useLeaseChatStore } from '@shared/store/leaseChatStore'
-import { useOwnerChatStore } from '../store/chatStore'
+import { useOwnerChatStore, type OwnerChatConversation } from '../store/chatStore'
+
+function sharedConversationId(onboardingId: string) {
+  return 10000 + Array.from(onboardingId).reduce((total, char) => (total * 31 + char.charCodeAt(0)) % 900000, 0)
+}
 
 export function OwnerMessages() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const ownerId = user?.id ?? ''
   const [searchParams] = useSearchParams()
-  const conversations = useOwnerChatStore((state) => state.conversations)
+  const storeConversations = useOwnerChatStore((state) => state.conversations)
   const leaseThreads = useLeaseChatStore((state) => state.threads)
+  const sendLeaseMessage = useLeaseChatStore((state) => state.sendMessage)
+  const conversations = useMemo(() => {
+    const shared = leaseThreads
+      .filter((thread) => thread.ownerId === ownerId)
+      .map((thread): OwnerChatConversation => {
+        const last = thread.messages.at(-1)
+        return {
+          id: sharedConversationId(thread.onboardingId),
+          contactType: 'tenant',
+          tenantId: thread.tenantId,
+          onboardingId: thread.onboardingId,
+          name: thread.tenantName,
+          role: 'Tenant',
+          preview: last?.text ?? 'Lease conversation started',
+          time: last?.time ?? 'Now',
+          unread: 0,
+          avatar: thread.tenantAvatar,
+          property: `${thread.propertyName} - ${thread.unit}`,
+          propertyImage: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=180&q=80',
+          listing: thread.propertyName,
+          location: thread.address,
+          price: thread.monthlyRent,
+          messages: thread.messages.map((message, index) => ({
+            id: index + 1,
+            sender: message.sender,
+            text: message.text,
+            time: message.time,
+          })),
+        }
+      })
+    const sharedIds = new Set(shared.map((conversation) => conversation.onboardingId))
+    return [...shared, ...storeConversations.filter((conversation) => !conversation.onboardingId || !sharedIds.has(conversation.onboardingId))]
+  }, [leaseThreads, ownerId, storeConversations])
   const storeSendMessage = useOwnerChatStore((state) => state.sendMessage)
   const markConversationRead = useOwnerChatStore((state) => state.markConversationRead)
   const requestedConversationId = Number(
@@ -56,11 +96,13 @@ export function OwnerMessages() {
       }))
     : activeConversation?.messages ?? []
 
+  const activeConversationId = activeConversation?.id
+
   useEffect(() => {
-    if (activeConversation) {
-      markConversationRead(activeConversation.id)
+    if (activeConversationId) {
+      markConversationRead(activeConversationId)
     }
-  }, [activeConversation?.id, markConversationRead])
+  }, [activeConversationId, markConversationRead])
 
   useEffect(() => {
     if (
@@ -110,7 +152,8 @@ export function OwnerMessages() {
       return
     }
 
-    storeSendMessage(activeId, trimmed)
+    if (activeConversation.onboardingId) sendLeaseMessage(activeConversation.onboardingId, 'owner', trimmed)
+    else storeSendMessage(activeId, trimmed)
     setDraft('')
     setStatus('Message sent.')
   }
@@ -167,12 +210,19 @@ export function OwnerMessages() {
 
                   <div className="space-y-2">
                     {section.conversations.map((conversation) => (
-                      <button
+                      <div
                         key={conversation.id}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => selectConversation(conversation.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            selectConversation(conversation.id)
+                          }
+                        }}
                         className={cn(
-                          'flex w-full items-start gap-3 rounded-card p-3 text-left transition-colors duration-200',
+                          'flex w-full cursor-pointer items-start gap-3 rounded-card p-3 text-left transition-colors duration-200',
                           conversation.id === activeId ? 'bg-primary-50' : 'hover:bg-hover-light'
                         )}
                       >
@@ -224,7 +274,7 @@ export function OwnerMessages() {
                             {conversation.unread}
                           </span>
                         )}
-                      </button>
+                      </div>
                     ))}
 
                     {section.conversations.length === 0 && (

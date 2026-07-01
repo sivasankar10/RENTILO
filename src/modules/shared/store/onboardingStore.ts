@@ -1,7 +1,7 @@
-import { create } from 'zustand'
-import { createJSONStorage, persist } from 'zustand/middleware'
-import { usePaymentsStore } from '@shared/store/paymentsStore'
-import { useOwnerStore } from '@modules/owner/store/ownerStore'
+﻿import { usePrototypeStore, type PrototypeState } from '@shared/store/prototypeStore'
+import { useLeaseChatStore } from '@shared/store/leaseChatStore'
+import { PROTOTYPE_USER_IDS } from '@shared/data/prototypeSeed'
+import type { AgreementTerms as PrototypeAgreementTerms, PrototypeNotification } from '@shared/types/prototype'
 
 export type OnboardingStatus =
   | 'interest_shown'
@@ -17,7 +17,6 @@ export type OnboardingStatus =
   | 'active'
   | 'rejected'
 
-/** Ordered pipeline for progress UI and comparisons */
 export const ONBOARDING_STATUS_ORDER: OnboardingStatus[] = [
   'interest_shown',
   'visit_scheduled',
@@ -36,36 +35,11 @@ export const PROGRESS_PANEL_MIN_STATUS: OnboardingStatus = 'visit_scheduled'
 
 export function isProgressPanelVisible(status: OnboardingStatus | undefined): boolean {
   if (!status || status === 'rejected') return false
-  const index = ONBOARDING_STATUS_ORDER.indexOf(status)
-  const minIndex = ONBOARDING_STATUS_ORDER.indexOf(PROGRESS_PANEL_MIN_STATUS)
-  return index >= minIndex
+  return ONBOARDING_STATUS_ORDER.indexOf(status) >= ONBOARDING_STATUS_ORDER.indexOf(PROGRESS_PANEL_MIN_STATUS)
 }
 
 export function statusIndex(status: OnboardingStatus): number {
   return ONBOARDING_STATUS_ORDER.indexOf(status)
-}
-
-/** Tenant may open the agreement page only after the owner has sent a version. */
-export function tenantCanViewAgreement(record: OnboardingRecord | undefined): boolean {
-  if (!record || record.agreementVersions.length === 0) return false
-  return (
-    record.status === 'agreement_sent' ||
-    ['agreement_approved', 'payment_completed', 'active'].includes(record.status)
-  )
-}
-
-export function getOwnerLeaseForProperty(
-  records: OnboardingRecord[],
-  ownerId: string,
-  ownerPropertyId: string,
-  statuses: OnboardingStatus[] = ['active'],
-) {
-  return records.find(
-    (record) =>
-      record.owner.id === ownerId &&
-      record.ownerPropertyId === ownerPropertyId &&
-      statuses.includes(record.status),
-  )
 }
 
 export interface OnboardingParty {
@@ -76,18 +50,7 @@ export interface OnboardingParty {
   avatar: string
 }
 
-export interface AgreementTerms {
-  startDate: string
-  endDate: string
-  monthlyRent: string
-  securityDeposit: string
-  noticePeriod: string
-  utilities: string
-  maintenanceResponsibility: string
-  petPolicy: string
-  specialClauses: string
-  ownerSignature: string
-}
+export interface AgreementTerms extends PrototypeAgreementTerms {}
 
 export interface AgreementVersion extends AgreementTerms {
   id: string
@@ -161,32 +124,135 @@ export interface PropertyApplicationInput {
   tenant: OnboardingParty
 }
 
-const AUTO_APPROVE_MS = 5000
-
 export const DEMO_TENANT: OnboardingParty = {
-  id: 'demo-tenant-1',
-  name: 'Priya Nair',
-  email: 'priya.nair@example.com',
-  phone: '+91 98765 43210',
-  avatar: 'https://i.pravatar.cc/96?img=47',
+  id: PROTOTYPE_USER_IDS.tenant1,
+  name: 'Tenant One',
+  email: 'tenant1@rentilo.test',
+  phone: '9000001001',
+  avatar: '',
 }
 
 export const DEMO_OWNER: OnboardingParty = {
-  id: 'demo-owner-1',
-  name: 'Rajesh Kumar',
-  email: 'rajesh.kumar@example.com',
-  phone: '+91 98400 22110',
-  avatar: 'https://i.pravatar.cc/96?img=12',
+  id: PROTOTYPE_USER_IDS.multiPropertyOwner,
+  name: 'MultiProperty Owner',
+  email: 'multipropertyowner@rentilo.test',
+  phone: '9000002001',
+  avatar: '',
 }
 
-const PROPERTY_BRIDGE: Record<string, { ownerPropertyId: string; ownerPropertyName: string; unit: string }> = {
-  'prop-1': { ownerPropertyId: 'opus-tower-14b', ownerPropertyName: 'The Opus Tower, 14B', unit: 'Unit 14B' },
-  'prop-2': { ownerPropertyId: 'parkview-residences', ownerPropertyName: 'Parkview Residences', unit: 'Villa 2' },
-  'prop-3': { ownerPropertyId: 'modern-penthouse-suite', ownerPropertyName: 'Modern Penthouse Suite', unit: 'Unit 15A' },
+function party(state: PrototypeState, userId: string): OnboardingParty {
+  const user = state.users.find((item) => item.id === userId)
+  if (!user) return userId.includes('tenant') ? DEMO_TENANT : DEMO_OWNER
+  return {
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`.trim(),
+    email: user.email,
+    phone: user.phone,
+    avatar: user.avatar ?? '',
+  }
 }
 
-const now = () => new Date().toISOString()
-const displayDate = () => new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
+function money(value: number) {
+  return `Rs. ${value.toLocaleString('en-IN')}`
+}
+
+function mapRecords(state: PrototypeState): OnboardingRecord[] {
+  return state.applications.map((application) => {
+    const property = state.properties.find((item) => item.id === application.propertyId)
+    const lease = state.leases.find((item) => item.applicationId === application.id)
+    const payments = state.payments.filter((item) => item.applicationId === application.id)
+    const total = payments.reduce((sum, payment) => sum + payment.amount, 0)
+    const latestPayment = payments[0]
+    const timeline = Object.fromEntries(
+      ONBOARDING_STATUS_ORDER.slice(0, Math.max(1, ONBOARDING_STATUS_ORDER.indexOf(application.status) + 1))
+        .map((status) => [status, application.updatedAt]),
+    ) as Partial<Record<OnboardingStatus, string>>
+
+    return {
+      id: application.id,
+      tenantPropertyId: application.listingId,
+      ownerPropertyId: application.propertyId,
+      propertyName: property?.title ?? 'Session property',
+      ownerPropertyName: property?.title ?? 'Session property',
+      unit: property?.unit ?? 'Unit 1',
+      address: property?.address ?? '',
+      monthlyRent: property?.price ?? 'Rs. 0',
+      securityDeposit: property?.deposit ?? 'Rs. 0',
+      tenant: party(state, application.tenantId),
+      owner: party(state, application.ownerId),
+      status: application.status,
+      createdAt: application.createdAt,
+      updatedAt: application.updatedAt,
+      timeline,
+      scheduledVisit: application.scheduledVisit,
+      agreementVersions: application.agreementVersions,
+      payment: latestPayment
+        ? {
+            transactionId: latestPayment.txnId,
+            amount: money(total),
+            method: latestPayment.method,
+            paidAt: latestPayment.paidAt,
+          }
+        : undefined,
+      lease: lease
+        ? {
+            id: lease.id,
+            status: lease.status,
+            activatedAt: lease.activatedAt,
+            accessKey: lease.accessKey,
+          }
+        : undefined,
+    }
+  })
+}
+
+const validActions = new Set<OnboardingNotification['action']>([
+  'review_application',
+  'review_agreement',
+  'pay',
+  'onboard',
+  'view_lease',
+])
+
+function mapNotifications(state: PrototypeState): OnboardingNotification[] {
+  return state.notifications.flatMap((item) => {
+    const audience = item.role === 'owner' ? 'owner' : item.role === 'tenant' ? 'tenant' : null
+    if (!audience || !item.relatedId) return []
+    const action = validActions.has(item.action as OnboardingNotification['action'])
+      ? (item.action as OnboardingNotification['action'])
+      : 'review_application'
+    return [{
+      id: item.id,
+      audience,
+      onboardingId: item.relatedId,
+      title: item.title,
+      description: item.description,
+      createdAt: item.createdAt,
+      unread: item.unread,
+      important: item.important,
+      action,
+    }]
+  })
+}
+
+function addNotification(notification: Omit<PrototypeNotification, 'id' | 'createdAt' | 'unread'>) {
+  usePrototypeStore.getState().addNotification(notification)
+}
+
+function setApplicationStatus(id: string, status: OnboardingStatus) {
+  usePrototypeStore.setState((state) => ({
+    applications: state.applications.map((application) =>
+      application.id === id ? { ...application, status, updatedAt: new Date().toISOString() } : application,
+    ),
+  }))
+}
+
+function listingIdFor(input: PropertyApplicationInput) {
+  const state = usePrototypeStore.getState()
+  return state.listings.some((item) => item.id === input.tenantPropertyId)
+    ? input.tenantPropertyId
+    : state.listings.find((item) => item.propertyId === input.tenantPropertyId)?.id
+}
 
 export function defaultAgreementTerms(record: OnboardingRecord): AgreementTerms {
   return {
@@ -199,89 +265,28 @@ export function defaultAgreementTerms(record: OnboardingRecord): AgreementTerms 
     maintenanceResponsibility: 'Owner handles structural repairs; tenant handles routine upkeep.',
     petPolicy: 'Pets require written owner approval.',
     specialClauses: 'No subletting without written consent.',
-    ownerSignature: DEMO_OWNER.name,
+    ownerSignature: record.owner.name,
   }
 }
 
-function notification(
-  audience: OnboardingNotification['audience'],
-  onboardingId: string,
-  title: string,
-  description: string,
-  action: OnboardingNotification['action'],
-): OnboardingNotification {
-  return {
-    id: `onboarding-notification-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    audience,
-    onboardingId,
-    title,
-    description,
-    action,
-    createdAt: displayDate(),
-    unread: true,
-    important: action === 'onboard' || action === 'review_agreement',
-  }
+export function tenantCanViewAgreement(record: OnboardingRecord | undefined): boolean {
+  return Boolean(record?.agreementVersions.length) && Boolean(record && [
+    'agreement_sent',
+    'agreement_approved',
+    'payment_completed',
+    'active',
+  ].includes(record.status))
 }
 
-function updateRecord(
+export function getOwnerLeaseForProperty(
   records: OnboardingRecord[],
-  id: string,
-  status: OnboardingStatus,
-  patch: Partial<OnboardingRecord> = {},
+  ownerId: string,
+  ownerPropertyId: string,
+  statuses: OnboardingStatus[] = ['active'],
 ) {
-  const timestamp = now()
-  return records.map((record) =>
-    record.id === id
-      ? {
-          ...record,
-          ...patch,
-          status,
-          updatedAt: timestamp,
-          timeline: { ...record.timeline, [status]: timestamp },
-        }
-      : record,
+  return records.find((record) =>
+    record.owner.id === ownerId && record.ownerPropertyId === ownerPropertyId && statuses.includes(record.status),
   )
-}
-
-function findActiveRecord(records: OnboardingRecord[], tenantId: string, propertyId: string) {
-  return records.find(
-    (record) =>
-      record.tenant.id === tenantId &&
-      record.tenantPropertyId === propertyId &&
-      record.status !== 'rejected',
-  )
-}
-
-function buildRecord(
-  input: PropertyApplicationInput,
-  status: OnboardingStatus,
-  patch: Partial<OnboardingRecord> = {},
-): OnboardingRecord {
-  const bridge = PROPERTY_BRIDGE[input.tenantPropertyId] ?? {
-    ownerPropertyId: input.tenantPropertyId,
-    ownerPropertyName: input.propertyName,
-    unit: 'Unit 1',
-  }
-  const timestamp = now()
-  return {
-    id: `onboarding-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-    tenantPropertyId: input.tenantPropertyId,
-    ownerPropertyId: bridge.ownerPropertyId,
-    propertyName: input.propertyName,
-    ownerPropertyName: bridge.ownerPropertyName,
-    unit: bridge.unit,
-    address: input.address,
-    monthlyRent: input.monthlyRent,
-    securityDeposit: input.securityDeposit,
-    tenant: input.tenant,
-    owner: DEMO_OWNER,
-    status,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    timeline: { [status]: timestamp },
-    agreementVersions: [],
-    ...patch,
-  }
 }
 
 interface OnboardingState {
@@ -304,334 +309,155 @@ interface OnboardingState {
   resetOnboardingDemo: () => void
 }
 
-export const useOnboardingStore = create<OnboardingState>()(
-  persist(
-    (set, get) => ({
-      records: [],
-      notifications: [],
-
-      showInterest: (input) => {
-        const existing = findActiveRecord(get().records, input.tenant.id, input.tenantPropertyId)
-        if (existing) return existing.id
-
-        const record = buildRecord(input, 'interest_shown')
-        set((state) => ({
-          records: [record, ...state.records],
-          notifications: [
-            notification(
-              'owner',
-              record.id,
-              'New tenant interest',
-              `Profile named ${input.tenant.name} shown interest on ur property ${input.propertyName}.`,
-              'review_application',
-            ),
-            ...state.notifications,
-          ],
-        }))
-        return record.id
-      },
-
-      scheduleVisit: (input, visit) => {
-        const existing = findActiveRecord(get().records, input.tenant.id, input.tenantPropertyId)
-        const timestamp = now()
-
-        if (existing) {
-          set((state) => ({
-            records: updateRecord(state.records, existing.id, 'visit_scheduled', {
-              scheduledVisit: visit,
-              timeline: {
-                ...existing.timeline,
-                interest_shown: existing.timeline.interest_shown ?? timestamp,
-                visit_scheduled: timestamp,
-              },
-            }),
-          }))
-          return existing.id
-        }
-
-        const record = buildRecord(input, 'visit_scheduled', {
-          scheduledVisit: visit,
-          timeline: { interest_shown: timestamp, visit_scheduled: timestamp },
+function bridgeState(state: PrototypeState): OnboardingState {
+  return {
+    records: mapRecords(state),
+    notifications: mapNotifications(state),
+    showInterest: (input) => {
+      const listingId = listingIdFor(input)
+      if (!listingId) return ''
+      const applicationId = usePrototypeStore.getState().showInterest(input.tenant.id, listingId) ?? ''
+      const current = usePrototypeStore.getState()
+      const application = current.applications.find((item) => item.id === applicationId)
+      if (application) {
+        const property = current.properties.find((item) => item.id === application.propertyId)
+        const owner = party(current, application.ownerId)
+        useLeaseChatStore.getState().ensureThread({
+          onboardingId: applicationId,
+          ownerId: application.ownerId,
+          tenantId: application.tenantId,
+          tenantName: input.tenant.name,
+          tenantAvatar: input.tenant.avatar,
+          ownerName: owner.name,
+          propertyName: property?.title ?? input.propertyName,
+          unit: property?.unit ?? 'Unit 1',
+          address: property?.address ?? input.address,
+          monthlyRent: property?.price ?? input.monthlyRent,
         })
-        set((state) => ({ records: [record, ...state.records] }))
-        return record.id
-      },
-
-      confirmPropertyVisit: (id, completed) => {
-        if (!completed) return
-
-        const dueAt = new Date(Date.now() + AUTO_APPROVE_MS).toISOString()
-        set((state) => ({
-          records: updateRecord(state.records, id, 'awaiting_owner_approval', {
-            ownerApprovalDueAt: dueAt,
-            timeline: {
-              ...state.records.find((r) => r.id === id)?.timeline,
-              visit_confirmed: now(),
-              awaiting_owner_approval: now(),
-            },
-          }),
-        }))
-      },
-
-      processDueOwnerApprovals: () => {
-        const dueRecords = get().records.filter(
-          (record) =>
-            record.status === 'awaiting_owner_approval' &&
-            record.ownerApprovalDueAt &&
-            Date.now() >= new Date(record.ownerApprovalDueAt).getTime(),
-        )
-        dueRecords.forEach((record) => get().approveTenant(record.id))
-      },
-
-      requestLeaseAgreement: (id) => {
-        const record = get().records.find((item) => item.id === id)
-        if (!record || record.status !== 'owner_approved') return
-        set((state) => ({
-          records: updateRecord(state.records, id, 'agreement_requested', {
-            timeline: {
-              ...record.timeline,
-              agreement_requested: now(),
-            },
-          }),
-          notifications: [
-            notification(
-              'owner',
-              id,
-              'Lease agreement requested',
-              `${record.tenant.name} requested the rental agreement for ${record.propertyName}. Send the agreement when ready.`,
-              'review_application',
-            ),
-            ...state.notifications,
-          ],
-        }))
-      },
-
-      approveTenant: (id) =>
-        set((state) => {
-          const record = state.records.find((item) => item.id === id)
-          if (!record || record.status !== 'awaiting_owner_approval') return state
-          return {
-            records: updateRecord(state.records, id, 'owner_approved', {
-              ownerApprovalDueAt: undefined,
-            }),
-            notifications: [
-              notification(
-                'tenant',
-                id,
-                'Application approved',
-                `${record.owner.name} approved your application for ${record.propertyName}.`,
-                'review_application',
-              ),
-              ...state.notifications,
-            ],
-          }
-        }),
-
-      rejectTenant: (id) => set((state) => ({ records: updateRecord(state.records, id, 'rejected') })),
-
-      sendAgreement: (id, terms) =>
-        set((state) => {
-          const record = state.records.find((item) => item.id === id)
-          if (
-            !record ||
-            !['owner_approved', 'agreement_requested', 'changes_requested'].includes(record.status)
-          ) {
-            return state
-          }
-          const version: AgreementVersion = {
-            ...terms,
-            id: `agreement-${id}-v${record.agreementVersions.length + 1}`,
-            version: record.agreementVersions.length + 1,
-            sentAt: displayDate(),
-          }
-          return {
-            records: updateRecord(state.records, id, 'agreement_sent', {
-              agreementVersions: [...record.agreementVersions, version],
-            }),
-            notifications: [
-              notification(
-                'tenant',
-                id,
-                'Rental agreement ready',
-                `Version ${version.version} for ${record.propertyName} is ready for review.`,
-                'review_agreement',
-              ),
-              ...state.notifications,
-            ],
-          }
-        }),
-
-      requestAgreementChanges: (id, comment) =>
-        set((state) => {
-          const record = state.records.find((item) => item.id === id)
-          const trimmed = comment.trim()
-          if (
-            !record ||
-            record.status !== 'agreement_sent' ||
-            !record.agreementVersions.length ||
-            trimmed.length < 10
-          ) {
-            return state
-          }
-          const latestId = record.agreementVersions[record.agreementVersions.length - 1]!.id
-          return {
-            records: updateRecord(state.records, id, 'changes_requested', {
-              agreementVersions: record.agreementVersions.map((version) =>
-                version.id === latestId ? { ...version, changeRequest: trimmed } : version,
-              ),
-            }),
-            notifications: [
-              notification(
-                'owner',
-                id,
-                'Agreement changes requested',
-                `${record.tenant.name} requested changes to the rental agreement.`,
-                'review_application',
-              ),
-              ...state.notifications,
-            ],
-          }
-        }),
-
-      approveAgreement: (id, tenantSignature) =>
-        set((state) => {
-          const record = state.records.find((item) => item.id === id)
-          const trimmed = tenantSignature.trim()
-          if (
-            !record ||
-            record.status !== 'agreement_sent' ||
-            !record.agreementVersions.length ||
-            trimmed.length < 2
-          ) {
-            return state
-          }
-          const latestId = record.agreementVersions[record.agreementVersions.length - 1]!.id
-          return {
-            records: updateRecord(state.records, id, 'agreement_approved', {
-              agreementVersions: record.agreementVersions.map((version) =>
-                version.id === latestId
-                  ? { ...version, tenantSignature: trimmed, tenantApprovedAt: displayDate() }
-                  : version,
-              ),
-            }),
-            notifications: [
-              notification(
-                'owner',
-                id,
-                'Agreement approved by tenant',
-                `${record.tenant.name} approved and signed the agreement.`,
-                'review_application',
-              ),
-              notification(
-                'tenant',
-                id,
-                'Complete onboarding payment',
-                `Pay the first month and deposit for ${record.propertyName}.`,
-                'pay',
-              ),
-              ...state.notifications,
-            ],
-          }
-        }),
-
-      completeOnboardingPayment: (id, method, refId = '') =>
-        set((state) => {
-          const record = state.records.find((item) => item.id === id)
-          if (!record || record.status !== 'agreement_approved') return state
-          const transactionId = `RTL-ONB-${Date.now()}`
-          const leaseId = `LSE-${Date.now().toString().slice(-6)}`
-          const amount = `${record.monthlyRent} + ${record.securityDeposit}`
-
-          usePaymentsStore.getState().recordOnboardingPayments({
-            onboardingId: record.id,
-            leaseId,
-            tenantId: record.tenant.id,
-            tenantName: record.tenant.name,
-            ownerPropertyId: record.ownerPropertyId,
-            propertyName: record.propertyName,
-            unit: record.unit,
-            monthlyRent: record.monthlyRent,
-            securityDeposit: record.securityDeposit,
-            method,
-            refId,
-            transactionId,
-          })
-
-          useOwnerStore.getState().releaseBrokerForProperty(record.ownerPropertyId)
-
-          return {
-            records: updateRecord(state.records, id, 'payment_completed', {
-              payment: {
-                transactionId,
-                amount,
-                method,
-                paidAt: displayDate(),
-              },
-              lease: {
-                id: leaseId,
-                status: 'pending_owner_onboarding',
-              },
-            }),
-            notifications: [
-              notification(
-                'owner',
-                id,
-                'Onboard tenant?',
-                `${record.tenant.name} completed payment for ${record.propertyName}.`,
-                'onboard',
-              ),
-              ...state.notifications,
-            ],
-          }
-        }),
-
-      confirmTenantOnboarding: (id) =>
-        set((state) => {
-          const record = state.records.find((item) => item.id === id)
-          if (!record || !record.lease || record.lease.status === 'active') return state
-          return {
-            records: updateRecord(state.records, id, 'active', {
-              lease: {
-                ...record.lease,
-                status: 'active',
-                activatedAt: displayDate(),
-                accessKey: `KEY-${record.unit.replace(/\W/g, '').toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
-              },
-            }),
-            notifications: [
-              notification(
-                'tenant',
-                id,
-                'Tenant onboarding complete',
-                `${record.propertyName} is now your active lease.`,
-                'view_lease',
-              ),
-              ...state.notifications,
-            ],
-          }
-        }),
-
-      markNotificationRead: (notificationId) =>
-        set((state) => ({
-          notifications: state.notifications.map((item) =>
-            item.id === notificationId ? { ...item, unread: false } : item,
-          ),
-        })),
-
-      toggleNotificationImportant: (notificationId) =>
-        set((state) => ({
-          notifications: state.notifications.map((item) =>
-            item.id === notificationId ? { ...item, important: !item.important } : item,
-          ),
-        })),
-
-      resetOnboardingDemo: () => set({ records: [], notifications: [] }),
-    }),
-    {
-      name: 'rentilo-onboarding-session',
-      storage: createJSONStorage(() => sessionStorage),
-      version: 2,
-      migrate: () => ({ records: [], notifications: [] }),
+        addNotification({
+          userId: application.ownerId,
+          role: 'owner',
+          title: 'New tenant interest',
+          description: `${input.tenant.name} is interested in ${input.propertyName}.`,
+          action: 'review_application',
+          relatedId: applicationId,
+          important: false,
+        })
+      }
+      return applicationId
     },
-  ),
-)
+    scheduleVisit: (input, visit) => {
+      const listingId = listingIdFor(input)
+      if (!listingId) return ''
+      const applicationId = usePrototypeStore.getState().showInterest(input.tenant.id, listingId) ?? ''
+      if (applicationId) {
+        usePrototypeStore.getState().scheduleVisit(applicationId, visit)
+        const application = usePrototypeStore.getState().applications.find((item) => item.id === applicationId)
+        if (application) addNotification({
+          userId: application.ownerId,
+          role: 'owner',
+          title: 'Visit scheduled',
+          description: `${input.tenant.name} scheduled ${input.propertyName} for ${visit.date} at ${visit.time}.`,
+          action: 'review_application',
+          relatedId: applicationId,
+          important: false,
+        })
+      }
+      return applicationId
+    },
+    confirmPropertyVisit: (id, completed) => {
+      if (!completed) return
+      setApplicationStatus(id, 'awaiting_owner_approval')
+    },
+    processDueOwnerApprovals: () => {
+      usePrototypeStore.getState().applications
+        .filter((item) => item.status === 'awaiting_owner_approval')
+        .forEach((item) => usePrototypeStore.getState().approveTenant(item.id))
+    },
+    requestLeaseAgreement: (id) => {
+      const application = usePrototypeStore.getState().applications.find((item) => item.id === id)
+      if (!application) return
+      setApplicationStatus(id, 'agreement_requested')
+      addNotification({
+        userId: application.ownerId,
+        role: 'owner',
+        title: 'Lease agreement requested',
+        description: 'The tenant requested the rental agreement.',
+        action: 'review_application',
+        relatedId: id,
+        important: true,
+      })
+    },
+    approveTenant: (id) => {
+      const application = usePrototypeStore.getState().applications.find((item) => item.id === id)
+      usePrototypeStore.getState().approveTenant(id)
+      if (application) addNotification({
+        userId: application.tenantId,
+        role: 'tenant',
+        title: 'Application approved',
+        description: 'The owner approved your rental application.',
+        action: 'review_application',
+        relatedId: id,
+        important: true,
+      })
+    },
+    rejectTenant: (id) => {
+      const application = usePrototypeStore.getState().applications.find((item) => item.id === id)
+      usePrototypeStore.getState().rejectTenant(id)
+      if (application) addNotification({ userId: application.tenantId, role: 'tenant', title: 'Application update', description: 'The owner did not proceed with this rental application.', action: 'review_application', relatedId: id, important: false })
+    },
+    sendAgreement: (id, terms) => {
+      const application = usePrototypeStore.getState().applications.find((item) => item.id === id)
+      usePrototypeStore.getState().sendAgreement(id, terms)
+      if (application) addNotification({
+        userId: application.tenantId,
+        role: 'tenant',
+        title: 'Rental agreement ready',
+        description: 'Your rental agreement is ready for review and signature.',
+        action: 'review_agreement',
+        relatedId: id,
+        important: true,
+      })
+    },
+    requestAgreementChanges: (id, comment) => usePrototypeStore.getState().requestAgreementChanges(id, comment),
+    approveAgreement: (id, signature) => usePrototypeStore.getState().approveAgreement(id, signature),
+    completeOnboardingPayment: (id, method, refId) => {
+      const application = usePrototypeStore.getState().applications.find((item) => item.id === id)
+      usePrototypeStore.getState().completeOnboardingPayment(id, { method, refId })
+      if (application) addNotification({
+        userId: application.ownerId,
+        role: 'owner',
+        title: 'Onboard tenant?',
+        description: 'The tenant completed rent and security deposit payment.',
+        action: 'onboard',
+        relatedId: id,
+        important: true,
+      })
+    },
+    confirmTenantOnboarding: (id) => {
+      const application = usePrototypeStore.getState().applications.find((item) => item.id === id)
+      usePrototypeStore.getState().confirmTenantOnboarding(id)
+      if (application) addNotification({
+        userId: application.tenantId,
+        role: 'tenant',
+        title: 'Lease activated',
+        description: 'Your owner completed onboarding. Lease access is active.',
+        action: 'view_lease',
+        relatedId: id,
+        important: true,
+      })
+    },
+    markNotificationRead: (id) => usePrototypeStore.getState().markNotificationRead(id),
+    toggleNotificationImportant: (id) => usePrototypeStore.setState((current) => ({
+      notifications: current.notifications.map((notification) =>
+        notification.id === id ? { ...notification, important: !notification.important } : notification,
+      ),
+    })),
+    resetOnboardingDemo: () => usePrototypeStore.getState().resetPrototypeSession(),
+  }
+}
+
+export function useOnboardingStore<T>(selector: (state: OnboardingState) => T): T {
+  const state = usePrototypeStore()
+  return selector(bridgeState(state))
+}

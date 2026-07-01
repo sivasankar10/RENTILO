@@ -14,6 +14,8 @@ const roleColors = {
   OWNER: 'bg-navy text-white',
   TENANT: 'bg-primary text-white',
   BROKER: 'bg-slate-700 text-white',
+  ADMIN: 'bg-status-error text-white',
+  'OWNER / TENANT': 'bg-teal-700 text-white',
 } as const
 
 const kycColors = {
@@ -45,7 +47,7 @@ export function AdminUserManagement() {
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      if (roleFilter !== 'All Roles' && user.role !== roleFilter.toUpperCase()) return false
+      if (roleFilter !== 'All Roles' && !user.role.includes(roleFilter.toUpperCase())) return false
       if (statusFilter !== 'All Status' && user.status !== statusFilter) return false
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
@@ -101,7 +103,7 @@ export function AdminUserManagement() {
   const handleRemoveUser = (user: AdminUser) => {
     confirm({
       title: 'Delete user account?',
-      description: `${user.name} (${user.email}) will be permanently removed. This cannot be undone.`,
+      description: `${user.name} (${user.email}) will be disabled for this prototype session.`,
       confirmLabel: 'Delete',
       variant: 'danger',
       onConfirm: () => {
@@ -228,6 +230,7 @@ export function AdminUserManagement() {
               <option>Owner</option>
               <option>Tenant</option>
               <option>Broker</option>
+              <option>Admin</option>
             </select>
           </div>
 

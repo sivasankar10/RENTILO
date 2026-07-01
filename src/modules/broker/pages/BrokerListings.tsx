@@ -20,13 +20,7 @@ import {
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
-import skylinePlazaImg from '@/assets/images/skyline_plaza.png'
-import harborResidencesImg from '@/assets/images/harbor_residences.png'
-import skylineHeightsImg from '@/assets/images/skyline_heights.png'
-import alpineTerraceImg from '@/assets/images/alpine_terrace_exterior.png'
-import canaryWharfImg from '@/assets/images/canary_wharf.png'
-import shoreditchImg from '@/assets/images/shoreditch_penthouse.png'
-import greenwichImg from '@/assets/images/greenwich_home.png'
+import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 
 /* ─────────────────────────────────────────────
    Types
@@ -73,124 +67,6 @@ type RemovalRequest = {
 
 /* ─────────────────────────────────────────────
    Mock data — Active Listings
-───────────────────────────────────────────── */
-const activeListings: ActiveListing[] = [
-  {
-    id: 'sl-1',
-    propertyId: 'skyline-plaza',
-    image: skylinePlazaImg,
-    name: 'Skyline Plaza',
-    location: 'Financial District, NYC',
-    type: 'Commercial',
-    price: '$42,000,000',
-    beds: 0,
-    baths: 4,
-    sqft: '18,400',
-    status: 'active',
-    views: 284,
-    leads: 12,
-    daysListed: 18,
-  },
-  {
-    id: 'sl-2',
-    propertyId: 'harbor-residences',
-    image: harborResidencesImg,
-    name: 'Harbor Residences 8C',
-    location: 'Seaport Area, NYC',
-    type: 'Mixed-Use',
-    price: '$68,500,000',
-    beds: 3,
-    baths: 3,
-    sqft: '3,200',
-    status: 'active',
-    views: 196,
-    leads: 7,
-    daysListed: 31,
-  },
-  {
-    id: 'sl-3',
-    propertyId: 'skyline-plaza',
-    image: skylineHeightsImg,
-    name: 'Skyline Heights 14B',
-    location: 'Midtown, NYC',
-    type: 'Residential',
-    price: '$2,400,000',
-    beds: 2,
-    baths: 2,
-    sqft: '1,850',
-    status: 'pending',
-    views: 412,
-    leads: 21,
-    daysListed: 9,
-  },
-]
-
-/* ─────────────────────────────────────────────
-   Mock data — Suggested Properties
-───────────────────────────────────────────── */
-const suggestedProperties: SuggestedProperty[] = [
-  {
-    id: 'sg-1',
-    propertyId: 'shoreditch-penthouse',
-    image: shoreditchImg,
-    name: 'Shoreditch Penthouse',
-    location: 'East London, UK',
-    type: 'Penthouse',
-    price: '$5,800,000',
-    beds: 4,
-    baths: 3,
-    sqft: '4,100',
-    matchScore: 98,
-    tags: ['High Demand', 'Luxury'],
-    trending: true,
-  },
-  {
-    id: 'sg-2',
-    propertyId: 'greenwich-modern-home',
-    image: alpineTerraceImg,
-    name: 'Alpine Terrace Estate',
-    location: 'Upper West Side, NYC',
-    type: 'Residential',
-    price: '$3,250,000',
-    beds: 4,
-    baths: 3,
-    sqft: '3,600',
-    matchScore: 94,
-    tags: ['New Listing', 'Hot Lead'],
-  },
-  {
-    id: 'sg-3',
-    propertyId: 'canary-wharf',
-    image: canaryWharfImg,
-    name: 'Canary Wharf Offices',
-    location: 'Isle of Dogs, London',
-    type: 'Commercial',
-    price: '$12,100,000',
-    beds: 0,
-    baths: 6,
-    sqft: '9,800',
-    matchScore: 91,
-    tags: ['Commercial', 'Prime Location'],
-    trending: true,
-  },
-  {
-    id: 'sg-4',
-    propertyId: 'greenwich-modern-home',
-    image: greenwichImg,
-    name: 'Greenwich Park Home',
-    location: 'Greenwich, London',
-    type: 'Residential',
-    price: '$1,875,000',
-    beds: 3,
-    baths: 2,
-    sqft: '2,400',
-    matchScore: 87,
-    tags: ['Family Home', 'Garden'],
-  },
-]
-
-/* ─────────────────────────────────────────────
-   Status badge
 ───────────────────────────────────────────── */
 function StatusBadge({ status }: { status: ListingStatus }) {
   const map: Record<ListingStatus, { label: string; icon: React.ReactNode; cls: string }> = {
@@ -477,11 +353,13 @@ function RequestListingCard({
    Main page
 ───────────────────────────────────────────── */
 function RequestNewListingModal({
+  properties,
   requestedIds,
   onToggleRequest,
   onClose,
   onViewProperty,
 }: {
+  properties: SuggestedProperty[]
   requestedIds: string[]
   onToggleRequest: (propertyId: string) => void
   onClose: () => void
@@ -518,7 +396,7 @@ function RequestNewListingModal({
         </div>
 
         <div className="grid max-h-[70vh] gap-4 overflow-y-auto p-6 md:grid-cols-2 xl:grid-cols-3">
-          {suggestedProperties.map((property) => (
+          {properties.map((property) => (
             <RequestListingCard
               key={property.id}
               prop={property}
@@ -615,14 +493,59 @@ type FilterTab = 'all' | 'active' | 'pending' | 'closed'
 
 export function BrokerListings() {
   const navigate = useNavigate()
+  const {
+    assignedBundles,
+    suggestedBundles,
+    leads,
+    requests,
+    requestAccess,
+    requestRemoval,
+  } = useBrokerPrototype()
+  const activeListings: ActiveListing[] = assignedBundles.map(({ listing, property }) => ({
+    id: listing.id,
+    propertyId: property.id,
+    image: property.image,
+    name: property.title,
+    location: `${property.neighborhood}, ${property.city}`,
+    type: property.propertyType,
+    price: property.price,
+    beds: property.beds,
+    baths: property.baths,
+    sqft: property.sqft,
+    status: listing.status === 'Active' ? 'active' : listing.status === 'Removed' ? 'closed' : 'pending',
+    views: property.views,
+    leads: leads.filter((lead) => lead.listingId === listing.id).length,
+    daysListed: Math.max(1, Math.round((Date.now() - new Date(listing.createdAt).getTime()) / 86400000)),
+  }))
+  const suggestedProperties: SuggestedProperty[] = suggestedBundles.map(({ property }) => ({
+    id: property.id,
+    propertyId: property.id,
+    image: property.image,
+    name: property.title,
+    location: `${property.neighborhood}, ${property.city}`,
+    type: property.propertyType,
+    price: property.price,
+    beds: property.beds,
+    baths: property.baths,
+    sqft: property.sqft,
+    matchScore: 90,
+    tags: ['Available', 'Owner listed'],
+    trending: property.views > 100,
+  }))
+  const requestedPropertyIds = requests
+    .filter((request) => request.type === 'broker_listing_access' && request.status === 'Pending')
+    .flatMap((request) => request.propertyId ? [request.propertyId] : [])
   const [search, setSearch] = useState('')
   const [filterTab, setFilterTab] = useState<FilterTab>('all')
   const [requestModalOpen, setRequestModalOpen] = useState(false)
-  const [requestedPropertyIds, setRequestedPropertyIds] = useState<string[]>([])
   const [openActionId, setOpenActionId] = useState<string | null>(null)
   const [removalTarget, setRemovalTarget] = useState<ActiveListing | null>(null)
   const [removalReason, setRemovalReason] = useState('')
-  const [removalRequests, setRemovalRequests] = useState<Record<string, RemovalRequest>>({})
+  const removalRequests = Object.fromEntries(
+    requests
+      .filter((request) => request.type === 'broker_listing_removal' && request.status === 'Pending' && request.listingId)
+      .map((request) => [request.listingId!, { reason: request.reason ?? '', status: 'pending' as const }]),
+  ) as Record<string, RemovalRequest>
 
   const tabs: { key: FilterTab; label: string }[] = [
     { key: 'all', label: 'All' },
@@ -641,11 +564,7 @@ export function BrokerListings() {
   })
 
   const toggleListingRequest = (propertyId: string) => {
-    setRequestedPropertyIds((current) =>
-      current.includes(propertyId)
-        ? current.filter((id) => id !== propertyId)
-        : [...current, propertyId],
-    )
+    if (!requestedPropertyIds.includes(propertyId)) requestAccess(propertyId)
   }
 
   const openRemovalModal = (listing: ActiveListing) => {
@@ -659,13 +578,8 @@ export function BrokerListings() {
       return
     }
 
-    setRemovalRequests((current) => ({
-      ...current,
-      [removalTarget.id]: {
-        reason: removalReason.trim(),
-        status: 'pending',
-      },
-    }))
+    requestRemoval(removalTarget.id, removalReason.trim())
+
     setRemovalTarget(null)
     setRemovalReason('')
   }
@@ -784,6 +698,7 @@ export function BrokerListings() {
 
       {requestModalOpen && (
         <RequestNewListingModal
+          properties={suggestedProperties}
           requestedIds={requestedPropertyIds}
           onToggleRequest={toggleListingRequest}
           onClose={() => setRequestModalOpen(false)}

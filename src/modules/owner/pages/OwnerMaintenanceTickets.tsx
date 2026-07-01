@@ -14,7 +14,8 @@ import {
   Wrench,
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
-import { OWNER_MANAGED_PROPERTIES, useOwnerStore } from '../store/ownerStore'
+import { useOwnerStore } from '../store/ownerStore'
+import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 import {
   useOwnerMaintenanceStore,
   type TicketPriority,
@@ -38,11 +39,12 @@ const priorityStyles: Record<TicketPriority, string> = {
 }
 
 function StatusBadge({ status }: { status: TicketStatus }) {
-  const style = statusStyles[status]
+  const safeStatus = statusStyles[status] ? status : 'Open'
+  const style = statusStyles[safeStatus]
   return (
     <span className={cn('inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-badge font-bold', style.badge)}>
       <span className={cn('h-1.5 w-1.5 rounded-full', style.dot)} />
-      {status}
+      {safeStatus}
     </span>
   )
 }
@@ -56,6 +58,7 @@ function PriorityBadge({ priority }: { priority: TicketPriority }) {
 }
 
 export function OwnerMaintenanceTickets() {
+  const { properties } = useOwnerPrototype()
   const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
   const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
   const tickets = useOwnerMaintenanceStore((state) => state.tickets)
@@ -69,8 +72,10 @@ export function OwnerMaintenanceTickets() {
   const chatSectionRef = useRef<HTMLElement>(null)
   const chatInputRef = useRef<HTMLInputElement>(null)
 
-  const currentPropertyId = selectedPropertyId ?? OWNER_MANAGED_PROPERTIES[0]?.id ?? ''
-  const selectedProperty = OWNER_MANAGED_PROPERTIES.find((property) => property.id === currentPropertyId)
+  const currentPropertyId = properties.some((property) => property.id === selectedPropertyId)
+    ? selectedPropertyId ?? ''
+    : properties[0]?.id ?? ''
+  const selectedProperty = properties.find((property) => property.id === currentPropertyId)
 
   const propertyTickets = useMemo(
     () => tickets.filter((ticket) => ticket.propertyId === currentPropertyId),
@@ -169,9 +174,9 @@ export function OwnerMaintenanceTickets() {
               onChange={(event) => setSelectedProperty(event.target.value)}
               className="mt-2 h-11 w-full rounded-input border border-outline bg-white px-3 text-body font-semibold text-text-primary outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary-100"
             >
-              {OWNER_MANAGED_PROPERTIES.map((property) => (
+              {properties.map((property) => (
                 <option key={property.id} value={property.id}>
-                  {property.name} - {property.unit}
+                  {property.title} - {property.unit}
                 </option>
               ))}
             </select>
@@ -220,7 +225,7 @@ export function OwnerMaintenanceTickets() {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h2 className="text-heading-3 font-bold text-text-primary">
-                    {selectedProperty?.name ?? 'Selected Property'}
+                    {selectedProperty?.title ?? 'Selected Property'}
                   </h2>
                   <p className="mt-1 flex items-center gap-2 text-label text-text-muted">
                     <Home size={14} />

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Filter, Shield } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore, type ApprovalRequest } from '../store/adminStore'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { toast } from '../components/Toast'
 type ApprovalStatusFilter = ApprovalRequest['status'] | 'All'
 type ApprovalDecision = Exclude<ApprovalRequest['status'], 'Pending'>
@@ -28,6 +29,10 @@ export function AdminPlatformConfiguration() {
   const decideListingApproval = useAdminStore((state) => state.decideListingApproval)
   const decidePromotedApproval = useAdminStore((state) => state.decidePromotedApproval)
   const addListing = useAdminStore((state) => state.addListing)
+  const brokerRequests = usePrototypeStore((state) => state.adminRequests)
+  const prototypeUsers = usePrototypeStore((state) => state.users)
+  const prototypeProperties = usePrototypeStore((state) => state.properties)
+  const decideBrokerRequest = usePrototypeStore((state) => state.decideAdminRequest)
   const [listingFilter, setListingFilter] = useState<ApprovalStatusFilter>('Pending')
   const [promotedFilter, setPromotedFilter] = useState<ApprovalStatusFilter>('Pending')
   const [showListingFilters, setShowListingFilters] = useState(false)
@@ -155,6 +160,55 @@ export function AdminPlatformConfiguration() {
           </div>
         </div>
 
+        <section className="overflow-hidden rounded-card border border-outline bg-white shadow-surface">
+          <div className="border-b border-outline px-6 py-4">
+            <h2 className="text-body-lg font-semibold text-text-primary">Broker Listing Requests</h2>
+            <p className="mt-1 text-label text-text-muted">
+              Access and removal requests submitted from broker listing management.
+            </p>
+          </div>
+          <div className="divide-y divide-outline">
+            {brokerRequests.length === 0 ? (
+              <p className="px-6 py-8 text-center text-body text-text-muted">No broker requests yet.</p>
+            ) : brokerRequests.map((request) => {
+              const broker = prototypeUsers.find((user) => user.id === request.requesterId)
+              const property = prototypeProperties.find((item) => item.id === request.propertyId)
+              return (
+                <article key={request.id} className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-body font-bold text-text-primary">
+                      {request.type === 'broker_listing_access' ? 'Listing access' : 'Listing removal'} - {property?.title ?? request.listingId}
+                    </p>
+                    <p className="mt-1 text-label text-text-muted">
+                      {broker?.accountName ?? request.requesterId}{request.reason ? ` - ${request.reason}` : ''}
+                    </p>
+                    <span className={cn('mt-2 inline-block rounded-pill px-3 py-1 text-badge font-bold', approvalStatusStyles[request.status])}>
+                      {request.status}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={request.status !== 'Pending'}
+                      onClick={() => decideBrokerRequest(request.id, 'Rejected')}
+                      className="rounded-button border border-status-error px-4 py-2 text-label font-bold text-status-error disabled:opacity-40"
+                    >
+                      Reject
+                    </button>
+                    <button
+                      type="button"
+                      disabled={request.status !== 'Pending'}
+                      onClick={() => decideBrokerRequest(request.id, 'Approved')}
+                      className="rounded-button bg-primary px-4 py-2 text-label font-bold text-white disabled:opacity-40"
+                    >
+                      Approve
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
         {/* Listings Approval Section */}
         <div className="rounded-card border border-outline bg-white shadow-surface overflow-hidden">
           <div className="border-b border-outline px-6 py-4">

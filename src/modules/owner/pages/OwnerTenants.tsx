@@ -1,9 +1,12 @@
-import { FileText, KeyRound, MessageCircle, Phone, Users } from 'lucide-react'
+﻿import { FileText, KeyRound, MessageCircle, Phone, Users } from 'lucide-react'
 import { DEMO_OWNER, useOnboardingStore } from '@shared/store/onboardingStore'
+import { useAuth } from '@shared/hooks/useAuth'
 
 export function OwnerTenants() {
+  const { user } = useAuth()
+  const ownerId = user?.id ?? DEMO_OWNER.id
   const tenants = useOnboardingStore((state) =>
-    state.records.filter((record) => record.owner.id === DEMO_OWNER.id && record.status === 'active'),
+    state.records.filter((record) => record.owner.id === ownerId && record.status === 'active'),
   )
 
   return (
@@ -24,7 +27,7 @@ export function OwnerTenants() {
                   <h2 className="text-heading-3 font-bold text-navy">{record.tenant.name}</h2>
                   <span className="rounded-pill bg-status-success-bg px-2.5 py-1 text-badge font-bold uppercase text-status-success">Active</span>
                 </div>
-                <p className="mt-1 text-label font-semibold text-text-primary">{record.propertyName} � {record.unit}</p>
+                <p className="mt-1 text-label font-semibold text-text-primary">{record.propertyName} · {record.unit}</p>
                 <p className="mt-1 text-label text-text-muted">{record.tenant.email}</p>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Bell, Star } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
@@ -16,8 +16,9 @@ export function NotificationsPage() {
   const records = useOnboardingStore((state) => state.records)
   const markRead = useOnboardingStore((state) => state.markNotificationRead)
   const toggleImportant = useOnboardingStore((state) => state.toggleNotificationImportant)
-  const unreadCount = notifications.filter((item) => item.unread).length
-  const visible = notifications.filter((item) => filter === 'All' || (filter === 'Unread' ? item.unread : item.important))
+  const tenantNotifications = notifications.filter((item) => records.some((record) => record.id === item.onboardingId && record.tenant.id === tenantId))
+  const unreadCount = tenantNotifications.filter((item) => item.unread).length
+  const visible = tenantNotifications.filter((item) => filter === 'All' || (filter === 'Unread' ? item.unread : item.important))
 
   const open = (notification: (typeof notifications)[number]) => {
     markRead(notification.id)
@@ -37,7 +38,7 @@ export function NotificationsPage() {
         <div className="mx-auto max-w-3xl">
           <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div><h1 className="font-display text-[32px] font-extrabold text-brand">Notifications</h1><p className="mt-2 font-body text-[15px] text-brand-on-surface-variant">Follow application approvals, agreements, payments, and check-in.</p></div>
-            <div className="flex flex-col items-start gap-2 sm:items-end"><div className="flex rounded-full bg-brand-container-high p-1">{filters.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={filter === item ? 'rounded-full bg-white px-4 py-2 text-sm font-bold text-brand shadow-sm' : 'px-4 py-2 text-sm font-semibold text-brand-outline'}>{item}{item === 'Unread' && unreadCount ? ` (${unreadCount})` : ''}</button>)}</div><button type="button" disabled={!unreadCount} onClick={() => notifications.forEach((item) => item.unread && markRead(item.id))} className="text-xs font-bold text-brand disabled:opacity-40">Mark all as read</button></div>
+            <div className="flex flex-col items-start gap-2 sm:items-end"><div className="flex rounded-full bg-brand-container-high p-1">{filters.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={filter === item ? 'rounded-full bg-white px-4 py-2 text-sm font-bold text-brand shadow-sm' : 'px-4 py-2 text-sm font-semibold text-brand-outline'}>{item}{item === 'Unread' && unreadCount ? ` (${unreadCount})` : ''}</button>)}</div><button type="button" disabled={!unreadCount} onClick={() => tenantNotifications.forEach((item) => item.unread && markRead(item.id))} className="text-xs font-bold text-brand disabled:opacity-40">Mark all as read</button></div>
           </header>
 
           <section className="mt-8 space-y-4">

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,9 +10,11 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { useAuth } from '@shared/hooks/useAuth'
+import { usePaymentsStore } from '@shared/store/paymentsStore'
 
 type PaymentStatus = 'Received' | 'Pending' | 'Failed'
-type PaymentCategory = 'Rent' | 'Security Deposit' | 'Maintenance' | 'Late Fee'
+type PaymentCategory = 'Rent' | 'Security Deposit' | 'Maintenance' | 'Late Fee' | 'Platform Service'
 type PaymentMethod = 'UPI' | 'Bank Transfer' | 'Credit Card' | 'Cash'
 
 interface OwnerPayment {
@@ -31,16 +33,6 @@ interface OwnerPayment {
 
 const PAGE_SIZE = 4
 
-const OWNER_PAYMENTS: OwnerPayment[] = [
-  { id: '1', from: 'Sarah Miller', property: 'Modern Penthouse Suite', category: 'Rent', amount: 4500, txnId: 'OWN-882104', refId: 'RTL-14B-APR', via: 'Bank Transfer', status: 'Received', date: '12 Apr 2026', time: '4:30 PM' },
-  { id: '2', from: 'Rajesh Kumar', property: 'Parkview Residences', category: 'Security Deposit', amount: 7600, txnId: 'OWN-772012', refId: 'RTL-204-DEP', via: 'UPI', status: 'Pending', date: '10 Apr 2026', time: '11:15 AM' },
-  { id: '3', from: 'Amit Shah', property: 'Skyline Heights - Unit 402', category: 'Rent', amount: 4500, txnId: 'OWN-661901', refId: 'RTL-402-APR', via: 'Credit Card', status: 'Failed', date: '08 Apr 2026', time: '9:00 AM' },
-  { id: '4', from: 'Sarah Miller', property: 'Modern Penthouse Suite', category: 'Maintenance', amount: 820, txnId: 'OWN-550884', refId: 'RTL-14B-MNT', via: 'Bank Transfer', status: 'Received', date: '02 Apr 2026', time: '2:00 PM' },
-  { id: '5', from: 'Sarah Miller', property: 'Modern Penthouse Suite', category: 'Rent', amount: 4500, txnId: 'OWN-442109', refId: 'RTL-14B-MAR', via: 'Bank Transfer', status: 'Received', date: '12 Mar 2026', time: '4:15 PM' },
-  { id: '6', from: 'Rajesh Kumar', property: 'Parkview Residences', category: 'Late Fee', amount: 120, txnId: 'OWN-338210', refId: 'RTL-204-FEE', via: 'UPI', status: 'Received', date: '04 Mar 2026', time: '10:30 AM' },
-  { id: '7', from: 'Amit Shah', property: 'Skyline Heights - Unit 402', category: 'Rent', amount: 4500, txnId: 'OWN-226731', refId: 'RTL-402-MAR', via: 'Cash', status: 'Pending', date: '01 Mar 2026', time: '5:20 PM' },
-]
-
 const statusStyles: Record<PaymentStatus, string> = {
   Received: 'bg-green-50 text-green-700',
   Pending: 'bg-amber-50 text-amber-700',
@@ -52,6 +44,7 @@ const categoryStyles: Record<PaymentCategory, string> = {
   'Security Deposit': 'bg-violet-50 text-violet-700',
   Maintenance: 'bg-orange-50 text-orange-700',
   'Late Fee': 'bg-slate-100 text-slate-700',
+  'Platform Service': 'bg-cyan-50 text-cyan-700',
 }
 
 function StatusBadge({ status }: { status: PaymentStatus }) {
@@ -115,7 +108,7 @@ function PaymentRow({ payment }: { payment: OwnerPayment }) {
   )
 }
 
-function RecordPaymentModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function RecordPaymentModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (input: { tenant: string; amount: number; category: PaymentCategory; method: PaymentMethod }) => void }) {
   const [tenant, setTenant] = useState('')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<PaymentCategory>('Rent')
@@ -130,7 +123,7 @@ function RecordPaymentModal({ onClose, onSuccess }: { onClose: () => void; onSuc
     }
 
     setError('')
-    onSuccess()
+    onSuccess({ tenant: tenant.trim(), amount: Number(amount), category, method })
     onClose()
   }
 
@@ -186,6 +179,27 @@ function RecordPaymentModal({ onClose, onSuccess }: { onClose: () => void; onSuc
 }
 
 export function OwnerPayments() {
+  const { user } = useAuth()
+  const ownerId = user?.id ?? ''
+  const storePayments = usePaymentsStore((state) => state.payments)
+  const addTenantPayment = usePaymentsStore((state) => state.addTenantPayment)
+  const ownerPayments = useMemo<OwnerPayment[]>(() => storePayments.filter((payment) => payment.ownerId === ownerId).map((payment) => {
+    const date = new Date(payment.paidAtIso)
+    const category: PaymentCategory = payment.category === 'RENT' ? 'Rent' : payment.category === 'SECURITY DEPOSIT' ? 'Security Deposit' : payment.category === 'MAINTENANCE' ? 'Maintenance' : 'Platform Service'
+    return {
+      id: payment.id,
+      from: payment.flow === 'owner_outgoing' ? payment.counterparty : payment.tenantName ?? payment.counterparty,
+      property: payment.propertyName ?? payment.description ?? 'Rentilo platform',
+      category,
+      amount: payment.amount,
+      txnId: payment.txnId,
+      refId: payment.refId,
+      via: (['UPI', 'Bank Transfer', 'Credit Card', 'Cash'].includes(payment.method) ? payment.method : 'UPI') as PaymentMethod,
+      status: payment.status === 'Successful' ? 'Received' : payment.status,
+      date: date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+    }
+  }), [ownerId, storePayments])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | 'All Status'>('All Status')
   const [page, setPage] = useState(1)
@@ -194,7 +208,7 @@ export function OwnerPayments() {
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return OWNER_PAYMENTS.filter((payment) => {
+    return ownerPayments.filter((payment) => {
       const matchesSearch =
         !query ||
         payment.from.toLowerCase().includes(query) ||
@@ -204,15 +218,15 @@ export function OwnerPayments() {
       const matchesStatus = statusFilter === 'All Status' || payment.status === statusFilter
       return matchesSearch && matchesStatus
     })
-  }, [search, statusFilter])
+  }, [ownerPayments, search, statusFilter])
 
   const summary = useMemo(
     () => ({
-      received: OWNER_PAYMENTS.filter((payment) => payment.status === 'Received').reduce((total, payment) => total + payment.amount, 0),
-      pending: OWNER_PAYMENTS.filter((payment) => payment.status === 'Pending').reduce((total, payment) => total + payment.amount, 0),
-      failed: OWNER_PAYMENTS.filter((payment) => payment.status === 'Failed').length,
+      received: ownerPayments.filter((payment) => payment.status === 'Received').reduce((total, payment) => total + payment.amount, 0),
+      pending: ownerPayments.filter((payment) => payment.status === 'Pending').reduce((total, payment) => total + payment.amount, 0),
+      failed: ownerPayments.filter((payment) => payment.status === 'Failed').length,
     }),
-    []
+    [ownerPayments]
   )
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -336,11 +350,20 @@ export function OwnerPayments() {
       {modalOpen && (
         <RecordPaymentModal
           onClose={() => setModalOpen(false)}
-          onSuccess={() => {
+          onSuccess={(input) => {
+            addTenantPayment({
+              tenantId: `manual-${Date.now()}`,
+              tenantName: input.tenant,
+              ownerId,
+              ownerName: user ? `${user.firstName} ${user.lastName}` : 'Owner',
+              to: user ? `${user.firstName} ${user.lastName}` : 'Owner',
+              category: input.category === 'Rent' ? 'RENT' : input.category === 'Security Deposit' ? 'SECURITY DEPOSIT' : input.category === 'Maintenance' ? 'MAINTENANCE' : 'OTHER',
+              amount: input.amount,
+              method: input.method,
+            })
             setToastVisible(true)
             window.setTimeout(() => setToastVisible(false), 3500)
-          }}
-        />
+          }}        />
       )}
 
       {toastVisible && (

@@ -16,7 +16,7 @@ const api = axios.create({
 // ── Request Interceptor: Attach Bearer token ──
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('rentilo_token')
+    const token = sessionStorage.getItem('rentilo_token') ?? localStorage.getItem('rentilo_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -30,6 +30,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      sessionStorage.removeItem('rentilo_token')
+      sessionStorage.removeItem('rentilo_user')
       localStorage.removeItem('rentilo_token')
       localStorage.removeItem('rentilo_user')
       window.location.href = '/auth/login'

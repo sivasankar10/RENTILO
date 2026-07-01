@@ -14,7 +14,8 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
-import { MOCK_PROPERTY_GROUPS, getAllConversations } from '../constants/mockMessages'
+import { getAllConversations } from '../constants/mockMessages'
+import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 import type { PropertyGroup, Conversation, ViewMode, Message, UserRole } from '../types/messages'
 
 type LeadConversationNavigationState = {
@@ -35,8 +36,67 @@ type BrokerMessagesLocationState = {
 
 export function BrokerMessagesPage() {
   const location = useLocation()
+  const { chats, users, properties, sendMessage: sendSharedMessage } = useBrokerPrototype()
+  const sharedGroups = useMemo<PropertyGroup[]>(() => {
+    const groupsByProperty = new Map<string, PropertyGroup>()
+    chats.forEach((thread) => {
+      const propertyId = thread.propertyId ?? 'general'
+      const property = properties.find((item) => item.id === propertyId)
+      const participant = users.find(
+        (user) =>
+          thread.participantIds.includes(user.id) &&
+          user.roles.includes(thread.type === 'owner_broker' ? 'owner' : 'tenant'),
+      )
+      if (!participant) return
+      const messages: Message[] = thread.messages.map((message) => ({
+        id: message.id,
+        senderId: message.senderId,
+        senderName: message.senderId === participant.id ? `${participant.firstName} ${participant.lastName}` : 'You',
+        senderRole: message.senderRole === 'broker' ? 'broker' : message.senderRole === 'owner' ? 'owner' : 'tenant',
+        text: message.text,
+        timestamp: new Date(message.createdAt),
+        status: 'read' as const,
+      }))
+      const conversation: Conversation = {
+        id: thread.id,
+        userId: participant.id,
+        userName: `${participant.firstName} ${participant.lastName}`,
+        userRole: participant.roles.includes('owner') ? 'owner' : 'tenant',
+        userAvatar: participant.avatar ?? '',
+        propertyId,
+        propertyName: property?.title ?? 'Session conversation',
+        lastMessage: messages.at(-1)?.text ?? 'Conversation started',
+        lastMessageTime: new Date(thread.updatedAt),
+        unreadCount: 0,
+        isOnline: true,
+        messages,
+      }
+      const group = groupsByProperty.get(propertyId) ?? {
+        id: `group-${propertyId}`,
+        name: property?.title ?? 'Session conversations',
+        unreadCount: 0,
+        isExpanded: true,
+        properties: [],
+      }
+      let groupedProperty = group.properties.find((item) => item.id === propertyId)
+      if (!groupedProperty) {
+        groupedProperty = {
+          id: propertyId,
+          name: property?.title ?? 'Session property',
+          address: property?.address ?? '',
+          groupId: group.id,
+          tenantConversations: [],
+        }
+        group.properties.push(groupedProperty)
+      }
+      if (conversation.userRole === 'owner') groupedProperty.ownerConversation = conversation
+      else groupedProperty.tenantConversations.push(conversation)
+      groupsByProperty.set(propertyId, group)
+    })
+    return Array.from(groupsByProperty.values())
+  }, [chats, properties, users])
   const [viewMode, setViewMode] = useState<ViewMode>('property')
-  const [groups, setGroups] = useState<PropertyGroup[]>(MOCK_PROPERTY_GROUPS)
+  const [groups, setGroups] = useState<PropertyGroup[]>(sharedGroups)
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messageText, setMessageText] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -45,6 +105,13 @@ export function BrokerMessagesPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const moreMenuRef = useRef<HTMLDivElement>(null)
 
+  useEffect(() => {
+    setGroups(sharedGroups)
+    setSelectedConversation((current) => {
+      const conversations = getAllConversations(sharedGroups)
+      return conversations.find((item) => item.id === current?.id) ?? conversations[0] ?? null
+    })
+  }, [sharedGroups])
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -221,7 +288,7 @@ export function BrokerMessagesPage() {
 
     setSelectedConversation(newConversation)
     setViewMode('property')
-  }, [location.key])
+  }, [groups, location.key, location.state])
 
   useEffect(() => {
     if (!requestedConversationId) {
@@ -251,6 +318,11 @@ export function BrokerMessagesPage() {
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation) return
+    if (chats.some((thread) => thread.id === selectedConversation.id)) {
+      sendSharedMessage(selectedConversation.id, messageText.trim())
+      setMessageText('')
+      return
+    }
 
     const newMessage: Message = {
       id: `m-${Date.now()}`,

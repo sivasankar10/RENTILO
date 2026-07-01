@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist } from 'zustand/middleware'
 import type { User } from '@modules/shared/types'
 import type { UserRole } from '@modules/shared/constants/roles'
 import { normalizeUser } from '@shared/utils/normalizeUser'
@@ -36,7 +36,7 @@ export const useAuthStore = create<AuthState>()(
       setAuth: (rawUser, token, preferredActiveRole) => {
         const user = normalizeUser(rawUser)
         const activeRole = pickInitialActiveRole(user, preferredActiveRole ?? get().activeRole ?? undefined)
-        localStorage.setItem('rentilo_token', token)
+        sessionStorage.setItem('rentilo_token', token)
         set({
           user,
           token,
@@ -73,7 +73,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        localStorage.removeItem('rentilo_token')
+        sessionStorage.removeItem('rentilo_token')
         void queryClient.clear()
         set({
           user: null,
@@ -85,6 +85,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'rentilo-auth',
+      storage: createJSONStorage(() => sessionStorage),
       version: 2,
       migrate: (persisted: unknown) => {
         const state = persisted as {

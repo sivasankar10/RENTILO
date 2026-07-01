@@ -14,6 +14,7 @@ import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
 import { toast } from '../components/Toast'
 import { exportToCsv } from '../utils/exportCsv'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -194,9 +195,11 @@ function BrokerRow({
 // ─── Top Brokers Modal ─────────────────────────────────────────────────────────
 
 function TopBrokersModal({
+  brokers,
   onClose,
   onChat,
 }: {
+  brokers: Broker[]
   onClose: () => void
   onChat: (b: Broker) => void
 }) {
@@ -235,7 +238,7 @@ function TopBrokersModal({
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {/* Top 3 hero cards */}
           <div className="grid grid-cols-3 gap-3 mb-6">
-            {topBrokers.slice(0, 3).map((broker) => (
+            {brokers.slice(0, 3).map((broker) => (
               <div
                 key={broker.brokerId}
                 className={cn(
@@ -278,7 +281,7 @@ function TopBrokersModal({
               <span className="text-center">Revenue</span>
             </div>
             <div className="px-4">
-              {topBrokers.map((broker) => (
+              {brokers.map((broker) => (
                 <BrokerRow
                   key={broker.brokerId}
                   broker={broker}
@@ -292,7 +295,7 @@ function TopBrokersModal({
 
         {/* Footer */}
         <div className="border-t border-outline px-6 py-4 shrink-0 flex items-center justify-between">
-          <p className="text-label text-text-muted">{topBrokers.length} brokers · Updated just now</p>
+          <p className="text-label text-text-muted">{brokers.length} brokers · Updated just now</p>
           <button
             type="button"
             onClick={onClose}
@@ -444,9 +447,51 @@ export function AdminDashboard() {
   const navigate = useNavigate()
   const [showBrokerModal, setShowBrokerModal]       = useState(false)
   const [showFailedModal, setShowFailedModal]       = useState(false)
+  const users = usePrototypeStore((state) => state.users)
+  const listings = usePrototypeStore((state) => state.listings)
+  const assignments = usePrototypeStore((state) => state.brokerAssignments)
+  const applications = usePrototypeStore((state) => state.applications)
+  const payments = usePrototypeStore((state) => state.payments)
+  const closures = applications.filter((application) => application.status === 'active').length
+  const activeListings = listings.filter((listing) => listing.status === 'Active').length
+  const totalRevenue = payments
+    .filter((payment) => payment.status === 'Successful')
+    .reduce((sum, payment) => sum + payment.amount, 0)
+  const failedPayments = payments.filter((payment) => payment.status === 'Failed').length
+  const brokerUsers = users.filter((user) => user.roles.includes('broker'))
+  const brokerSuccessRate = applications.filter((application) => application.brokerId).length
+    ? Math.round((applications.filter((application) => application.brokerId && application.status === 'active').length / applications.filter((application) => application.brokerId).length) * 100)
+    : 0
+  const sessionTopBrokers: Broker[] = brokerUsers.map((broker, index) => {
+    const brokerApplications = applications.filter((application) => application.brokerId === broker.id)
+    const deals = brokerApplications.filter((application) => application.status === 'active').length
+    const revenue = payments
+      .filter((payment) => payment.brokerId === broker.id && payment.status === 'Successful')
+      .reduce((sum, payment) => sum + payment.amount, 0)
+    return {
+      rank: index + 1,
+      initials: `${broker.firstName[0] ?? ''}${broker.lastName[0] ?? ''}`,
+      name: broker.accountName,
+      deals,
+      rate: brokerApplications.length ? Math.round((deals / brokerApplications.length) * 100) : 0,
+      revenue: new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(revenue),
+      city: `${assignments.filter((assignment) => assignment.brokerId === broker.id && assignment.status === 'Active').length} active listings`,
+      color: index % 2 === 0 ? 'bg-orange-500' : 'bg-blue-500',
+      phone: broker.phone,
+      brokerId: broker.id,
+    }
+  }).sort((a, b) => b.deals - a.deals || b.rate - a.rate).map((broker, index) => ({ ...broker, rank: index + 1 }))
+  const formattedRevenue = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(totalRevenue)
+  const dashboardExportRows: DashboardExportRow[] = [
+    { section: 'Summary', metric: 'Deal Closures', value: String(closures), detail: 'Session data' },
+    { section: 'Summary', metric: 'Total Revenue', value: formattedRevenue, detail: 'Successful session payments' },
+    { section: 'Summary', metric: 'Active Listings', value: String(activeListings), detail: 'Session data' },
+    { section: 'Summary', metric: 'Broker Performance', value: `${brokerSuccessRate}%`, detail: 'Session data' },
+    ...buildAdminDashboardExportRows().filter((row) => row.section !== 'Summary'),
+  ]
 
   const handleExportData = () => {
-    exportToCsv('rentilo-admin-dashboard.csv', buildAdminDashboardExportRows(), [
+    exportToCsv('rentilo-admin-dashboard.csv', dashboardExportRows, [
       { key: 'section', label: 'Section' },
       { key: 'metric',  label: 'Metric'  },
       { key: 'value',   label: 'Value'   },
@@ -487,7 +532,7 @@ export function AdminDashboard() {
             <p className="text-filter-label uppercase tracking-wider text-text-muted">Deal Closures</p>
             <div className="mt-3 flex items-end justify-between">
               <div>
-                <p className="text-[42px] font-bold leading-none tracking-tight text-text-primary">1,482</p>
+                <p className="text-[42px] font-bold leading-none tracking-tight text-text-primary">{closures}</p>
                 <p className="mt-2 flex items-center gap-1.5 text-label text-status-success">
                   <TrendingUp size={14} />+12.5% from last month
                 </p>
@@ -505,7 +550,7 @@ export function AdminDashboard() {
             <p className="text-filter-label uppercase tracking-wider text-text-muted">Total Revenue</p>
             <div className="mt-3 flex items-end justify-between">
               <div>
-                <p className="text-[42px] font-bold leading-none tracking-tight text-text-primary">₹ 4.8M</p>
+                <p className="text-[42px] font-bold leading-none tracking-tight text-text-primary">{formattedRevenue}</p>
                 <p className="mt-2 flex items-center gap-1.5 text-label text-status-success">
                   <TrendingUp size={14} />+8.2% vs target
                 </p>
@@ -523,11 +568,11 @@ export function AdminDashboard() {
         {/* Secondary Stats */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
           {[
-            { label: 'Active Listings',    value: '12,305', badge: '+4%',    badgeCls: 'bg-status-success-bg text-status-success-text' },
-            { label: 'Broker Performance', value: '88.4%',  badge: '★',      badgeCls: 'text-status-warning text-label'                 },
+            { label: 'Active Listings', value: String(activeListings), badge: 'Live', badgeCls: 'bg-status-success-bg text-status-success-text' },
+            { label: 'Broker Performance', value: `${brokerSuccessRate}%`, badge: 'Live', badgeCls: 'text-status-warning text-label' },
             { label: 'KYC Rate',           value: '94%',    badge: 'Stable', badgeCls: 'bg-slate-100 text-text-muted'                   },
-            { label: 'Tenant Signals',     value: '4.2k',   badge: 'Active', badgeCls: 'bg-status-success-bg text-status-success-text'  },
-            { label: 'Failed Deals',       value: '42',     badge: '-2%',    badgeCls: 'bg-status-error-bg text-status-error-text', valueCls: 'text-status-error' },
+            { label: 'Tenant Signals', value: String(applications.length), badge: 'Active', badgeCls: 'bg-status-success-bg text-status-success-text' },
+            { label: 'Failed Deals', value: String(failedPayments), badge: 'Payments', badgeCls: 'bg-status-error-bg text-status-error-text', valueCls: 'text-status-error' },
           ].map((stat) => (
             <div key={stat.label} className="rounded-card border border-outline bg-white p-4 shadow-sm">
               <p className="text-label text-text-muted">{stat.label}</p>
@@ -598,7 +643,7 @@ export function AdminDashboard() {
             </div>
 
             {/* Preview — first 3 */}
-            {topBrokers.slice(0, 3).map((broker) => (
+            {sessionTopBrokers.slice(0, 3).map((broker) => (
               <BrokerRow
                 key={broker.brokerId}
                 broker={broker}
@@ -673,6 +718,7 @@ export function AdminDashboard() {
       {/* Modals */}
       {showBrokerModal && (
         <TopBrokersModal
+          brokers={sessionTopBrokers}
           onClose={() => setShowBrokerModal(false)}
           onChat={(b) => { handleBrokerChat(b); setShowBrokerModal(false) }}
         />

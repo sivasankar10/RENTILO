@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownLeft,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { confirm } from '../components/ConfirmDialog'
 import { toast } from '../components/Toast'
 import { exportToCsv } from '../utils/exportCsv'
@@ -102,18 +103,18 @@ function PaymentRow({
             </div>
             {/* Amount */}
             <div className={cn('text-[26px] font-extrabold leading-none mb-2 font-display', payment.direction === 'inbound' ? 'text-green-700' : 'text-[#0F172A]')}>
-              {payment.direction === 'inbound' ? '+' : 'âˆ’'}â‚¹{payment.amount.toLocaleString('en-IN')}
+              {payment.direction === 'inbound' ? '+' : '-'}Rs. {payment.amount.toLocaleString('en-IN')}
             </div>
             {/* Meta row */}
             <div className="flex flex-wrap items-center gap-2 text-[12px] text-[#64748b] font-medium">
               <span>TXN: <span className="font-semibold text-[#0F172A]">{payment.txnId}</span></span>
-              <span className="text-[#cbd5e1]">â€¢</span>
+              <span className="text-[#cbd5e1]">|</span>
               <span>REF: <span className="font-semibold text-[#0F172A]">{payment.refId}</span></span>
-              <span className="text-[#cbd5e1]">â€¢</span>
+              <span className="text-[#cbd5e1]">|</span>
               <span>via <span className="font-semibold text-[#0F172A]">{payment.via}</span></span>
               {payment.property && (
                 <>
-                  <span className="text-[#cbd5e1]">â€¢</span>
+                  <span className="text-[#cbd5e1]">|</span>
                   <span className="text-[#0F172A]">{payment.property}</span>
                 </>
               )}
@@ -302,7 +303,7 @@ function ProcessPaymentModal({
               </select>
             </div>
             <div>
-              <label className="block text-label font-bold uppercase tracking-wider text-text-muted mb-1.5">Amount (â‚¹)</label>
+              <label className="block text-label font-bold uppercase tracking-wider text-text-muted mb-1.5">Amount (Rs. )</label>
               <input type="number" placeholder="0" min="1" value={amount}
                 onChange={(e) => setAmount(e.target.value)} className={inputCls('amount')} />
               {errors.amount && <p className="mt-1 text-label text-status-error">{errors.amount}</p>}
@@ -339,7 +340,7 @@ function ProcessPaymentModal({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                 </svg>
-                Processingâ€¦
+                Processing...
               </span>
             ) : 'Confirm Payment'}
           </button>
@@ -385,7 +386,34 @@ function StatCard({
 
 export function AdminFinancePayments() {
   const navigate = useNavigate()
-  const [localPayments, setLocalPayments] = useState<AdminPayment[]>(ALL_PAYMENTS)
+  const sharedPayments = usePrototypeStore((state) => state.payments)
+  const prototypeUsers = usePrototypeStore((state) => state.users)
+  const prototypeProperties = usePrototypeStore((state) => state.properties)
+  const setPaymentStatus = usePrototypeStore((state) => state.setPaymentStatus)
+  const [manualPayments, setManualPayments] = useState<AdminPayment[]>(ALL_PAYMENTS)
+  const dynamicPayments = useMemo<AdminPayment[]>(() => sharedPayments.map((payment) => {
+    const user = prototypeUsers.find((item) => item.id === (payment.brokerId ?? payment.tenantId ?? payment.ownerId))
+    const property = prototypeProperties.find((item) => item.id === payment.propertyId)
+    return {
+      id: payment.id,
+      txnId: payment.txnId,
+      refId: payment.refId,
+      user: user?.accountName ?? payment.counterparty,
+      userInitials: user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}` : 'SU',
+      avatarColor: 'bg-primary',
+      role: payment.brokerId ? 'Broker' : payment.tenantId ? 'Tenant' : 'Owner',
+      type: payment.category === 'COMMISSION' ? 'Commission' : payment.category === 'SECURITY DEPOSIT' ? 'Security Deposit' : payment.category === 'PREMIUM' ? 'Subscription' : 'Rent',
+      direction: payment.flow === 'platform_to_broker' || payment.flow === 'owner_outgoing' ? 'outbound' : 'inbound',
+      amount: payment.amount,
+      via: payment.method,
+      status: payment.status === 'Successful' ? 'Success' : payment.status,
+      date: new Date(payment.paidAtIso).toLocaleDateString('en-IN'),
+      time: new Date(payment.paidAtIso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+      property: property?.title,
+      note: payment.description,
+    }
+  }), [prototypeProperties, prototypeUsers, sharedPayments])
+  const localPayments = useMemo(() => [...dynamicPayments, ...manualPayments], [dynamicPayments, manualPayments])
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<PaymentType | 'All Types'>('All Types')
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | 'All Status'>('All Status')
@@ -456,13 +484,12 @@ export function AdminFinancePayments() {
   const handleRefund = (p: AdminPayment) => {
     confirm({
       title: 'Issue refund?',
-      description: `â‚¹${p.amount.toLocaleString('en-IN')} will be refunded for ${p.txnId}.`,
+      description: `Rs. ${p.amount.toLocaleString('en-IN')} will be refunded for ${p.txnId}.`,
       confirmLabel: 'Issue refund',
       variant: 'danger',
       onConfirm: () => {
-        setLocalPayments((prev) =>
-          prev.map((item) => item.id === p.id ? { ...item, status: 'Refunded' } : item)
-        )
+        if (sharedPayments.some((item) => item.id === p.id)) setPaymentStatus(p.id, 'Refunded')
+        else setManualPayments((prev) => prev.map((item) => item.id === p.id ? { ...item, status: 'Refunded' } : item))
         showToast(`Refund issued for ${p.txnId}.`)
       },
     })
@@ -471,13 +498,12 @@ export function AdminFinancePayments() {
   const handleRetry = (p: AdminPayment) => {
     confirm({
       title: 'Retry payment?',
-      description: `Retry â‚¹${p.amount.toLocaleString('en-IN')} for ${p.user}?`,
+      description: `Retry Rs. ${p.amount.toLocaleString('en-IN')} for ${p.user}?`,
       confirmLabel: 'Retry',
       onConfirm: () => {
-        setLocalPayments((prev) =>
-          prev.map((item) => item.id === p.id ? { ...item, status: 'Pending' } : item)
-        )
-        showToast(`Payment ${p.txnId} retried â€” now Pending.`)
+        if (sharedPayments.some((item) => item.id === p.id)) setPaymentStatus(p.id, 'Pending')
+        else setManualPayments((prev) => prev.map((item) => item.id === p.id ? { ...item, status: 'Pending' } : item))
+        showToast(`Payment ${p.txnId} retried - now Pending.`)
       },
     })
   }
@@ -491,7 +517,7 @@ export function AdminFinancePayments() {
       { key: 'role', label: 'Role' },
       { key: 'type', label: 'Type' },
       { key: 'direction', label: 'Direction' },
-      { key: 'amount', label: 'Amount (â‚¹)' },
+      { key: 'amount', label: 'Amount (Rs. )' },
       { key: 'via', label: 'Via' },
       { key: 'status', label: 'Status' },
       { key: 'date', label: 'Date' },
@@ -512,7 +538,7 @@ export function AdminFinancePayments() {
               Finance & Payments
             </h1>
             <p className="mt-1 text-body text-text-muted">
-              Monitor all capital flows â€” commissions, rent, subscriptions, refunds, and more.
+              Monitor all capital flows - commissions, rent, subscriptions, refunds, and more.
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
@@ -531,13 +557,13 @@ export function AdminFinancePayments() {
 
         {/* Stats */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard label="Total Inbound" value={`â‚¹${(totalInbound / 100000).toFixed(1)}L`}
+          <StatCard label="Total Inbound" value={`Rs. ${(totalInbound / 100000).toFixed(1)}L`}
             sub="Successful receipts" icon={ArrowDownLeft} iconBg="bg-green-600"
             trend={{ value: '+12.4% vs last month', positive: true }} />
-          <StatCard label="Total Outbound" value={`â‚¹${(totalOutbound / 100000).toFixed(1)}L`}
+          <StatCard label="Total Outbound" value={`Rs. ${(totalOutbound / 100000).toFixed(1)}L`}
             sub="Paid out successfully" icon={ArrowUpRight} iconBg="bg-navy"
             trend={{ value: '+8.1% vs last month', positive: true }} />
-          <StatCard label="Commission Paid" value={`â‚¹${(totalCommission / 100000).toFixed(1)}L`}
+          <StatCard label="Commission Paid" value={`Rs. ${(totalCommission / 100000).toFixed(1)}L`}
             sub="To brokers this month" icon={CheckCircle2} iconBg="bg-orange-500"
             trend={{ value: '+5.2% vs last month', positive: true }} />
           <StatCard label="Pending" value={String(pendingCount)}
@@ -551,7 +577,7 @@ export function AdminFinancePayments() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-[220px] flex-1">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" placeholder="Search by TXN ID, user, propertyâ€¦"
+            <input type="text" placeholder="Search by TXN ID, user, property..."
               value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }}
               className="h-10 w-full rounded-input border border-outline bg-white pl-10 pr-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
           </div>
@@ -611,12 +637,12 @@ export function AdminFinancePayments() {
               disabled={currentPage === 1}
               className={cn('inline-flex items-center gap-1.5 rounded-button px-4 py-2 text-body font-semibold border-0 transition-colors',
                 currentPage === 1 ? 'cursor-not-allowed text-text-muted opacity-40 bg-transparent' : 'cursor-pointer text-text-primary hover:bg-hover-light bg-transparent')}>
-              â† Previous
+              {'<- Previous'}
             </button>
             <div className="flex items-center gap-1">
               {pageNumbers.map((n, i) =>
                 n === '...' ? (
-                  <span key={`e-${i}`} className="px-2 text-text-muted">â€¦</span>
+                  <span key={`e-${i}`} className="px-2 text-text-muted">...</span>
                 ) : (
                   <button key={n} type="button" onClick={() => setPage(n as number)}
                     className={cn('h-9 w-9 rounded-button text-body font-semibold border-0 cursor-pointer transition-colors',
@@ -630,14 +656,14 @@ export function AdminFinancePayments() {
               disabled={currentPage === totalPages}
               className={cn('inline-flex items-center gap-1.5 rounded-button px-4 py-2 text-body font-semibold border-0 transition-colors',
                 currentPage === totalPages ? 'cursor-not-allowed text-text-muted opacity-40 bg-transparent' : 'cursor-pointer text-text-primary hover:bg-hover-light bg-transparent')}>
-              Next â†’
+              {'Next ->'}
             </button>
           </div>
         )}
 
         {/* Footer note */}
         <p className="text-center text-[11px] font-semibold uppercase tracking-wider text-text-muted pb-2">
-          RENTILO Admin Finance Portal â€¢ All figures in INR â€¢ Data refreshed on page load
+          RENTILO Admin Finance Portal | All figures in INR | Data refreshed on page load
         </p>
       </div>
 
@@ -646,8 +672,8 @@ export function AdminFinancePayments() {
         <ProcessPaymentModal
           onClose={() => setShowModal(false)}
           onSuccess={(p) => {
-            setLocalPayments((prev) => [p, ...prev])
-            showToast(`Payment ${p.txnId} created â€” status: Pending.`)
+            setManualPayments((prev) => [p, ...prev])
+            showToast(`Payment ${p.txnId} created - status: Pending.`)
           }}
         />
       )}

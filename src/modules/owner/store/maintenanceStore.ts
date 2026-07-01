@@ -1,5 +1,4 @@
-import { create } from 'zustand'
-import { createJSONStorage, persist } from 'zustand/middleware'
+import { usePrototypeStore, type PrototypeState } from '@shared/store/prototypeStore'
 
 export type TicketStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed'
 export type TicketPriority = 'Low' | 'Medium' | 'High' | 'Urgent'
@@ -48,10 +47,7 @@ interface OwnerMaintenanceState {
   sendTicketMessage: (ticketId: string, text: string) => void
   sendTenantTicketMessage: (ticketId: string, tenantId: string, text: string) => void
   createTenantTicket: (
-    ticket: Omit<
-      OwnerMaintenanceTicket,
-      'id' | 'ticketNo' | 'status' | 'submittedAt' | 'lastUpdated' | 'messages' | 'images'
-    > & { images?: string[] },
+    ticket: Omit<OwnerMaintenanceTicket, 'id' | 'ticketNo' | 'status' | 'submittedAt' | 'lastUpdated' | 'messages' | 'images'> & { images?: string[] },
   ) => string
   updateTenantTicket: (
     ticketId: string,
@@ -60,123 +56,87 @@ interface OwnerMaintenanceState {
   ) => boolean
 }
 
-function getMessageTime() {
-  return new Date().toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
+function mapTickets(state: PrototypeState): OwnerMaintenanceTicket[] {
+  return state.maintenanceTickets.map((ticket) => {
+    const tenant = state.users.find((item) => item.id === ticket.tenantId)
+    const property = state.properties.find((item) => item.id === ticket.propertyId)
+    return {
+      id: ticket.id,
+      ticketNo: ticket.ticketNo,
+      propertyId: ticket.propertyId,
+      tenantId: ticket.tenantId,
+      leaseId: ticket.leaseId,
+      tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : ticket.tenantId,
+      tenantPhone: tenant?.phone ?? '',
+      tenantAvatar: tenant?.avatar ?? '',
+      unit: property ? `${property.title} - ${property.unit}` : 'Session property',
+      category: ticket.category ?? 'Other',
+      priority: ticket.priority ?? 'Medium',
+      problem: ticket.problem ?? 'Maintenance request details unavailable.',
+      status: ticket.status ?? 'Open',
+      submittedAt: ticket.submittedAt,
+      preferredSlot: ticket.preferredSlot ?? 'Coordinate with tenant',
+      assignedTo: ticket.assignedTo ?? 'Not assigned',
+      lastUpdated: ticket.lastUpdated,
+      ownerNote: ticket.ownerNote ?? '',
+      images: ticket.images ?? [],
+      messages: (ticket.messages ?? []).map((message) => ({
+        id: message.id,
+        sender: message.senderRole === 'tenant' ? 'tenant' : 'owner',
+        text: message.text,
+        time: message.time,
+      })),
+    }
   })
 }
 
-export const useOwnerMaintenanceStore = create<OwnerMaintenanceState>()(
-  persist(
-    (set, get) => ({
-      tickets: [],
-
-      updateTicket: (ticketId, patch) =>
-        set((state) => ({
-          tickets: state.tickets.map((ticket) =>
-            ticket.id === ticketId
-              ? {
-                  ...ticket,
-                  ...patch,
-                  lastUpdated: 'Just now',
-                }
-              : ticket,
-          ),
-        })),
-
-      sendTicketMessage: (ticketId, text) =>
-        set((state) => ({
-          tickets: state.tickets.map((ticket) =>
-            ticket.id === ticketId
-              ? {
-                  ...ticket,
-                  lastUpdated: 'Just now',
-                  messages: [
-                    ...ticket.messages,
-                    {
-                      id: `owner-message-${Date.now()}`,
-                      sender: 'owner',
-                      text,
-                      time: getMessageTime(),
-                    },
-                  ],
-                }
-              : ticket,
-          ),
-        })),
-
-      sendTenantTicketMessage: (ticketId, tenantId, text) =>
-        set((state) => ({
-          tickets: state.tickets.map((ticket) =>
-            ticket.id === ticketId && ticket.tenantId === tenantId
-              ? {
-                  ...ticket,
-                  lastUpdated: 'Just now',
-                  messages: [
-                    ...ticket.messages,
-                    {
-                      id: `tenant-message-${Date.now()}`,
-                      sender: 'tenant',
-                      text,
-                      time: getMessageTime(),
-                    },
-                  ],
-                }
-              : ticket,
-          ),
-        })),
-
-      createTenantTicket: (ticket) => {
-        const id = `tenant-ticket-${Date.now()}`
-        const ticketNo = `MNT-${Date.now().toString().slice(-4)}`
-        set((state) => ({
-          tickets: [
-            {
-              ...ticket,
-              id,
-              ticketNo,
-              status: 'Open',
-              submittedAt: new Date().toLocaleString('en-IN', {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              }),
-              lastUpdated: 'Just now',
-              images: ticket.images ?? [],
-              messages: [],
-            },
-            ...state.tickets,
-          ],
-        }))
-        return ticketNo
-      },
-
-      updateTenantTicket: (ticketId, tenantId, patch) => {
-        const existing = get().tickets.find(
-          (ticket) => ticket.id === ticketId && ticket.tenantId === tenantId,
-        )
-        if (!existing || existing.status !== 'Open') return false
-
-        set((state) => ({
-          tickets: state.tickets.map((ticket) =>
-            ticket.id === ticketId && ticket.tenantId === tenantId
-              ? {
-                  ...ticket,
-                  ...patch,
-                  lastUpdated: 'Just now',
-                }
-              : ticket,
-          ),
-        }))
-        return true
-      },
+function bridgeState(state: PrototypeState): OwnerMaintenanceState {
+  return {
+    tickets: mapTickets(state),
+    updateTicket: (ticketId, patch) => usePrototypeStore.getState().updateMaintenanceTicket(ticketId, {
+      category: patch.category,
+      priority: patch.priority,
+      problem: patch.problem,
+      status: patch.status,
+      preferredSlot: patch.preferredSlot,
+      assignedTo: patch.assignedTo,
+      ownerNote: patch.ownerNote,
+      images: patch.images,
     }),
-    {
-      name: 'rentilo-maintenance-session',
-      storage: createJSONStorage(() => sessionStorage),
-      version: 2,
-      migrate: () => ({ tickets: [] }),
+    sendTicketMessage: (ticketId, text) => {
+      const ticket = usePrototypeStore.getState().maintenanceTickets.find((item) => item.id === ticketId)
+      if (ticket) usePrototypeStore.getState().sendMaintenanceMessage(ticketId, ticket.ownerId, text)
     },
-  ),
-)
+    sendTenantTicketMessage: (ticketId, tenantId, text) => {
+      const ticket = usePrototypeStore.getState().maintenanceTickets.find(
+        (item) => item.id === ticketId && item.tenantId === tenantId,
+      )
+      if (ticket) usePrototypeStore.getState().sendMaintenanceMessage(ticketId, tenantId, text)
+    },
+    createTenantTicket: (ticket) => {
+      if (!ticket.tenantId || !ticket.leaseId) return ''
+      const id = usePrototypeStore.getState().createMaintenanceTicket(ticket.tenantId, ticket.leaseId, {
+        category: ticket.category ?? 'Other',
+        priority: ticket.priority ?? 'Medium',
+        problem: ticket.problem ?? 'Maintenance request details unavailable.',
+        preferredSlot: ticket.preferredSlot ?? 'Coordinate with tenant',
+        assignedTo: ticket.assignedTo ?? 'Not assigned',
+        images: ticket.images ?? [],
+      })
+      return usePrototypeStore.getState().maintenanceTickets.find((item) => item.id === id)?.ticketNo ?? ''
+    },
+    updateTenantTicket: (ticketId, tenantId, patch) => {
+      const ticket = usePrototypeStore.getState().maintenanceTickets.find(
+        (item) => item.id === ticketId && item.tenantId === tenantId,
+      )
+      if (!ticket || ticket.status !== 'Open') return false
+      usePrototypeStore.getState().updateMaintenanceTicket(ticketId, patch)
+      return true
+    },
+  }
+}
+
+export function useOwnerMaintenanceStore<T>(selector: (state: OwnerMaintenanceState) => T): T {
+  const state = usePrototypeStore()
+  return selector(bridgeState(state))
+}
