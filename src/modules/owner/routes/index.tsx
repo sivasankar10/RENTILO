@@ -19,8 +19,15 @@ import { OwnerNotifications } from '../pages/OwnerNotifications'
 import { OwnerMessages } from '../pages/OwnerMessages'
 import { OwnerPremiumPaymentPage } from '../pages/OwnerPremiumPaymentPage'
 import { OwnerBrokerProfile } from '../pages/OwnerBrokerProfile'
+import { OwnerProfile } from '../pages/OwnerProfile'
+import { OwnerInquiries } from '../pages/OwnerInquiries'
+import { OwnerViewings } from '../pages/OwnerViewings'
+import { OwnerPromotions } from '../pages/OwnerPromotions'
+import { OwnerFinancials } from '../pages/OwnerFinancials'
+import { OwnerBrokerManagement } from '../pages/OwnerBrokerManagement'
 
 export const ownerRoutes: RouteObject[] = [
+  // Base routes (available to all)
   { index: true, element: <OwnerDashboard /> },
   { path: 'dashboard', element: <OwnerDashboard /> },
   { path: 'portfolio', element: <OwnerPortfolio /> },
@@ -39,7 +46,15 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'premium-payment', element: <OwnerPremiumPaymentPage /> },
   { path: 'payments/:paymentId', element: <PaymentReceiptPage backRoute={ROUTES.OWNER.PAYMENTS} backLabel="Back to Payments" audience="owner" /> },
   { path: 'settings', element: <OwnerSettings /> },
+  { path: 'profile', element: <OwnerProfile /> },
   { path: 'notifications', element: <OwnerNotifications /> },
   { path: 'messages', element: <OwnerMessages /> },
   { path: 'brokers/:brokerId', element: <OwnerBrokerProfile /> },
+  
+  // Premium features routes
+  { path: 'inquiries', element: <OwnerInquiries /> },
+  { path: 'viewings', element: <OwnerViewings /> },
+  { path: 'brokers', element: <OwnerBrokerManagement /> },
+  { path: 'promotions', element: <OwnerPromotions /> },
+  { path: 'financials', element: <OwnerFinancials /> },
 ]

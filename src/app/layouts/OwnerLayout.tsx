@@ -3,18 +3,23 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
   Building2,
+  Calendar,
   ChevronRight,
   CreditCard,
+  Crown,
   FileText,
   HelpCircle,
   Home,
   LayoutGrid,
   LogOut,
+  Megaphone,
   Menu,
   MessageSquare,
   Settings,
+  Users,
   Wrench,
   X,
+  Zap,
   type LucideIcon,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
@@ -23,31 +28,39 @@ import { useAuth } from '@shared/hooks/useAuth'
 import { useMediaQuery } from '@shared/hooks/useMediaQuery'
 import { cn } from '@shared/utils/cn'
 import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
-import { useOwnerStore } from '@modules/owner/store/ownerStore'
-import { useOwnerPrototype } from '@modules/owner/hooks/useOwnerPrototype'
+import { OWNER_MANAGED_PROPERTIES, useOwnerStore } from '@modules/owner/store/ownerStore'
+import { UpgradeDialog } from '@modules/owner/components/UpgradeDialog'
+import type { OwnerFeature } from '@modules/owner/config/features'
 
 interface OwnerSidebarItem {
   label: string
   href: string
   icon: LucideIcon
-  disabled?: boolean
-  actionOnly?: boolean
+  feature?: OwnerFeature // If set, requires this feature to access
 }
 
-const sidebarItems: OwnerSidebarItem[] = [
+// Base items available to all owners
+const baseSidebarItems: OwnerSidebarItem[] = [
   { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
-  { label: 'Owner Plans & Rules', href: ROUTES.OWNER.PLANS_RULES, icon: Settings },
+  { label: 'Plans & Rules', href: ROUTES.OWNER.PLANS_RULES, icon: Settings },
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
-  { label: 'Maintenance Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
-  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
+  { label: 'Maintenance', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
+]
+
+// Premium features (locked for FREE users)
+const premiumSidebarItems: OwnerSidebarItem[] = [
+  { label: 'Inquiries', href: `${ROUTES.OWNER.ROOT}/inquiries`, icon: Users, feature: 'inquiry_management' },
+  { label: 'Viewings', href: `${ROUTES.OWNER.ROOT}/viewings`, icon: Calendar, feature: 'viewings_calendar' },
+  { label: 'Brokers', href: `${ROUTES.OWNER.ROOT}/brokers`, icon: Users, feature: 'broker_management' },
+  { label: 'Promotions', href: `${ROUTES.OWNER.ROOT}/promotions`, icon: Megaphone, feature: 'promoted_listings' },
+  { label: 'Financials', href: `${ROUTES.OWNER.ROOT}/financials`, icon: CreditCard, feature: 'financial_reports' },
 ]
 
 const mobileNavItems = [
   { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
   { label: 'Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
-  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
 ]
 
@@ -57,7 +70,7 @@ interface OwnerProfileMenuProps {
   displayName: string
   initials: string
   avatar?: string
-  profileMeta: string
+  subscriptionPlan: string
   onLogout: () => void
 }
 
@@ -67,7 +80,7 @@ function OwnerProfileMenu({
   displayName,
   initials,
   avatar,
-  profileMeta,
+  subscriptionPlan,
   onLogout,
 }: OwnerProfileMenuProps) {
   const navigate = useNavigate()
@@ -135,8 +148,15 @@ function OwnerProfileMenu({
             <span className="mt-0.5 block truncate text-xs font-semibold text-brand-on-surface-variant">
               {displayName}
             </span>
-            <span className="mt-0.5 block truncate text-[11px] font-medium text-brand-outline">
-              {profileMeta}
+            <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium">
+              {subscriptionPlan === 'PREMIUM' ? (
+                <>
+                  <Crown size={12} className="text-amber-500" />
+                  <span className="text-amber-600">Premium</span>
+                </>
+              ) : (
+                <span className="text-brand-outline">Free Plan</span>
+              )}
             </span>
           </span>
           <ChevronRight size={18} className="shrink-0 text-brand-outline" />
@@ -173,32 +193,48 @@ export function OwnerLayout() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const isMobile = useMediaQuery('(max-width: 1024px)')
+  
+  // Owner store
+  const subscriptionPlan = useOwnerStore((state) => state.subscriptionPlan)
+  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
+  const hasFeature = useOwnerStore((state) => state.hasFeature)
+  const showUpgradePrompt = useOwnerStore((state) => state.showUpgradePrompt)
+  
   const displayName = user ? `${user.firstName} ${user.lastName}` : 'Johnathan Smith'
   const initials = user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}` : 'JS'
-  const profileMeta = user?.email ?? user?.phone ?? 'Manage owner profile'
   const notificationsActive = pathname.startsWith(ROUTES.OWNER.NOTIFICATIONS)
   const messagesActive = pathname.startsWith(ROUTES.OWNER.MESSAGES)
   const profileActive = pathname.startsWith(ROUTES.OWNER.SETTINGS)
-  const { properties } = useOwnerPrototype()
-  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
-  const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
-  const currentPropertyId = properties.some((property) => property.id === selectedPropertyId)
-    ? selectedPropertyId ?? ''
-    : properties[0]?.id ?? ''
-
-  useEffect(() => {
-    if (currentPropertyId && currentPropertyId !== selectedPropertyId) setSelectedProperty(currentPropertyId)
-  }, [currentPropertyId, selectedPropertyId, setSelectedProperty])
+  // const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  // const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
+  const currentPropertyId = selectedPropertyId ?? OWNER_MANAGED_PROPERTIES[0]?.id ?? ''
   const canSwitchMode =
     Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
+  
+  // const planConfig = PLAN_CONFIG[subscriptionPlan]
+  const isPremium = subscriptionPlan === 'PREMIUM'
+  // const propertyLimitReached = !isPremium && planConfig.propertyLimit > 0 && planConfig.propertyLimit <= 1
 
   const handleLogout = () => {
     logout()
     navigate(ROUTES.AUTH.LOGIN)
   }
 
+  const handleNavClick = (item: OwnerSidebarItem) => {
+    if (item.feature && !hasFeature(item.feature)) {
+      showUpgradePrompt(item.feature)
+      return false
+    }
+    if (isMobile) setSidebarOpen(false)
+    return true
+  }
+
   return (
     <div className="min-h-screen bg-canvas-alt font-manrope text-text-primary">
+      {/* Upgrade Dialog */}
+      <UpgradeDialog />
+      
       <header className="fixed inset-x-0 top-0 z-40 h-16 border-b border-brand-container-low bg-brand-surface text-brand shadow-sm">
         <div className="mx-auto flex h-full w-full items-center gap-6 px-6">
           <button
@@ -287,7 +323,7 @@ export function OwnerLayout() {
                 displayName={displayName}
                 initials={initials}
                 avatar={user?.avatar}
-                profileMeta={profileMeta}
+                subscriptionPlan={subscriptionPlan}
                 onLogout={handleLogout}
               />
             </div>
@@ -320,7 +356,16 @@ export function OwnerLayout() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-body font-semibold text-text-primary">Main Portfolio</p>
-              <p className="text-filter-label uppercase text-text-muted">Free Plan</p>
+              <p className="flex items-center gap-1 text-filter-label uppercase">
+                {isPremium ? (
+                  <>
+                    <Crown size={12} className="text-amber-500" />
+                    <span className="text-amber-600">Premium</span>
+                  </>
+                ) : (
+                  <span className="text-text-muted">Free Plan</span>
+                )}
+              </p>
             </div>
           </div>
           <select
@@ -336,38 +381,16 @@ export function OwnerLayout() {
           </select>
         </div>
 
-        <nav className="flex-1 px-4 py-8">
-          <ul className="space-y-2">
-            {sidebarItems.map((item) => {
+        <nav className="flex-1 overflow-y-auto px-4 py-6">
+          {/* Base Items */}
+          <ul className="space-y-1">
+            {baseSidebarItems.map((item) => {
               const Icon = item.icon
-              if (item.disabled || item.actionOnly) {
-                return (
-                  <li key={item.label}>
-                    <div
-                      className={cn(
-                        'flex items-center gap-3 rounded-button px-3 py-3',
-                        item.disabled
-                          ? 'text-slate-300'
-                          : 'text-text-muted transition-colors duration-200 hover:bg-hover-light hover:text-text-primary'
-                      )}
-                    >
-                      <Icon size={18} />
-                      <span className="text-body font-semibold">{item.label}</span>
-                      {item.disabled && (
-                        <span className="ml-auto text-slate-300">
-                          <CreditCard size={12} />
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                )
-              }
-
               return (
                 <li key={item.href}>
                   <NavLink
                     to={item.href}
-                    onClick={() => isMobile && setSidebarOpen(false)}
+                    onClick={() => handleNavClick(item)}
                     className={({ isActive }) =>
                       cn(
                         'flex items-center gap-3 rounded-button border-r-3 px-3 py-3 text-body font-semibold transition-all duration-200',
@@ -384,7 +407,76 @@ export function OwnerLayout() {
               )
             })}
           </ul>
+          
+          {/* Premium Section */}
+          <div className="mt-6 pt-4 border-t border-outline">
+            <p className="px-3 mb-2 text-filter-label uppercase text-text-muted flex items-center gap-1">
+              <Crown size={12} className="text-amber-500" />
+              Premium Features
+            </p>
+            <ul className="space-y-1">
+              {premiumSidebarItems.map((item) => {
+                const Icon = item.icon
+                const isLocked = item.feature && !hasFeature(item.feature)
+                
+                if (isLocked) {
+                  return (
+                    <li key={item.label}>
+                      <button
+                        type="button"
+                        onClick={() => item.feature && showUpgradePrompt(item.feature)}
+                        className="flex w-full items-center gap-3 rounded-button px-3 py-3 text-body font-semibold text-slate-400 hover:bg-hover-light transition-colors"
+                      >
+                        <Icon size={18} />
+                        <span>{item.label}</span>
+                        <span className="ml-auto text-amber-500">🔒</span>
+                      </button>
+                    </li>
+                  )
+                }
+                
+                return (
+                  <li key={item.href}>
+                    <NavLink
+                      to={item.href}
+                      onClick={() => handleNavClick(item)}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-3 rounded-button border-r-3 px-3 py-3 text-body font-semibold transition-all duration-200',
+                          isActive
+                            ? 'border-primary bg-hover-light text-text-primary'
+                            : 'border-transparent text-text-muted hover:bg-hover-light hover:text-text-primary'
+                        )
+                      }
+                    >
+                      <Icon size={18} />
+                      <span>{item.label}</span>
+                    </NavLink>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
         </nav>
+
+        {/* Upgrade Card - Only show for FREE users */}
+        {!isPremium && (
+          <div className="mx-4 mb-4 rounded-xl bg-gradient-to-br from-navy to-slate-800 p-4 text-white">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap size={16} className="text-amber-400" />
+              <span className="text-sm font-bold">Upgrade to Premium</span>
+            </div>
+            <p className="text-xs text-white/70 mb-3">
+              Unlock analytics, inquiries, promotions & more
+            </p>
+            <button
+              onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
+              className="w-full py-2 rounded-lg bg-white text-navy text-xs font-bold hover:bg-white/90 transition-colors"
+            >
+              Upgrade Now
+            </button>
+          </div>
+        )}
 
         {isMobile && (
           <button

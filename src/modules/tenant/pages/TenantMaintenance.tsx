@@ -3,15 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
 import { useOnboardingStore } from '@shared/store/onboardingStore'
-import {
-  useOwnerMaintenanceStore,
-  type OwnerMaintenanceTicket,
-  type TicketCategory,
-  type TicketStatus,
-} from '../../owner/store/maintenanceStore'
+import { useOwnerMaintenanceStore, type OwnerMaintenanceTicket } from '@modules/owner/store/maintenanceStore'
 import { useTenantId } from '../hooks/useTenantId'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+type TicketCategory = 'Plumbing' | 'Electrical' | 'Appliance' | 'Structural' | 'Pest Control' | 'HVAC' | 'Other'
+type TicketStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed'
 
 interface Ticket {
   id: string
@@ -109,7 +107,6 @@ function TicketRow({ ticket, onEdit, onOpen }: TicketRowProps) {
       className="cursor-pointer px-6 py-5 border-b border-[#f1f5f9] last:border-0 hover:bg-[#fafbfc] transition-colors"
     >
       <div className="flex items-start justify-between gap-4 flex-wrap">
-
         {/* ── Left ── */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
@@ -189,7 +186,6 @@ function TicketRow({ ticket, onEdit, onOpen }: TicketRowProps) {
             )}
           </div>
         </div>
-
       </div>
     </div>
   )
@@ -198,7 +194,6 @@ function TicketRow({ ticket, onEdit, onOpen }: TicketRowProps) {
 // ─── Ticket Form Modal (create + edit) ───────────────────────────────────────
 
 interface TicketFormModalProps {
-  /** When provided the modal is in edit mode */
   initialData?: Ticket
   onClose: () => void
   onSubmit: (data: Pick<Ticket, 'category' | 'problem' | 'images'>) => void
@@ -265,7 +260,6 @@ function TicketFormModal({ initialData, onClose, onSubmit }: TicketFormModalProp
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-7 pb-5 border-b border-[#f1f5f9] flex-shrink-0">
           <div className="flex items-center gap-3">
-            {/* Mode indicator pill */}
             <div className={cn(
               'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0',
               isEdit ? 'bg-amber-50' : 'bg-[#f1f5f9]'
@@ -293,7 +287,6 @@ function TicketFormModal({ initialData, onClose, onSubmit }: TicketFormModalProp
 
         {/* Scrollable form */}
         <form onSubmit={handleSubmit} className="px-7 py-6 flex flex-col gap-5 overflow-y-auto flex-1">
-
           {/* Category */}
           <div>
             <label className="block text-[11px] font-bold tracking-widest text-[#64748b] uppercase mb-2">Category</label>
@@ -390,7 +383,6 @@ function TicketFormModal({ initialData, onClose, onSubmit }: TicketFormModalProp
               ) : isEdit ? 'Save Changes' : 'Submit Request'}
             </button>
           </div>
-
         </form>
       </div>
     </div>
@@ -509,7 +501,6 @@ export function TenantMaintenance() {
 
   return (
     <div className="space-y-0">
-
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
         <div>
@@ -651,9 +642,6 @@ export function TenantMaintenance() {
           </div>
         </div>
       )}
-
     </div>
   )
 }
-
-

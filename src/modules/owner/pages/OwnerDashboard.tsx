@@ -5,10 +5,14 @@ import {
   Bed,
   CheckCircle2,
   Circle,
+  Crown,
   Eye,
   Info,
+  MessageSquare,
   Pencil,
   Ruler,
+  Sparkles,
+  TrendingUp,
   Users,
   Zap,
 } from 'lucide-react'
@@ -17,7 +21,8 @@ import { useAuth } from '@shared/hooks/useAuth'
 import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
 import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
 import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
-import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
+import { PLAN_CONFIG } from '../config/features'
+import { formatSubscriptionDate } from '../services/subscription.service'
 import { useOwnerStore } from '../store/ownerStore'
 
 const tenantSignals = [
@@ -71,6 +76,11 @@ export function OwnerDashboard() {
   const propertyOccupied = Boolean(activeLease)
   const [activityItems, setActivityItems] = useState(initialActivityItems)
   const completedCount = activityItems.filter((item) => item.complete).length
+  
+  // Get subscription state
+  const { subscriptionPlan, subscribedAt } = useOwnerStore()
+  const isPremium = subscriptionPlan === 'PREMIUM'
+  const planConfig = PLAN_CONFIG[subscriptionPlan]
 
   const toggleActivity = (label: string) => {
     setActivityItems((items) =>
@@ -88,10 +98,15 @@ export function OwnerDashboard() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-body-lg font-semibold tracking-tight text-text-primary">
-                  Free Plan Dashboard
+                  {isPremium ? 'Premium Dashboard' : 'Free Plan Dashboard'}
                 </h1>
-                <span className="rounded-pill bg-primary-100 px-2.5 py-1 text-badge uppercase text-primary">
-                  Free
+                <span className={`rounded-pill px-2.5 py-1 text-badge uppercase ${
+                  isPremium 
+                    ? 'bg-amber-100 text-amber-700' 
+                    : 'bg-primary-100 text-primary'
+                }`}>
+                  {isPremium && <Crown size={12} className="inline mr-1 -mt-0.5" />}
+                  {planConfig.name.replace(' Plan', '')}
                 </span>
               </div>
               <p className="mt-2 text-body text-text-muted">
@@ -109,8 +124,16 @@ export function OwnerDashboard() {
             </div>
           </div>
 
+          {/* Premium Welcome Banner - Only show for premium users */}
+          {isPremium && (
+            <PremiumWelcomeBanner subscribedAt={subscribedAt} />
+          )}
+
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
             <div className="space-y-6">
+              {/* Premium Stats Row */}
+              {isPremium && <PremiumStatsRow />}
+              
               <article className="overflow-hidden rounded-card border border-outline bg-white shadow-surface">
                 <button
                   type="button"
@@ -134,6 +157,12 @@ export function OwnerDashboard() {
                   >
                     {propertyOccupied ? 'Occupied' : leaseWithPayment ? 'Pending onboarding' : 'Vacant'}
                   </span>
+                  {isPremium && (
+                    <span className="absolute right-6 top-6 rounded-pill bg-amber-500 px-2.5 py-1 text-badge uppercase text-white flex items-center gap-1">
+                      <Sparkles size={12} />
+                      Promoted
+                    </span>
+                  )}
                   </div>
 
                   <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
@@ -195,7 +224,7 @@ export function OwnerDashboard() {
                 <div className="mt-4 space-y-4">
                   {tenantSignals.map((signal) => {
                     const Icon = signal.icon
-                    const isRestricted = signal.state === 'restricted'
+                    const isRestricted = signal.state === 'restricted' && !isPremium
 
                     return (
                       <div
@@ -338,16 +367,113 @@ export function OwnerDashboard() {
                 </ul>
                 <button
                   type="button"
-                  onClick={() => navigate(ROUTES.OWNER.PLANS_RULES)}
+                  onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
                   className="mt-6 w-full rounded-button bg-primary px-4 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
                 >
-                  Start 7-Day Trial
+                  Upgrade to Premium
                 </button>
               </article>
             </aside>
           </div>
         </section>
       </div>
+    </div>
+  )
+}
+
+
+/* ─────────────────────────────────────────────
+   Premium Welcome Banner
+───────────────────────────────────────────── */
+function PremiumWelcomeBanner({ subscribedAt }: { subscribedAt: string | null }) {
+  return (
+    <div className="rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 p-6 text-white">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+            <Crown size={28} className="text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">Premium Active</h2>
+            <p className="text-white/80 text-sm mt-0.5">
+              {subscribedAt 
+                ? `Subscribed on ${formatSubscriptionDate(subscribedAt)}`
+                : 'All premium features unlocked'
+              }
+            </p>
+          </div>
+        </div>
+        <div className="hidden sm:flex items-center gap-2 bg-white/20 backdrop-blur px-4 py-2 rounded-lg">
+          <CheckCircle2 size={16} />
+          <span className="text-sm font-semibold">Subscription Active</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
+   Premium Stats Row
+───────────────────────────────────────────── */
+function PremiumStatsRow() {
+  const navigate = useNavigate()
+  
+  const stats = [
+    { 
+      label: 'Total Views', 
+      value: '2,847', 
+      change: '+12%', 
+      icon: Eye,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+    },
+    { 
+      label: 'Active Inquiries', 
+      value: '24', 
+      change: '+8%', 
+      icon: Users,
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50',
+    },
+    { 
+      label: 'Messages', 
+      value: '156', 
+      change: '+23%', 
+      icon: MessageSquare,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+    },
+    { 
+      label: 'Conversion Rate', 
+      value: '8.4%', 
+      change: '+2.1%', 
+      icon: TrendingUp,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50',
+    },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {stats.map((stat) => {
+        const Icon = stat.icon
+        return (
+          <div 
+            key={stat.label}
+            className="rounded-xl border border-outline bg-white p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate(ROUTES.OWNER.ANALYTICS)}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
+                <Icon size={18} className={stat.color} />
+              </div>
+              <span className="text-xs font-semibold text-emerald-600">{stat.change}</span>
+            </div>
+            <p className="text-2xl font-bold text-text-primary">{stat.value}</p>
+            <p className="text-xs text-text-muted mt-1">{stat.label}</p>
+          </div>
+        )
+      })}
     </div>
   )
 }
