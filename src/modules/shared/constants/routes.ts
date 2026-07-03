@@ -46,6 +46,7 @@ export const ROUTES = {
     LEASES: '/owner/leases',
     LEASE_DOCUMENTS: (onboardingId: string) => `/owner/leases/${encodeURIComponent(onboardingId)}/documents`,
     TENANTS: '/owner/tenants',
+    PAYMENTS: '/owner/payments',
     ANALYTICS: '/owner/analytics',
     PLANS_RULES: '/owner/plans-rules',
     PREMIUM_PAYMENT: '/owner/premium-payment',

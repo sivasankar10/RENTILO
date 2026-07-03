@@ -1,8 +1,6 @@
 import type { UserRole } from '@shared/constants/roles'
 import type { AuthUserPayload, VerifyOtpResponse } from '../types'
-import { PROTOTYPE_OTP, prototypeUsers } from '@shared/data/prototypeSeed'
-
-const MOCK_OTP = '123456'
+import { PROTOTYPE_OTP } from '@shared/data/prototypeSeed'
 
 /** Subscription plan type for owner accounts */
 type SubscriptionPlan = 'FREE' | 'PREMIUM'
@@ -72,7 +70,7 @@ export function mockVerifyOtp(
     throw new Error('Invalid OTP. Use 123456 for demo.')
   }
 
-  const account = MOCK_ACCOUNTS.get(normalized)
+  const account = MOCK_ACCOUNTS[normalized]
 
   if (!account) {
     return {
@@ -82,18 +80,18 @@ export function mockVerifyOtp(
     }
   }
 
+  const now = new Date().toISOString()
   const user: AuthUserPayload = {
-    id: account.id,
+    id: `mock-${normalized}`,
     email: account.email,
     firstName: account.firstName,
     lastName: account.lastName,
     roles: account.roles,
-    primaryRole: account.primaryRole,
-    avatar: account.avatar,
+    primaryRole: account.roles[0],
     phone: normalized,
     isVerified: true,
-    createdAt: account.createdAt,
-    updatedAt: account.updatedAt,
+    createdAt: now,
+    updatedAt: now,
   }
 
   return {

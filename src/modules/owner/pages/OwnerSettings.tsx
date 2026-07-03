@@ -13,6 +13,8 @@ import {
   User,
   Wrench,
 } from 'lucide-react'
+import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { useOwnerStore } from '../store/ownerStore'
 import { PLAN_CONFIG } from '../config/features'
 import { formatSubscriptionDate, getSubscriptionAge } from '../services/subscription.service'

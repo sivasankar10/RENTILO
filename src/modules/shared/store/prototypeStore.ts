@@ -27,6 +27,10 @@ type PrototypeState = PrototypeStateData & {
   setListingStatus: (listingId: string, status: PrototypeListingStatus) => void
   assignBroker: (propertyId: string, brokerId: string, assignedBy: string) => string | null
   removeBrokerAssignment: (propertyId: string, brokerId: string) => void
+  requestBrokerAssignment: (brokerId: string, propertyId: string) => string | null
+  approveBrokerAssignment: (assignmentId: string) => void
+  rejectBrokerAssignment: (assignmentId: string) => void
+  releaseBrokerAssignment: (assignmentId: string) => void
   requestBrokerListingAccess: (brokerId: string, propertyId: string) => string | null
   requestBrokerListingRemoval: (brokerId: string, listingId: string, reason: string) => string | null
   decideAdminRequest: (requestId: string, decision: 'Approved' | 'Rejected') => void
@@ -381,6 +385,164 @@ export const usePrototypeStore = create<PrototypeState>()(
               : assignment,
           ),
         })),
+
+      // Owner-decided broker assignment request
+      requestBrokerAssignment: (brokerId, propertyId) => {
+        const listing = get().listings.find((item) => item.propertyId === propertyId)
+        if (!listing) return null
+        // Idempotent — return existing pending/active assignment
+        const existing = get().brokerAssignments.find(
+          (a) =>
+            a.brokerId === brokerId &&
+            a.propertyId === propertyId &&
+            (a.status === 'Pending' || a.status === 'Active'),
+        )
+        if (existing) return existing.id
+        const timestamp = nowIso()
+        const assignment: BrokerAssignment = {
+          id: createId('assignment'),
+          propertyId,
+          listingId: listing.id,
+          ownerId: listing.ownerId,
+          brokerId,
+          assignedBy: brokerId,
+          status: 'Pending',
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        }
+        set((state) => ({
+          brokerAssignments: [assignment, ...state.brokerAssignments],
+          notifications: [
+            {
+              id: createId('notif-broker-req'),
+              userId: listing.ownerId,
+              role: 'owner',
+              title: 'Broker access request',
+              description: 'A broker has requested access to your property listing.',
+              action: 'review_broker_request',
+              relatedId: assignment.id,
+              unread: true,
+              important: true,
+              createdAt: timestamp,
+            },
+            ...state.notifications,
+          ],
+        }))
+        return assignment.id
+      },
+
+      approveBrokerAssignment: (assignmentId) => {
+        const assignment = get().brokerAssignments.find((a) => a.id === assignmentId)
+        if (!assignment) return
+        const timestamp = nowIso()
+        set((state) => ({
+          // Mark this one Active, release any other active on same property
+          brokerAssignments: state.brokerAssignments.map((a) => {
+            if (a.id === assignmentId) return { ...a, status: 'Active', updatedAt: timestamp }
+            if (a.propertyId === assignment.propertyId && a.status === 'Active')
+              return { ...a, status: 'Released', updatedAt: timestamp }
+            return a
+          }),
+          // Enable broker flag on listing
+          listings: state.listings.map((l) =>
+            l.propertyId === assignment.propertyId
+              ? { ...l, brokerEnabled: true, updated: 'Just now', updatedAt: timestamp }
+              : l,
+          ),
+          // Create owner_broker chat if one doesn't exist
+          chats: state.chats.some(
+            (t) =>
+              t.type === 'owner_broker' &&
+              t.propertyId === assignment.propertyId &&
+              t.participantIds.includes(assignment.brokerId),
+          )
+            ? state.chats
+            : [
+                {
+                  id: createId('chat-owner-broker'),
+                  type: 'owner_broker' as const,
+                  participantIds: [assignment.ownerId, assignment.brokerId],
+                  propertyId: assignment.propertyId,
+                  listingId: assignment.listingId,
+                  messages: [],
+                  updatedAt: timestamp,
+                },
+                ...state.chats,
+              ],
+          notifications: [
+            {
+              id: createId('notif-broker-approved'),
+              userId: assignment.brokerId,
+              role: 'broker',
+              title: 'Listing access approved',
+              description: 'The owner has approved your listing access request.',
+              action: 'view_assignment',
+              relatedId: assignment.propertyId,
+              unread: true,
+              important: true,
+              createdAt: timestamp,
+            },
+            ...state.notifications,
+          ],
+        }))
+      },
+
+      rejectBrokerAssignment: (assignmentId) => {
+        const assignment = get().brokerAssignments.find((a) => a.id === assignmentId)
+        if (!assignment) return
+        const timestamp = nowIso()
+        set((state) => ({
+          brokerAssignments: state.brokerAssignments.map((a) =>
+            a.id === assignmentId ? { ...a, status: 'Rejected', updatedAt: timestamp } : a,
+          ),
+          notifications: [
+            {
+              id: createId('notif-broker-rejected'),
+              userId: assignment.brokerId,
+              role: 'broker',
+              title: 'Listing access declined',
+              description: 'The owner has declined your listing access request.',
+              action: 'view_assignment',
+              relatedId: assignment.propertyId,
+              unread: true,
+              important: false,
+              createdAt: timestamp,
+            },
+            ...state.notifications,
+          ],
+        }))
+      },
+
+      releaseBrokerAssignment: (assignmentId) => {
+        const assignment = get().brokerAssignments.find((a) => a.id === assignmentId)
+        if (!assignment) return
+        const timestamp = nowIso()
+        set((state) => ({
+          brokerAssignments: state.brokerAssignments.map((a) =>
+            a.id === assignmentId ? { ...a, status: 'Released', updatedAt: timestamp } : a,
+          ),
+          listings: state.listings.map((l) =>
+            l.propertyId === assignment.propertyId
+              ? { ...l, brokerEnabled: false, updated: 'Just now', updatedAt: timestamp }
+              : l,
+          ),
+          notifications: [
+            {
+              id: createId('notif-broker-released'),
+              userId: assignment.brokerId,
+              role: 'broker',
+              title: 'Listing assignment ended',
+              description: 'The owner has released you from this listing.',
+              action: 'view_assignment',
+              relatedId: assignment.propertyId,
+              unread: true,
+              important: false,
+              createdAt: timestamp,
+            },
+            ...state.notifications,
+          ],
+        }))
+      },
 
       requestBrokerListingAccess: (brokerId, propertyId) => {
         const listing = get().listings.find((item) => item.propertyId === propertyId)

@@ -428,6 +428,18 @@ export const prototypeBrokerAssignments: BrokerAssignment[] = [
     createdAt: seedNow,
     updatedAt: seedNow,
   },
+  // Broker2 has requested access to Owner1's Lakeview Studio — pending owner approval
+  {
+    id: 'assignment-broker2-owner1-pending',
+    propertyId: PROTOTYPE_PROPERTY_IDS.owner1,
+    listingId: PROTOTYPE_LISTING_IDS.owner1,
+    ownerId: PROTOTYPE_USER_IDS.owner1,
+    brokerId: PROTOTYPE_USER_IDS.broker2,
+    assignedBy: PROTOTYPE_USER_IDS.broker2,
+    status: 'Pending',
+    createdAt: seedNow,
+    updatedAt: seedNow,
+  },
 ]
 
 export const prototypeChats: ChatThread[] = [
@@ -463,6 +475,18 @@ export const prototypeNotifications: PrototypeNotification[] = [
     relatedId: PROTOTYPE_PROPERTY_IDS.multi1,
     unread: true,
     important: false,
+    createdAt: seedNow,
+  },
+  {
+    id: 'notification-broker2-request-owner1',
+    userId: PROTOTYPE_USER_IDS.owner1,
+    role: 'owner',
+    title: 'Broker access request',
+    description: 'A broker has requested access to your Lakeview Studio listing.',
+    action: 'review_broker_request',
+    relatedId: 'assignment-broker2-owner1-pending',
+    unread: true,
+    important: true,
     createdAt: seedNow,
   },
 ]

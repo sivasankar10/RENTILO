@@ -17,7 +17,6 @@ import {
   Zap,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
-import { useAuth } from '@shared/hooks/useAuth'
 import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
 import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
 import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
@@ -54,24 +53,19 @@ const advantageItems = [
 
 export function OwnerDashboard() {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const { properties } = useOwnerPrototype()
-  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
-  const currentPropertyId = properties.some((property) => property.id === selectedPropertyId) ? selectedPropertyId ?? PRIMARY_OWNER_PROPERTY_ID : properties[0]?.id ?? PRIMARY_OWNER_PROPERTY_ID
-  const ownerId = user?.id ?? DEMO_OWNER.id
   const onboardingRecords = useOnboardingStore((state) => state.records)
   const activeLease = useMemo(
     () =>
-      getOwnerLeaseForProperty(onboardingRecords, ownerId, currentPropertyId, ['active']),
-    [currentPropertyId, onboardingRecords, ownerId],
+      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, ['active']),
+    [onboardingRecords],
   )
   const leaseWithPayment = useMemo(
     () =>
-      getOwnerLeaseForProperty(onboardingRecords, ownerId, currentPropertyId, [
+      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, [
         'payment_completed',
         'active',
       ]),
-    [currentPropertyId, onboardingRecords, ownerId],
+    [onboardingRecords],
   )
   const propertyOccupied = Boolean(activeLease)
   const [activityItems, setActivityItems] = useState(initialActivityItems)
@@ -137,7 +131,7 @@ export function OwnerDashboard() {
               <article className="overflow-hidden rounded-card border border-outline bg-white shadow-surface">
                 <button
                   type="button"
-                  onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(currentPropertyId))}
+                  onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(PRIMARY_OWNER_PROPERTY_ID))}
                   className="block w-full text-left"
                 >
                   <div className="relative h-64 overflow-hidden bg-slate-100">
@@ -205,7 +199,7 @@ export function OwnerDashboard() {
                 <div className="border-t border-outline px-6 pb-6 pt-0 text-left sm:text-right">
                     <button
                       type="button"
-                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_EDIT(currentPropertyId))}
+                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_EDIT(PRIMARY_OWNER_PROPERTY_ID))}
                       className="mt-2 inline-flex items-center gap-2 text-label font-bold text-primary transition-colors duration-200 hover:text-primary-700"
                     >
                       Edit Details
@@ -276,7 +270,7 @@ export function OwnerDashboard() {
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button
                       type="button"
-                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(currentPropertyId))}
+                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(PRIMARY_OWNER_PROPERTY_ID))}
                       className="rounded-button bg-navy px-4 py-2.5 text-label font-bold text-white"
                     >
                       View tenant & documents
@@ -325,54 +319,54 @@ export function OwnerDashboard() {
                   </p>
                 </div>
 
-                <div className="mt-8 space-y-4">
-                  {activityItems.map((item) => (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => toggleActivity(item.label)}
-                      className={
-                        item.complete
-                          ? 'flex w-full items-center gap-3 rounded-button border border-slate-700 bg-white/5 px-4 py-3 text-left text-label font-semibold text-white transition-colors duration-200 hover:bg-white/10'
-                          : 'flex w-full items-center gap-3 rounded-button border border-slate-800 bg-navy px-4 py-3 text-left text-label font-semibold text-slate-500'
-                      }
-                    >
-                      {item.complete ? (
-                        <CheckCircle2 size={18} className="text-status-success" />
-                      ) : (
-                        <Circle size={18} className="text-slate-600" />
-                      )}
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </article>
+                    <div className="mt-8 space-y-4">
+                      {activityItems.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={() => toggleActivity(item.label)}
+                          className={
+                            item.complete
+                              ? 'flex w-full items-center gap-3 rounded-button border border-slate-700 bg-white/5 px-4 py-3 text-left text-label font-semibold text-white transition-colors duration-200 hover:bg-white/10'
+                              : 'flex w-full items-center gap-3 rounded-button border border-slate-800 bg-navy px-4 py-3 text-left text-label font-semibold text-slate-500'
+                          }
+                        >
+                          {item.complete ? (
+                            <CheckCircle2 size={18} className="text-status-success" />
+                          ) : (
+                            <Circle size={18} className="text-slate-600" />
+                          )}
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </article>
 
-              <article className="rounded-card border border-dashed border-primary-100 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Zap size={18} className="text-primary" />
-                  <h2 className="text-body-lg font-semibold text-text-primary">Pro Advantage</h2>
-                </div>
-                <p className="mt-4 text-label leading-5 text-text-muted">
-                  Unlock full analytics, unlimited listings, and priority tenant communication
-                  tools.
-                </p>
-                <ul className="mt-6 space-y-3">
-                  {advantageItems.map((item) => (
-                    <li key={item} className="flex items-center gap-2 text-label text-text-muted">
-                      <CheckCircle2 size={14} className="text-status-success" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
-                  className="mt-6 w-full rounded-button bg-primary px-4 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
-                >
-                  Upgrade to Premium
-                </button>
-              </article>
+                  <article className="rounded-card border border-dashed border-primary-100 bg-white p-6 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <Zap size={18} className="text-primary" />
+                      <h2 className="text-body-lg font-semibold text-text-primary">Pro Advantage</h2>
+                    </div>
+                    <p className="mt-4 text-label leading-5 text-text-muted">
+                      Unlock full analytics, unlimited listings, and priority tenant communication
+                      tools.
+                    </p>
+                    <ul className="mt-6 space-y-3">
+                      {advantageItems.map((item) => (
+                        <li key={item} className="flex items-center gap-2 text-label text-text-muted">
+                          <CheckCircle2 size={14} className="text-status-success" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
+                      className="mt-6 w-full rounded-button bg-primary px-4 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
+                    >
+                      Upgrade to Premium
+                    </button>
+                  </article>
             </aside>
           </div>
         </section>

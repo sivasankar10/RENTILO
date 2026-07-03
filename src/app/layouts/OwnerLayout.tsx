@@ -373,9 +373,9 @@ export function OwnerLayout() {
             onChange={(event) => setSelectedProperty(event.target.value)}
             className="mt-4 w-full rounded-input border border-outline bg-white px-3 py-2 text-label font-medium text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
           >
-            {properties.map((property) => (
+            {OWNER_MANAGED_PROPERTIES.map((property) => (
               <option key={property.id} value={property.id}>
-                {property.title}
+                {property.name}
               </option>
             ))}
           </select>

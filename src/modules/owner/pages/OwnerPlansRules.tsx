@@ -29,8 +29,6 @@ export function OwnerPlansRules() {
   const [isVerified, setIsVerified] = useState(false)
   const [verificationMessage, setVerificationMessage] = useState('')
   const [businessStatus, setBusinessStatus] = useState('Pending Upload')
-  const [showKycModal, setShowKycModal] = useState(false)
-  const [verificationMessage, setVerificationMessage] = useState('')
   const [brokersEnabled, setBrokersEnabled] = useState(false)
   const [notifications, setNotifications] = useState<
     { id: number; message: string; description?: string }[]
@@ -273,44 +271,6 @@ export function OwnerPlansRules() {
         onClose={() => setShowKycModal(false)}
         onVerified={() => handleVerified()}
       />
-    </div>
-  )
-}
-function KycVerificationModal({
-  isOpen,
-  onClose,
-  onVerified,
-}: {
-  isOpen: boolean
-  onClose: () => void
-  onVerified: () => void
-}) {
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-md rounded-modal bg-white p-6 shadow-modal">
-        <h2 className="text-heading-2 font-bold text-text-primary">Verify Identity</h2>
-        <p className="mt-2 text-body text-text-muted">
-          Complete the session-only KYC check to unlock owner payment and broker flows.
-        </p>
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-button border border-outline px-4 py-2 text-body font-semibold text-text-primary hover:bg-hover-light"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onVerified}
-            className="rounded-button bg-navy px-4 py-2 text-body font-semibold text-white hover:bg-slate-800"
-          >
-            Mark Verified
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
