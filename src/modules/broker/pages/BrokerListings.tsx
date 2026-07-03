@@ -498,6 +498,7 @@ export function BrokerListings() {
     suggestedBundles,
     leads,
     requests,
+    pendingAssignments,
     requestAccess,
     requestRemoval,
   } = useBrokerPrototype()
@@ -532,9 +533,8 @@ export function BrokerListings() {
     tags: ['Available', 'Owner listed'],
     trending: property.views > 100,
   }))
-  const requestedPropertyIds = requests
-    .filter((request) => request.type === 'broker_listing_access' && request.status === 'Pending')
-    .flatMap((request) => request.propertyId ? [request.propertyId] : [])
+  // Pending property IDs — from the new owner-decided assignment flow
+  const requestedPropertyIds = pendingAssignments.map((a) => a.propertyId)
   const [search, setSearch] = useState('')
   const [filterTab, setFilterTab] = useState<FilterTab>('all')
   const [requestModalOpen, setRequestModalOpen] = useState(false)

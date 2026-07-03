@@ -44,15 +44,16 @@ const baseSidebarItems: OwnerSidebarItem[] = [
   { label: 'Overview', href: ROUTES.OWNER.DASHBOARD, icon: LayoutGrid },
   { label: 'Plans & Rules', href: ROUTES.OWNER.PLANS_RULES, icon: Settings },
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
+  { label: 'Viewings', href: `${ROUTES.OWNER.ROOT}/viewings`, icon: Calendar },
+  { label: 'Brokers', href: `${ROUTES.OWNER.ROOT}/brokers`, icon: Users },
   { label: 'Maintenance', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
+  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
 
-// Premium features (locked for FREE users)
+// Premium-only features (locked for FREE users)
 const premiumSidebarItems: OwnerSidebarItem[] = [
   { label: 'Inquiries', href: `${ROUTES.OWNER.ROOT}/inquiries`, icon: Users, feature: 'inquiry_management' },
-  { label: 'Viewings', href: `${ROUTES.OWNER.ROOT}/viewings`, icon: Calendar, feature: 'viewings_calendar' },
-  { label: 'Brokers', href: `${ROUTES.OWNER.ROOT}/brokers`, icon: Users, feature: 'broker_management' },
   { label: 'Promotions', href: `${ROUTES.OWNER.ROOT}/promotions`, icon: Megaphone, feature: 'promoted_listings' },
   { label: 'Financials', href: `${ROUTES.OWNER.ROOT}/financials`, icon: CreditCard, feature: 'financial_reports' },
 ]

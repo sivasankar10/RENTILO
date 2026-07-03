@@ -14,10 +14,8 @@ export type OwnerFeature =
   | 'advanced_analytics'
   | 'inquiry_management'
   | 'chat'
-  | 'broker_management'
   | 'promoted_listings'
   | 'promotion_selection'
-  | 'viewings_calendar'
   | 'financial_reports'
   | 'bulk_property_management'
   | 'custom_branding'
@@ -28,18 +26,14 @@ export type OwnerFeature =
 
 // Feature configuration by plan
 const PLAN_FEATURES: Record<SubscriptionPlan, OwnerFeature[]> = {
-  FREE: [
-    // Basic features available to all owners
-  ],
+  FREE: [],
   PREMIUM: [
     'analytics',
     'advanced_analytics',
     'inquiry_management',
     'chat',
-    'broker_management',
     'promoted_listings',
     'promotion_selection',
-    'viewings_calendar',
     'financial_reports',
     'bulk_property_management',
     'custom_branding',
@@ -56,10 +50,8 @@ export const FEATURE_LABELS: Record<OwnerFeature, string> = {
   advanced_analytics: 'Advanced Analytics',
   inquiry_management: 'Inquiry Management',
   chat: 'Messaging',
-  broker_management: 'Broker Management',
   promoted_listings: 'Promoted Listings',
   promotion_selection: 'Promotion Selection',
-  viewings_calendar: 'Viewings Calendar',
   financial_reports: 'Financial Reports',
   bulk_property_management: 'Bulk Property Management',
   custom_branding: 'Custom Branding',
@@ -75,10 +67,8 @@ export const FEATURE_DESCRIPTIONS: Record<OwnerFeature, string> = {
   advanced_analytics: 'Get market insights and advanced reporting',
   inquiry_management: 'Manage tenant inquiries efficiently',
   chat: 'Direct messaging with tenants and brokers',
-  broker_management: 'Assign and manage brokers for your properties',
   promoted_listings: 'Boost visibility with promoted listings',
   promotion_selection: 'Select properties for promotional campaigns',
-  viewings_calendar: 'Schedule and manage property viewings',
   financial_reports: 'Generate comprehensive financial reports',
   bulk_property_management: 'Manage multiple properties at once',
   custom_branding: 'Add your brand to listings',

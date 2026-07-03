@@ -1,37 +1,27 @@
 import type { UserRole } from '@shared/constants/roles'
 import type { AuthUserPayload, VerifyOtpResponse } from '../types'
-import { PROTOTYPE_OTP } from '@shared/data/prototypeSeed'
+import { PROTOTYPE_OTP, prototypeUsers } from '@shared/data/prototypeSeed'
 
 /** Subscription plan type for owner accounts */
 type SubscriptionPlan = 'FREE' | 'PREMIUM'
 
-/** Dev mock: phone (digits only) → account definition */
-const MOCK_ACCOUNTS: Record<
-  string,
-  { roles: UserRole[]; firstName: string; lastName: string; email: string; subscriptionPlan?: SubscriptionPlan }
-> = {
-  '9000000001': { roles: ['tenant'], firstName: 'Test', lastName: 'Tenant', email: 'tenant@rentilo.com' },
-  '9000000002': { roles: ['owner'], firstName: 'Test', lastName: 'Owner', email: 'owner@rentilo.com', subscriptionPlan: 'FREE' },
-  '9000000003': {
-    roles: ['tenant', 'owner'],
-    firstName: 'Test',
-    lastName: 'Dual',
-    email: 'dual@rentilo.com',
-    subscriptionPlan: 'FREE',
-  },
-  '9000000004': { roles: ['broker'], firstName: 'Test', lastName: 'Broker', email: 'broker@rentilo.com' },
-  '9000000005': {
-    roles: ['enterprise'],
-    firstName: 'Test',
-    lastName: 'Enterprise',
-    email: 'enterprise@rentilo.com',
-  },
-  '9000000006': {
-    roles: ['admin'],
-    firstName: 'Test',
-    lastName: 'Admin',
-    email: 'admin@rentilo.com',
-  },
+/** Subscription plans keyed by userId — matches auth.mock MOCK_ACCOUNTS */
+const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
+  'user-owner-multi': 'FREE',
+  'user-owner-1': 'FREE',
+  'user-owner-2': 'FREE',
+  'user-tenant-owner': 'FREE',
+}
+
+// Override Victoria Ashworth (user-owner-7 doesn't exist in seed,
+// but 9000000007 was the old premium test account — keep for compatibility)
+const EXTRA_ACCOUNTS: Record<string, {
+  roles: UserRole[]
+  firstName: string
+  lastName: string
+  email: string
+  subscriptionPlan?: SubscriptionPlan
+}> = {
   '9000000007': {
     roles: ['owner'],
     firstName: 'Victoria',
@@ -70,35 +60,60 @@ export function mockVerifyOtp(
     throw new Error('Invalid OTP. Use 123456 for demo.')
   }
 
-  const account = MOCK_ACCOUNTS[normalized]
-
-  if (!account) {
+  // First look up in the prototype seed users (canonical source of truth)
+  const seedUser = prototypeUsers.find((u) => normalizePhone(u.phone) === normalized)
+  if (seedUser) {
+    const subscriptionPlan = SUBSCRIPTION_PLANS[seedUser.id]
+    const user: AuthUserPayload = {
+      id: seedUser.id,
+      email: seedUser.email,
+      firstName: seedUser.firstName,
+      lastName: seedUser.lastName,
+      roles: seedUser.roles,
+      primaryRole: seedUser.primaryRole,
+      avatar: seedUser.avatar,
+      phone: normalized,
+      isVerified: seedUser.kycStatus === 'Verified',
+      createdAt: seedUser.createdAt,
+      updatedAt: seedUser.updatedAt,
+    }
     return {
-      user: null,
-      token: `mock-pending-${normalized}`,
-      isNewUser: true,
+      user,
+      token: `mock-jwt-${normalized}`,
+      isNewUser: false,
+      subscriptionPlan,
     }
   }
 
-  const now = new Date().toISOString()
-  const user: AuthUserPayload = {
-    id: `mock-${normalized}`,
-    email: account.email,
-    firstName: account.firstName,
-    lastName: account.lastName,
-    roles: account.roles,
-    primaryRole: account.roles[0],
-    phone: normalized,
-    isVerified: true,
-    createdAt: now,
-    updatedAt: now,
+  // Fallback: extra accounts not in the seed (e.g. legacy premium test account)
+  const extra = EXTRA_ACCOUNTS[normalized]
+  if (extra) {
+    const now = new Date().toISOString()
+    const user: AuthUserPayload = {
+      id: `mock-${normalized}`,
+      email: extra.email,
+      firstName: extra.firstName,
+      lastName: extra.lastName,
+      roles: extra.roles,
+      primaryRole: extra.roles[0],
+      phone: normalized,
+      isVerified: true,
+      createdAt: now,
+      updatedAt: now,
+    }
+    return {
+      user,
+      token: `mock-jwt-${normalized}`,
+      isNewUser: false,
+      subscriptionPlan: extra.subscriptionPlan,
+    }
   }
 
+  // Unknown phone
   return {
-    user,
-    token: `mock-jwt-${normalized}`,
+    user: null,
+    token: `mock-pending-${normalized}`,
     isNewUser: false,
-    subscriptionPlan: account.subscriptionPlan,
   }
 }
 
@@ -138,4 +153,4 @@ export function mockEnableRole(
 }
 
 export const AUTH_MOCK_HINT =
-  'Demo OTP: 123456. Tenant1 9000001001, Tenant2 9000001002, MultiPropertyOwner 9000002001, Owner1 9000002002, Owner2 9000002003, Broker1 9000003001, Broker2 9000003002, Admin1 9000009001, TenantOwner 9000004001.'
+  'Demo OTP: 123456 · Tenant1 9000001001 · Tenant2 9000001002 · MultiOwner 9000002001 · Owner1 9000002002 · Owner2 9000002003 · Broker1 9000003001 · Broker2 9000003002 · Admin1 9000009001 · TenantOwner 9000004001'

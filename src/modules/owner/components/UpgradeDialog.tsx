@@ -8,10 +8,9 @@ import { ROUTES } from '@shared/constants/routes'
 const PREMIUM_HIGHLIGHTS: OwnerFeature[] = [
   'analytics',
   'inquiry_management',
-  'broker_management',
   'promoted_listings',
-  'viewings_calendar',
   'financial_reports',
+  'priority_support',
 ]
 
 export function UpgradeDialog() {
