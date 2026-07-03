@@ -6,6 +6,7 @@ import { MaterialIcon } from '../components/MaterialIcon'
 import { tenantStyles } from '../utils/tenantStyles'
 import { EnableOwnerModeCard } from '../components/EnableOwnerModeCard'
 import { TenantKycSection } from '../components/TenantKycSection'
+import { TenantHomeBackBar } from '../components/TenantHomeBackBar'
 
 const AVATAR_SRC =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBsjFwGI8TSSdoEXUZWAE-nRGmK8p1eH8KgYLjT3Urn8_obEczpwXsONy_TGRwKE0xPxoIiwJBviAzhbr8_8hIDA4l_kLNXdDbBX6-QfmRcjzG89x6vzPJXOX37ffQJu6xx0_zNwcREd9vf8PK0Du-IaTWhO6oVo0nqBbRArkk5eIc0SIYI174D3jXGPi3s-g82-4iFdrt9-Rhjwsej9Y7K0PTNiC4gdcsm5cL4dCFxk6wfXLf_ncUSgwvGRPdp_YbPZzioXRLYcnuV'
@@ -49,6 +50,7 @@ export function EditProfilePage() {
   return (
     <div className="flex flex-1 flex-col bg-brand-background font-body">
       <main className="flex-1 w-full max-w-[900px] mx-auto px-8 py-8 pb-16">
+        <TenantHomeBackBar />
         <form
           className="bg-brand-container-lowest rounded-2xl border border-brand-outline-variant shadow-card px-10 py-8 max-md:px-5"
           onSubmit={handleSubmit}

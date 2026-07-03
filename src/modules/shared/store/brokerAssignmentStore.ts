@@ -1,65 +1,90 @@
 /**
- * brokerAssignmentStore — bridge store for the Owner ↔ Broker assignment workflow.
+ * brokerAssignmentStore — bridge store for Owner/Broker read-only views of
+ * Admin-managed broker assignments.
  *
- * Mirrors the pattern of useOnboardingStore:
- * - Reads from usePrototypeStore (single source of truth)
- * - Derives a rich view model on every render
- * - Exposes typed action wrappers so UI components stay logic-free
+ * IMPORTANT: Per the Broker↔Owner workflow rule, assignment is ALWAYS
+ * initiated and decided by Admin (see prototypeStore.assignBroker /
+ * requestBrokerListingAccess / decideAdminRequest). Owners and Brokers can
+ * only READ their assignment state here — no approve/reject/request actions
+ * belong in this store. Broker requests go through
+ * useBrokerPrototype().requestAccess -> requestBrokerListingAccess (Admin-routed).
  */
 
+import { useMemo } from 'react'
 import { usePrototypeStore } from './prototypeStore'
-import {
-  selectOwnerActiveBrokers,
-  selectOwnerBrokerRequests,
-  selectBrokerAssignmentsForBroker,
-  selectBrokerCommissions,
-  type BrokerAssignmentBundle,
-} from './prototypeSelectors'
-import type { PrototypePayment } from '@shared/types/prototype'
+import type { BrokerAssignment, PrototypePayment, PrototypeListing, PrototypeProperty, PrototypeUser } from '@shared/types/prototype'
 
-// ─── View models ─────────────────────────────────────────────────────────────
+// ─── View model ──────────────────────────────────────────────────────────────
+
+export interface BrokerAssignmentBundle {
+  assignment: BrokerAssignment
+  broker: PrototypeUser
+  property: PrototypeProperty
+  listing: PrototypeListing
+}
+
+// ─── Internal helper ─────────────────────────────────────────────────────────
+
+function buildBundle(
+  assignment: BrokerAssignment,
+  users: PrototypeUser[],
+  properties: PrototypeProperty[],
+  listings: PrototypeListing[],
+): BrokerAssignmentBundle | null {
+  const broker = users.find((u) => u.id === assignment.brokerId)
+  const property = properties.find((p) => p.id === assignment.propertyId)
+  const listing = listings.find((l) => l.id === assignment.listingId)
+  if (!broker || !property || !listing) return null
+  return { assignment, broker, property, listing }
+}
+
+// ─── Owner-facing hook (read-only) ───────────────────────────────────────────
 
 export interface OwnerBrokerState {
-  pendingRequests: BrokerAssignmentBundle[]
+  /** Brokers Admin has actively assigned to this owner's properties */
   activeBrokers: BrokerAssignmentBundle[]
-  approveBrokerAssignment: (assignmentId: string) => void
-  rejectBrokerAssignment: (assignmentId: string) => void
-  releaseBrokerAssignment: (assignmentId: string) => void
 }
 
-export interface BrokerAssignmentState {
-  assignments: BrokerAssignmentBundle[]
-  commissions: PrototypePayment[]
-  requestAssignment: (propertyId: string) => string | null
-  releaseSelf: (assignmentId: string) => void
-}
-
-// ─── Owner-facing hook ───────────────────────────────────────────────────────
-
-/** Used by OwnerBrokerManagement page */
+/** Used by OwnerBrokerManagement — read-only, Admin owns the assignment lifecycle */
 export function useOwnerBrokerStore(ownerId: string): OwnerBrokerState {
   const store = usePrototypeStore()
 
-  return {
-    pendingRequests: selectOwnerBrokerRequests(ownerId),
-    activeBrokers: selectOwnerActiveBrokers(ownerId),
-    approveBrokerAssignment: store.approveBrokerAssignment,
-    rejectBrokerAssignment: store.rejectBrokerAssignment,
-    releaseBrokerAssignment: store.releaseBrokerAssignment,
-  }
+  const activeBrokers = useMemo(() =>
+    store.brokerAssignments
+      .filter((a) => a.ownerId === ownerId && a.status === 'Active')
+      .map((a) => buildBundle(a, store.users, store.properties, store.listings))
+      .filter((b): b is BrokerAssignmentBundle => b !== null),
+    [ownerId, store.brokerAssignments, store.users, store.properties, store.listings],
+  )
+
+  return { activeBrokers }
 }
 
-// ─── Broker-facing hook ──────────────────────────────────────────────────────
+// ─── Broker-facing hook (read-only) ──────────────────────────────────────────
 
-/** Used by BrokerListings / BrokerAssignedProperties pages */
+export interface BrokerAssignmentState {
+  /** Properties Admin has actively assigned to this broker */
+  activeAssignments: BrokerAssignmentBundle[]
+  commissions: PrototypePayment[]
+}
+
+/** Used by BrokerListings/BrokerAssignedProperties — read-only assignment state.
+ *  To request new access, use useBrokerPrototype().requestAccess (Admin-routed). */
 export function useBrokerAssignmentStore(brokerId: string): BrokerAssignmentState {
   const store = usePrototypeStore()
 
-  return {
-    assignments: selectBrokerAssignmentsForBroker(brokerId),
-    commissions: selectBrokerCommissions(brokerId),
-    requestAssignment: (propertyId: string) =>
-      store.requestBrokerAssignment(brokerId, propertyId),
-    releaseSelf: store.releaseBrokerAssignment,
-  }
+  const activeAssignments = useMemo(() =>
+    store.brokerAssignments
+      .filter((a) => a.brokerId === brokerId && a.status === 'Active')
+      .map((a) => buildBundle(a, store.users, store.properties, store.listings))
+      .filter((b): b is BrokerAssignmentBundle => b !== null),
+    [brokerId, store.brokerAssignments, store.users, store.properties, store.listings],
+  )
+
+  const commissions = useMemo(() =>
+    store.payments.filter((p) => p.brokerId === brokerId && p.category === 'COMMISSION'),
+    [brokerId, store.payments],
+  )
+
+  return { activeAssignments, commissions }
 }

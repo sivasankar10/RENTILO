@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Clock3, FileSignature, Printer, Send } from 'lucide-react'
+import { CheckCircle2, Clock3, FileSignature, Printer, Send } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { useOnboardingStore, tenantCanViewAgreement } from '@shared/store/onboardingStore'
@@ -90,10 +90,7 @@ export function TenantAgreementReview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-body font-semibold text-text-muted hover:text-navy">
-          <ArrowLeft size={17} /> Back
-        </button>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <button onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-button border border-outline bg-white px-4 py-2 text-body font-semibold text-navy">
           <Printer size={16} /> Print / Save PDF
         </button>

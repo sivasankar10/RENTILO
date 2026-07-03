@@ -1,5 +1,6 @@
 import type { UserRole } from '@shared/constants/roles'
 import type {
+  AdminRequest,
   BrokerAssignment,
   ChatThread,
   PrototypeListing,
@@ -428,18 +429,6 @@ export const prototypeBrokerAssignments: BrokerAssignment[] = [
     createdAt: seedNow,
     updatedAt: seedNow,
   },
-  // Broker2 has requested access to Owner1's Lakeview Studio — pending owner approval
-  {
-    id: 'assignment-broker2-owner1-pending',
-    propertyId: PROTOTYPE_PROPERTY_IDS.owner1,
-    listingId: PROTOTYPE_LISTING_IDS.owner1,
-    ownerId: PROTOTYPE_USER_IDS.owner1,
-    brokerId: PROTOTYPE_USER_IDS.broker2,
-    assignedBy: PROTOTYPE_USER_IDS.broker2,
-    status: 'Pending',
-    createdAt: seedNow,
-    updatedAt: seedNow,
-  },
 ]
 
 export const prototypeChats: ChatThread[] = [
@@ -477,17 +466,32 @@ export const prototypeNotifications: PrototypeNotification[] = [
     important: false,
     createdAt: seedNow,
   },
+  // Broker2 has requested access to Owner1's Lakeview Studio — routed to Admin, not Owner
   {
-    id: 'notification-broker2-request-owner1',
-    userId: PROTOTYPE_USER_IDS.owner1,
-    role: 'owner',
+    id: 'notification-admin-broker2-request',
+    role: 'admin',
     title: 'Broker access request',
-    description: 'A broker has requested access to your Lakeview Studio listing.',
+    description: 'Broker2 has requested access to Owner1\'s Lakeview Studio listing.',
     action: 'review_broker_request',
-    relatedId: 'assignment-broker2-owner1-pending',
+    relatedId: 'request-broker2-owner1',
     unread: true,
     important: true,
     createdAt: seedNow,
+  },
+]
+
+// Broker2's request to manage Owner1's Lakeview Studio — awaiting Admin decision.
+// Owner is never notified or involved until Admin approves, which then calls assignBroker().
+export const prototypeAdminRequests: AdminRequest[] = [
+  {
+    id: 'request-broker2-owner1',
+    type: 'broker_listing_access',
+    requesterId: PROTOTYPE_USER_IDS.broker2,
+    propertyId: PROTOTYPE_PROPERTY_IDS.owner1,
+    listingId: PROTOTYPE_LISTING_IDS.owner1,
+    status: 'Pending',
+    createdAt: seedNow,
+    updatedAt: seedNow,
   },
 ]
 
@@ -503,7 +507,7 @@ export const initialPrototypeState: PrototypeStateData = {
   chats: prototypeChats,
   maintenanceTickets: [],
   notifications: prototypeNotifications,
-  adminRequests: [],
+  adminRequests: prototypeAdminRequests,
 }
 
 

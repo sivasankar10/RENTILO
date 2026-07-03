@@ -185,57 +185,7 @@ export function selectPrototypeUserById(userId: string): PrototypeUser | undefin
   return state().users.find((user) => user.id === userId)
 }
 
-
-// ─── Owner ↔ Broker Assignment Selectors ─────────────────────────────────────
-
-export interface BrokerAssignmentBundle {
-  assignment: BrokerAssignment
-  broker: PrototypeUser
-  property: PrototypeProperty
-  listing: PrototypeListing
-}
-
-function assignmentBundle(
-  data: PrototypeStateData,
-  assignment: BrokerAssignment,
-): BrokerAssignmentBundle | null {
-  const broker = data.users.find((u) => u.id === assignment.brokerId)
-  const property = data.properties.find((p) => p.id === assignment.propertyId)
-  const listing = data.listings.find((l) => l.id === assignment.listingId)
-  if (!broker || !property || !listing) return null
-  return { assignment, broker, property, listing }
-}
-
-/** All pending requests across all owner's properties */
-export function selectOwnerBrokerRequests(ownerId: string): BrokerAssignmentBundle[] {
-  const data = state()
-  return data.brokerAssignments
-    .filter((a) => a.ownerId === ownerId && a.status === 'Pending')
-    .map((a) => assignmentBundle(data, a))
-    .filter((b): b is BrokerAssignmentBundle => Boolean(b))
-}
-
-/** All active broker assignments for an owner */
-export function selectOwnerActiveBrokers(ownerId: string): BrokerAssignmentBundle[] {
-  const data = state()
-  return data.brokerAssignments
-    .filter((a) => a.ownerId === ownerId && a.status === 'Active')
-    .map((a) => assignmentBundle(data, a))
-    .filter((b): b is BrokerAssignmentBundle => Boolean(b))
-}
-
-/** All assignments for a broker (any status) — for broker status display */
-export function selectBrokerAssignmentsForBroker(brokerId: string): BrokerAssignmentBundle[] {
-  const data = state()
-  return data.brokerAssignments
-    .filter((a) => a.brokerId === brokerId)
-    .map((a) => assignmentBundle(data, a))
-    .filter((b): b is BrokerAssignmentBundle => Boolean(b))
-}
-
-/** Commission payments for a broker */
-export function selectBrokerCommissions(brokerId: string): PrototypePayment[] {
-  return state().payments.filter(
-    (p) => p.brokerId === brokerId && p.category === 'COMMISSION',
-  )
-}
+// Note: Owner/Broker assignment read-models now live in
+// @shared/store/brokerAssignmentStore.ts (useOwnerBrokerStore /
+// useBrokerAssignmentStore) — those hooks subscribe reactively via
+// usePrototypeStore() instead of one-shot getState() snapshots used here.

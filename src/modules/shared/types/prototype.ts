@@ -91,7 +91,7 @@ export interface PrototypeListing {
   updatedAt: string
 }
 
-export type BrokerAssignmentStatus = 'Active' | 'Pending' | 'Released' | 'Rejected'
+export type BrokerAssignmentStatus = 'Active' | 'Pending' | 'Released'
 
 export interface BrokerAssignment {
   id: string

@@ -533,8 +533,10 @@ export function BrokerListings() {
     tags: ['Available', 'Owner listed'],
     trending: property.views > 100,
   }))
-  // Pending property IDs — from the new owner-decided assignment flow
-  const requestedPropertyIds = pendingAssignments.map((a) => a.propertyId)
+  // Property IDs with a pending Admin-review request (broker_listing_access)
+  const requestedPropertyIds = pendingAssignments
+    .map((a) => a.propertyId)
+    .filter((id): id is string => Boolean(id))
   const [search, setSearch] = useState('')
   const [filterTab, setFilterTab] = useState<FilterTab>('all')
   const [requestModalOpen, setRequestModalOpen] = useState(false)

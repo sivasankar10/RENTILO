@@ -32,9 +32,9 @@ export function useBrokerPrototype() {
       ),
       leads: state.applications.filter((application) => application.brokerId === brokerId),
       requests: state.adminRequests.filter((request) => request.requesterId === brokerId),
-      // pending assignment requests from the new owner-decided flow
-      pendingAssignments: state.brokerAssignments.filter(
-        (a) => a.brokerId === brokerId && a.status === 'Pending',
+      // Pending listing-access requests awaiting Admin decision (broker_listing_access)
+      pendingAssignments: state.adminRequests.filter(
+        (r) => r.requesterId === brokerId && r.type === 'broker_listing_access' && r.status === 'Pending',
       ),
       notifications: state.notifications.filter(
         (notification) =>
@@ -48,7 +48,8 @@ export function useBrokerPrototype() {
       ),
       users: state.users,
       properties: state.properties,
-      requestAccess: (propertyId: string) => state.requestBrokerAssignment(brokerId, propertyId),
+      // Broker-initiated request — always routed to Admin for decision, never to Owner.
+      requestAccess: (propertyId: string) => state.requestBrokerListingAccess(brokerId, propertyId),
       requestRemoval: (listingId: string, reason: string) =>
         state.requestBrokerListingRemoval(brokerId, listingId, reason),
       sendMessage: (threadId: string, text: string) =>

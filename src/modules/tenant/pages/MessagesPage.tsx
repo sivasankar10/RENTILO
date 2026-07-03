@@ -5,6 +5,7 @@ import { ChatWindow } from '../components/chat/ChatWindow'
 import { useTenantChatStore } from '../store/chatStore'
 import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { useTenantId } from '../hooks/useTenantId'
+import { TenantHomeBackBar } from '../components/TenantHomeBackBar'
 import type { ChatConversation } from '../types/chat'
 
 export function MessagesPage() {
@@ -76,9 +77,14 @@ export function MessagesPage() {
   }
 
   return (
-    <div className="flex max-h-[calc(100vh-73px)] min-h-0 flex-1 bg-brand-background">
-      <ConversationSidebar conversations={mergedConversations} activeId={activeConversation.id} onSelect={setActiveId} />
-      <ChatWindow conversation={activeConversation} onSendMessage={handleSendMessage} />
+    <div className="flex min-h-0 flex-1 flex-col bg-brand-background">
+      <div className="px-6 pt-4">
+        <TenantHomeBackBar />
+      </div>
+      <div className="flex max-h-[calc(100vh-73px)] min-h-0 flex-1">
+        <ConversationSidebar conversations={mergedConversations} activeId={activeConversation.id} onSelect={setActiveId} />
+        <ChatWindow conversation={activeConversation} onSendMessage={handleSendMessage} />
+      </div>
     </div>
   )
 }
