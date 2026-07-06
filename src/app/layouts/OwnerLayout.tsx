@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   Bell,
@@ -30,6 +30,7 @@ import { cn } from '@shared/utils/cn'
 import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
 import { OWNER_MANAGED_PROPERTIES, useOwnerStore } from '@modules/owner/store/ownerStore'
 import { UpgradeDialog } from '@modules/owner/components/UpgradeDialog'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import type { OwnerFeature } from '@modules/owner/config/features'
 
 interface OwnerSidebarItem {
@@ -63,6 +64,7 @@ const mobileNavItems = [
   { label: 'Portfolio', href: ROUTES.OWNER.PORTFOLIO, icon: Building2 },
   { label: 'Tickets', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
+  { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
 ]
 
 interface OwnerProfileMenuProps {
@@ -201,6 +203,13 @@ export function OwnerLayout() {
   const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
   const hasFeature = useOwnerStore((state) => state.hasFeature)
   const showUpgradePrompt = useOwnerStore((state) => state.showUpgradePrompt)
+
+  // Unread notification count from prototypeStore (broker requests, assignments etc.)
+  const unreadProtoCount = usePrototypeStore((state) =>
+    state.notifications.filter(
+      (n) => n.unread && (n.userId === user?.id || (n.role === 'owner' && !n.userId)),
+    ).length,
+  )
   
   const displayName = user ? `${user.firstName} ${user.lastName}` : 'Johnathan Smith'
   const initials = user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}` : 'JS'
@@ -213,9 +222,7 @@ export function OwnerLayout() {
   const canSwitchMode =
     Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
   
-  // const planConfig = PLAN_CONFIG[subscriptionPlan]
   const isPremium = subscriptionPlan === 'PREMIUM'
-  // const propertyLimitReached = !isPremium && planConfig.propertyLimit > 0 && planConfig.propertyLimit <= 1
 
   const handleLogout = () => {
     logout()
@@ -268,13 +275,18 @@ export function OwnerLayout() {
             <NavLink
               to={ROUTES.OWNER.NOTIFICATIONS}
               className={cn(
-                'rounded-button p-2 text-brand transition-colors duration-200 hover:bg-brand-container-low',
+                'relative rounded-button p-2 text-brand transition-colors duration-200 hover:bg-brand-container-low',
                 notificationsActive && 'bg-brand-container-low'
               )}
               aria-label="Notifications"
               aria-current={notificationsActive ? 'page' : undefined}
             >
               <Bell size={18} />
+              {unreadProtoCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {unreadProtoCount > 9 ? '9+' : unreadProtoCount}
+                </span>
+              )}
             </NavLink>
             <NavLink
               to={ROUTES.OWNER.MESSAGES}

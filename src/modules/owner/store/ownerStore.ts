@@ -1,18 +1,8 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import type { 
-  SubscriptionPlan, 
-  SubscriptionStatus, 
-  OwnerFeature 
-} from '../config/features'
-import { hasFeature, getEnabledFeatures } from '../config/features'
-import { 
-  getSubscription, 
-  upgradeToPremium as upgradeSubscription,
-  downgradeToFree as downgradeSubscription,
-  resetSubscription,
-  type SubscriptionData 
-} from '../services/subscription.service'
+import type { SubscriptionPlan, SubscriptionStatus, OwnerFeature } from '../config/features'
+import { hasFeature as hasFeatureForPlan, getEnabledFeatures } from '../config/features'
+import { upgradeToPremium as upgradeToPremiumService, resetSubscription } from '../services/subscription.service'
 import type {
   OwnerProfile,
   OwnerProperty,
@@ -88,13 +78,13 @@ export interface OwnerRegisterPropertyFormData {
   photos: string[]
   virtualTourUrl: string
   baseRent: string
-  priceNegotiable?: boolean
+  priceNegotiable: boolean
   securityDeposit: string
   depositUnit: string
   availableFrom: string
-  visitWeekday?: string
-  visitStartTime?: string
-  visitEndTime?: string
+  visitWeekday: string
+  visitStartTime: string
+  visitEndTime: string
   leaseDuration: number
   noticePeriod: string
   utilities: {
@@ -136,16 +126,6 @@ interface OwnerState {
   // Properties
   properties: OwnerProperty[]
   selectedPropertyId: string | null
-  propertyEditDrafts: Record<string, OwnerRegisterPropertyFormData>
-  savedPropertyEditIds: string[]
-  
-  // KYC
-  kycStatus: OwnerKycStatus
-  
-  // Broker integration
-  brokerIntegrationEnabled: boolean
-  assignedBrokerId: string | null
-  brokerReleasedPropertyIds: string[]
   
   // Tenants
   tenants: OwnerTenant[]
@@ -159,50 +139,26 @@ interface OwnerState {
   // Property registration
   registerPropertyDraft: OwnerRegisterPropertyFormData
   sessionRegisterProperties: OwnerSessionProperty[]
-  
-  // UI State
-  isLoading: boolean
+  propertyEditDrafts: Record<string, OwnerRegisterPropertyFormData>
+  savedPropertyEditIds: string[]
+  kycStatus: OwnerKycStatus
+  brokerIntegrationEnabled: boolean
+  assignedBrokerId: string | null
+  brokerReleasedPropertyIds: string[]
+  setSelectedProperty: (id: string | null) => void
+
+  // Upgrade dialog UI state
   showUpgradeDialog: boolean
   upgradeFeature: OwnerFeature | null
-  
+
   // Actions - Subscription
-  setSubscriptionPlan: (plan: SubscriptionPlan) => void
-  setSubscriptionStatus: (status: SubscriptionStatus) => void
-  upgradeToPremium: () => Promise<void>
-  downgradeToFree: () => void
-  resetSubscriptionState: () => void
-  initializeSubscription: () => void
-  applySubscriptionData: (data: SubscriptionData) => void
-  
-  // Actions - Feature check
   hasFeature: (feature: OwnerFeature) => boolean
+  upgradeToPremium: () => Promise<void>
+  setSubscriptionPlan: (plan: SubscriptionPlan) => void
+  resetSubscriptionState: () => void
   showUpgradePrompt: (feature: OwnerFeature) => void
   hideUpgradeDialog: () => void
-  
-  // Actions - Profile
-  setProfile: (profile: OwnerProfile) => void
-  
-  // Actions - Properties
-  setProperties: (properties: OwnerProperty[]) => void
-  setSelectedProperty: (id: string | null) => void
-  getPropertyEditDraft: (propertyId: string) => OwnerRegisterPropertyFormData
-  updatePropertyEditDraft: <K extends keyof OwnerRegisterPropertyFormData>(
-    propertyId: string,
-    key: K,
-    value: OwnerRegisterPropertyFormData[K]
-  ) => void
-  savePropertyEditDraft: (propertyId: string) => void
-  
-  // Actions - KYC
-  setKycStatus: (status: OwnerKycStatus) => void
-  
-  // Actions - Broker integration
-  enableBrokerIntegration: () => void
-  assignBrokerToProperty: (brokerId: string) => void
-  removeBrokerFromProperty: () => void
-  releaseBrokerForProperty: (propertyId: string) => void
-  isBrokerReleasedForProperty: (propertyId: string) => boolean
-  
+
   // Actions - Tenants
   setTenants: (tenants: OwnerTenant[]) => void
   
@@ -220,12 +176,19 @@ interface OwnerState {
   saveRegisterPropertyDraft: () => void
   submitRegisterProperty: () => void
   resetRegisterPropertyDraft: () => void
-  
-  // Actions - UI
-  setIsLoading: (loading: boolean) => void
-  
-  // Reset
-  reset: () => void
+  getPropertyEditDraft: (propertyId: string) => OwnerRegisterPropertyFormData
+  updatePropertyEditDraft: <K extends keyof OwnerRegisterPropertyFormData>(
+    propertyId: string,
+    key: K,
+    value: OwnerRegisterPropertyFormData[K]
+  ) => void
+  savePropertyEditDraft: (propertyId: string) => void
+  setKycStatus: (status: OwnerKycStatus) => void
+  enableBrokerIntegration: () => void
+  assignBrokerToProperty: (brokerId: string) => void
+  removeBrokerFromProperty: () => void
+  releaseBrokerForProperty: (propertyId: string) => void
+  isBrokerReleasedForProperty: (propertyId: string) => boolean
 }
 
 // ─────────────────────────────────────────────
@@ -282,9 +245,6 @@ const initialRegisterPropertyDraft: OwnerRegisterPropertyFormData = {
   petDetails: '',
 }
 
-// ─────────────────────────────────────────────
-// Seeded Property Edit Drafts
-// ─────────────────────────────────────────────
 const seededPropertyEditDrafts: Record<string, OwnerRegisterPropertyFormData> = {
   'opus-tower-14b': {
     propertyName: 'The Opus Tower, 14B',
@@ -326,7 +286,7 @@ const seededPropertyEditDrafts: Record<string, OwnerRegisterPropertyFormData> = 
     ],
     virtualTourUrl: 'https://rentilo.example/tours/opus-14b',
     baseRent: '4500',
-    priceNegotiable: true,
+    priceNegotiable: false,
     securityDeposit: '9000',
     depositUnit: 'Fixed',
     availableFrom: '06/24/2026',
@@ -341,9 +301,6 @@ const seededPropertyEditDrafts: Record<string, OwnerRegisterPropertyFormData> = 
   },
 }
 
-// ─────────────────────────────────────────────
-// Utility Functions
-// ─────────────────────────────────────────────
 const cloneRegisterPropertyData = (
   data: OwnerRegisterPropertyFormData
 ): OwnerRegisterPropertyFormData => ({
@@ -368,108 +325,67 @@ const createSessionProperty = (
   data: cloneRegisterPropertyData(data),
 })
 
-// ─────────────────────────────────────────────
-// Store
-// ─────────────────────────────────────────────
 export const useOwnerStore = create<OwnerState>()(
   persist(
     (set, get) => ({
-      // Initial state
-      subscriptionPlan: 'FREE' as SubscriptionPlan,
-      subscriptionStatus: 'active' as SubscriptionStatus,
-      enabledFeatures: [] as OwnerFeature[],
+      // Subscription defaults (FREE plan, no features enabled)
+      subscriptionPlan: 'FREE',
+      subscriptionStatus: 'active',
+      enabledFeatures: getEnabledFeatures('FREE'),
       subscribedAt: null,
       expiresAt: null,
       isUpgrading: false,
-      upgradeProgress: 'idle' as const,
+      upgradeProgress: 'idle',
+      showUpgradeDialog: false,
+      upgradeFeature: null,
+
+      // Profile / properties / tenants / brokers / analytics — unused placeholders for now
       profile: null,
       properties: [],
-      selectedPropertyId: OWNER_MANAGED_PROPERTIES[0]?.id ?? null,
-      propertyEditDrafts: {},
-      savedPropertyEditIds: [],
-      kycStatus: 'Not Started' as OwnerKycStatus,
-      brokerIntegrationEnabled: false,
-      assignedBrokerId: null,
-      brokerReleasedPropertyIds: [],
       tenants: [],
       brokers: [],
       analytics: null,
+
+      selectedPropertyId: OWNER_MANAGED_PROPERTIES[0]?.id ?? null,
       registerPropertyDraft: cloneRegisterPropertyData(initialRegisterPropertyDraft),
       sessionRegisterProperties: [],
-      isLoading: false,
-      showUpgradeDialog: false,
-      upgradeFeature: null,
-      
-      // Initialize subscription from Local Storage on app load
-      initializeSubscription: () => {
-        const data = getSubscription()
-        set({
-          subscriptionPlan: data.subscriptionPlan,
-          subscriptionStatus: data.subscriptionStatus,
-          enabledFeatures: data.enabledFeatures,
-          subscribedAt: data.subscribedAt ?? null,
-          expiresAt: data.expiresAt ?? null,
-        })
-      },
-      
-      // Apply subscription data from service
-      applySubscriptionData: (data: SubscriptionData) => {
-        set({
-          subscriptionPlan: data.subscriptionPlan,
-          subscriptionStatus: data.subscriptionStatus,
-          enabledFeatures: data.enabledFeatures,
-          subscribedAt: data.subscribedAt ?? null,
-          expiresAt: data.expiresAt ?? null,
-        })
-      },
-      
-      // Subscription actions
-      setSubscriptionPlan: (plan) => set({ 
-        subscriptionPlan: plan,
-        enabledFeatures: getEnabledFeatures(plan),
-      }),
-      
-      setSubscriptionStatus: (status) => set({ subscriptionStatus: status }),
-      
+      propertyEditDrafts: {},
+      savedPropertyEditIds: [],
+      kycStatus: 'Not Started',
+      brokerIntegrationEnabled: false,
+      assignedBrokerId: null,
+      brokerReleasedPropertyIds: [],
+      setSelectedProperty: (id) => set({ selectedPropertyId: id }),
+
+      // ── Subscription actions ──────────────────────────────
+      hasFeature: (feature) => hasFeatureForPlan(get().subscriptionPlan, feature),
       upgradeToPremium: async () => {
-        set({ isUpgrading: true, upgradeProgress: 'idle' })
-        
+        set({ isUpgrading: true, upgradeProgress: 'processing' })
         try {
-          const data = await upgradeSubscription((status) => {
-            set({ upgradeProgress: status })
-          })
-          
-          set({ 
+          const data = await upgradeToPremiumService((status) => set({ upgradeProgress: status }))
+          set({
             subscriptionPlan: data.subscriptionPlan,
             subscriptionStatus: data.subscriptionStatus,
             enabledFeatures: data.enabledFeatures,
             subscribedAt: data.subscribedAt ?? null,
             expiresAt: data.expiresAt ?? null,
-            showUpgradeDialog: false,
-            upgradeFeature: null,
             isUpgrading: false,
             upgradeProgress: 'success',
+            showUpgradeDialog: false,
+            upgradeFeature: null,
           })
         } catch (error) {
-          set({ 
-            isUpgrading: false, 
-            upgradeProgress: 'error' 
-          })
+          set({ isUpgrading: false, upgradeProgress: 'error' })
           throw error
         }
       },
-      
-      downgradeToFree: () => {
-        const data = downgradeSubscription()
-        set({ 
-          subscriptionPlan: data.subscriptionPlan,
-          subscriptionStatus: data.subscriptionStatus,
-          enabledFeatures: data.enabledFeatures,
-          subscribedAt: null,
-          expiresAt: null,
-        })
-      },
-      
+      setSubscriptionPlan: (plan) =>
+        set({
+          subscriptionPlan: plan,
+          enabledFeatures: getEnabledFeatures(plan),
+          subscriptionStatus: 'active',
+          subscribedAt: plan === 'PREMIUM' ? new Date().toISOString() : null,
+        }),
       resetSubscriptionState: () => {
         const data = resetSubscription()
         set({
@@ -480,37 +396,44 @@ export const useOwnerStore = create<OwnerState>()(
           expiresAt: null,
           isUpgrading: false,
           upgradeProgress: 'idle',
+          showUpgradeDialog: false,
+          upgradeFeature: null,
         })
       },
-      
-      // Feature check
-      hasFeature: (feature) => {
-        const { subscriptionPlan } = get()
-        return hasFeature(subscriptionPlan, feature)
-      },
-      
-      showUpgradePrompt: (feature) => set({ 
-        showUpgradeDialog: true, 
-        upgradeFeature: feature 
-      }),
-      
-      hideUpgradeDialog: () => set({ 
-        showUpgradeDialog: false, 
-        upgradeFeature: null 
-      }),
-      
-      // Profile actions
-      setProfile: (profile) => set({ profile }),
-      
-      // Property actions
-      setProperties: (properties) => set({ properties }),
-      setSelectedProperty: (id) => set({ selectedPropertyId: id }),
-      
+      showUpgradePrompt: (feature) => set({ showUpgradeDialog: true, upgradeFeature: feature }),
+      hideUpgradeDialog: () => set({ showUpgradeDialog: false, upgradeFeature: null }),
+
+      // ── Tenants / Brokers / Analytics setters ─────────────
+      setTenants: (tenants) => set({ tenants }),
+      setBrokers: (brokers) => set({ brokers }),
+      setAnalytics: (analytics) => set({ analytics }),
+      updateRegisterPropertyDraft: (key, value) =>
+        set((state) => ({
+          registerPropertyDraft: {
+            ...state.registerPropertyDraft,
+            [key]: value,
+          },
+        })),
+      saveRegisterPropertyDraft: () =>
+        set((state) => ({
+          sessionRegisterProperties: [
+            createSessionProperty(state.registerPropertyDraft, 'draft'),
+            ...state.sessionRegisterProperties,
+          ],
+        })),
+      submitRegisterProperty: () =>
+        set((state) => ({
+          sessionRegisterProperties: [
+            createSessionProperty(state.registerPropertyDraft, 'submitted'),
+            ...state.sessionRegisterProperties,
+          ],
+        })),
+      resetRegisterPropertyDraft: () =>
+        set({ registerPropertyDraft: cloneRegisterPropertyData(initialRegisterPropertyDraft) }),
       getPropertyEditDraft: (propertyId) => {
         const draft = get().propertyEditDrafts[propertyId]
         return cloneRegisterPropertyData(draft ?? getSeededEditDraft(propertyId))
       },
-      
       updatePropertyEditDraft: (propertyId, key, value) =>
         set((state) => {
           const currentDraft = state.propertyEditDrafts[propertyId] ?? getSeededEditDraft(propertyId)
@@ -524,7 +447,6 @@ export const useOwnerStore = create<OwnerState>()(
             },
           }
         }),
-        
       savePropertyEditDraft: (propertyId) =>
         set((state) => {
           const currentDraft = state.propertyEditDrafts[propertyId] ?? getSeededEditDraft(propertyId)
@@ -536,20 +458,10 @@ export const useOwnerStore = create<OwnerState>()(
             savedPropertyEditIds: Array.from(new Set([propertyId, ...state.savedPropertyEditIds])),
           }
         }),
-      
-      // KYC actions
       setKycStatus: (status) => set({ kycStatus: status }),
-      
-      // Broker integration actions
       enableBrokerIntegration: () => set({ brokerIntegrationEnabled: true }),
-      
-      assignBrokerToProperty: (brokerId) => set({ 
-        assignedBrokerId: brokerId, 
-        brokerIntegrationEnabled: true 
-      }),
-      
+      assignBrokerToProperty: (brokerId) => set({ assignedBrokerId: brokerId, brokerIntegrationEnabled: true }),
       removeBrokerFromProperty: () => set({ assignedBrokerId: null }),
-      
       releaseBrokerForProperty: (propertyId) =>
         set((state) => ({
           brokerReleasedPropertyIds: state.brokerReleasedPropertyIds.includes(propertyId)
@@ -557,98 +469,18 @@ export const useOwnerStore = create<OwnerState>()(
             : [...state.brokerReleasedPropertyIds, propertyId],
           assignedBrokerId: null,
         })),
-        
       isBrokerReleasedForProperty: (propertyId) =>
         get().brokerReleasedPropertyIds.includes(propertyId),
-      
-      // Tenant actions
-      setTenants: (tenants) => set({ tenants }),
-      
-      // Broker actions
-      setBrokers: (brokers) => set({ brokers }),
-      
-      // Analytics actions
-      setAnalytics: (analytics) => set({ analytics }),
-      
-      // Property registration actions
-      updateRegisterPropertyDraft: (key, value) =>
-        set((state) => ({
-          registerPropertyDraft: {
-            ...state.registerPropertyDraft,
-            [key]: value,
-          },
-        })),
-        
-      saveRegisterPropertyDraft: () =>
-        set((state) => ({
-          sessionRegisterProperties: [
-            createSessionProperty(state.registerPropertyDraft, 'draft'),
-            ...state.sessionRegisterProperties,
-          ],
-        })),
-        
-      submitRegisterProperty: () =>
-        set((state) => ({
-          sessionRegisterProperties: [
-            createSessionProperty(state.registerPropertyDraft, 'submitted'),
-            ...state.sessionRegisterProperties,
-          ],
-        })),
-        
-      resetRegisterPropertyDraft: () =>
-        set({ registerPropertyDraft: cloneRegisterPropertyData(initialRegisterPropertyDraft) }),
-      
-      // UI actions
-      setIsLoading: (isLoading) => set({ isLoading }),
-      
-      // Reset
-      reset: () => set({
-        subscriptionPlan: 'FREE' as SubscriptionPlan,
-        subscriptionStatus: 'active' as SubscriptionStatus,
-        enabledFeatures: [] as OwnerFeature[],
-        subscribedAt: null,
-        expiresAt: null,
-        isUpgrading: false,
-        upgradeProgress: 'idle' as const,
-        profile: null,
-        properties: [],
-        selectedPropertyId: OWNER_MANAGED_PROPERTIES[0]?.id ?? null,
-        propertyEditDrafts: {},
-        savedPropertyEditIds: [],
-        kycStatus: 'Not Started' as OwnerKycStatus,
-        brokerIntegrationEnabled: false,
-        assignedBrokerId: null,
-        brokerReleasedPropertyIds: [],
-        tenants: [],
-        brokers: [],
-        analytics: null,
-        registerPropertyDraft: cloneRegisterPropertyData(initialRegisterPropertyDraft),
-        sessionRegisterProperties: [],
-        isLoading: false,
-        showUpgradeDialog: false,
-        upgradeFeature: null,
-      }),
     }),
     {
       name: 'rentilo-owner-session',
       storage: createJSONStorage(() => sessionStorage),
-      partialize: (state) => ({
-        selectedPropertyId: state.selectedPropertyId,
-        propertyEditDrafts: state.propertyEditDrafts,
-        savedPropertyEditIds: state.savedPropertyEditIds,
-        kycStatus: state.kycStatus,
-        brokerIntegrationEnabled: state.brokerIntegrationEnabled,
-        assignedBrokerId: state.assignedBrokerId,
-        brokerReleasedPropertyIds: state.brokerReleasedPropertyIds,
-      }),
     }
   )
 )
 
-// Initialize subscription on store creation
-if (typeof window !== 'undefined') {
-  // Defer initialization to avoid SSR issues
-  setTimeout(() => {
-    useOwnerStore.getState().initializeSubscription()
-  }, 0)
-}
+
+
+
+
+
