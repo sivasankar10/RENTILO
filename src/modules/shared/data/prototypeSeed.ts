@@ -332,25 +332,6 @@ export const prototypeProperties: PrototypeProperty[] = [
     badge: 'Recommended',
   }),
   createProperty({
-    id: PROTOTYPE_PROPERTY_IDS.multi2,
-    ownerId: PROTOTYPE_USER_IDS.multiPropertyOwner,
-    title: 'MultiOwner Garden Villa',
-    propertyType: 'Villa',
-    address: '22 Garden Avenue, Whitefield',
-    unit: 'Villa 22',
-    city: 'Bangalore',
-    neighborhood: 'Whitefield',
-    price: 'Rs. 1,20,000',
-    deposit: 'Rs. 2,40,000',
-    beds: 4,
-    baths: 3,
-    sqft: '2,900',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-    tenantPreference: 'Family',
-    furnishing: 'Fully Furnished',
-    parking: 'Two Car Slots',
-  }),
-  createProperty({
     id: PROTOTYPE_PROPERTY_IDS.owner1,
     ownerId: PROTOTYPE_USER_IDS.owner1,
     title: 'Owner1 Lakeview Studio',
@@ -411,7 +392,6 @@ export const prototypeProperties: PrototypeProperty[] = [
 
 export const prototypeListings: PrototypeListing[] = [
   createListing(PROTOTYPE_LISTING_IDS.multi1, PROTOTYPE_PROPERTY_IDS.multi1, PROTOTYPE_USER_IDS.multiPropertyOwner, 'Recommended'),
-  createListing(PROTOTYPE_LISTING_IDS.multi2, PROTOTYPE_PROPERTY_IDS.multi2, PROTOTYPE_USER_IDS.multiPropertyOwner),
   createListing(PROTOTYPE_LISTING_IDS.owner1, PROTOTYPE_PROPERTY_IDS.owner1, PROTOTYPE_USER_IDS.owner1),
   createListing(PROTOTYPE_LISTING_IDS.owner2, PROTOTYPE_PROPERTY_IDS.owner2, PROTOTYPE_USER_IDS.owner2),
   createListing(PROTOTYPE_LISTING_IDS.tenantOwner1, PROTOTYPE_PROPERTY_IDS.tenantOwner1, PROTOTYPE_USER_IDS.tenantOwner),

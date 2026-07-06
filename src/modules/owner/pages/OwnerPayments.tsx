@@ -12,6 +12,8 @@ import {
 import { cn } from '@shared/utils/cn'
 import { useAuth } from '@shared/hooks/useAuth'
 import { usePaymentsStore } from '@shared/store/paymentsStore'
+import { useOwnerStore } from '../store/ownerStore'
+import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 
 type PaymentStatus = 'Received' | 'Pending' | 'Failed'
 type PaymentCategory = 'Rent' | 'Security Deposit' | 'Maintenance' | 'Late Fee' | 'Platform Service'
@@ -183,7 +185,12 @@ export function OwnerPayments() {
   const ownerId = user?.id ?? ''
   const storePayments = usePaymentsStore((state) => state.payments)
   const addTenantPayment = usePaymentsStore((state) => state.addTenantPayment)
-  const ownerPayments = useMemo<OwnerPayment[]>(() => storePayments.filter((payment) => payment.ownerId === ownerId).map((payment) => {
+  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  const { properties } = useOwnerPrototype()
+  const currentPropertyId = properties.some((p) => p.id === selectedPropertyId)
+    ? selectedPropertyId!
+    : properties[0]?.id ?? ''
+  const ownerPayments = useMemo<OwnerPayment[]>(() => storePayments.filter((payment) => payment.ownerId === ownerId && (!payment.propertyId || payment.propertyId === currentPropertyId)).map((payment) => {
     const date = new Date(payment.paidAtIso)
     const category: PaymentCategory = payment.category === 'RENT' ? 'Rent' : payment.category === 'SECURITY DEPOSIT' ? 'Security Deposit' : payment.category === 'MAINTENANCE' ? 'Maintenance' : 'Platform Service'
     return {
@@ -199,7 +206,7 @@ export function OwnerPayments() {
       date: date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
       time: date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
     }
-  }), [ownerId, storePayments])
+  }), [ownerId, storePayments, currentPropertyId])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<PaymentStatus | 'All Status'>('All Status')
   const [page, setPage] = useState(1)

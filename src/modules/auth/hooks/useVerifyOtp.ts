@@ -30,8 +30,13 @@ export function useVerifyOtp() {
       setAuth(normalized, token)
       
       // Set subscription plan for owner users
+      // Only apply the plan from auth if owner store doesn't already have PREMIUM
+      // (preserve in-session upgrades across re-login)
       if (normalized.roles.includes('owner') && subscriptionPlan) {
-        setSubscriptionPlan(subscriptionPlan)
+        const currentPlan = useOwnerStore.getState().subscriptionPlan
+        if (currentPlan !== 'PREMIUM') {
+          setSubscriptionPlan(subscriptionPlan)
+        }
       }
       
       const homeRole = normalized.primaryRole ?? normalized.roles[0]

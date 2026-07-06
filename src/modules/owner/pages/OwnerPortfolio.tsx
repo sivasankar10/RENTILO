@@ -26,10 +26,9 @@ import {
 import { ROUTES } from '@shared/constants/routes'
 import { useAuth } from '@shared/hooks/useAuth'
 import { usePrototypeStore } from '@shared/store/prototypeStore'
-import { PROTOTYPE_USER_IDS } from '@shared/data/prototypeSeed'
 import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
 import { OwnerListingPromotionTable } from '../components/OwnerListingPromotionTable'
-import { PRIMARY_OWNER_PROPERTY_ID, primaryPortfolioProperty } from '../constants/portfolioProperty'
+import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
 import { useOwnerStore } from '../store/ownerStore'
 import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 
@@ -47,119 +46,6 @@ type BrokerCandidate = {
   location: string
   avatar: string
   quote: string
-}
-
-type BrokerAssignmentUpdate = {
-  leadsFound: number
-  qualifiedLeads: number
-  status: string
-  nextAction: string
-  lastUpdated: string
-}
-
-const portfolioProperty = {
-  name: primaryPortfolioProperty.name,
-  address: primaryPortfolioProperty.address,
-}
-
-const suggestedBroker: BrokerCandidate = {
-  id: 'alexander-pierce',
-  conversationId: 6,
-  name: 'Alexander Pierce',
-  title: 'Senior Portfolio Manager',
-  rating: 4.9,
-  reviews: 128,
-  propertiesManaged: '150+',
-  occupancyRate: '98%',
-  responseTime: '12 mins',
-  specialty: 'Luxury rentals and premium tenant vetting',
-  location: 'New York',
-  avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=240&q=80',
-  quote:
-    '12 years of experience in the NY luxury rental market. Specialized in high-occupancy strategies and premium tenant vetting.',
-}
-
-const brokerCandidates: BrokerCandidate[] = [
-  suggestedBroker,
-  {
-    id: 'maya-deshpande',
-    conversationId: 2,
-    name: 'Maya Deshpande',
-    title: 'Tenant Acquisition Lead',
-    rating: 4.8,
-    reviews: 96,
-    propertiesManaged: '118',
-    occupancyRate: '96%',
-    responseTime: '18 mins',
-    specialty: 'Family tenants and lease negotiation',
-    location: 'Manhattan',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=240&q=80',
-    quote:
-      'Strong leasing record for mid and premium apartments with a focus on fast tenant onboarding.',
-  },
-  {
-    id: 'jordan-lee',
-    conversationId: 1,
-    name: 'Jordan Lee',
-    title: 'Residential Leasing Specialist',
-    rating: 4.7,
-    reviews: 84,
-    propertiesManaged: '92',
-    occupancyRate: '94%',
-    responseTime: '21 mins',
-    specialty: 'Young professionals and furnished units',
-    location: 'Brooklyn',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=240&q=80',
-    quote:
-      'Experienced in high-response listing campaigns and guided virtual property tours.',
-  },
-  {
-    id: 'priya-menon',
-    conversationId: 7,
-    name: 'Priya Menon',
-    title: 'Premium Homes Advisor',
-    rating: 4.6,
-    reviews: 73,
-    propertiesManaged: '76',
-    occupancyRate: '93%',
-    responseTime: '25 mins',
-    specialty: 'Verified leads and move-in coordination',
-    location: 'Queens',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=240&q=80',
-    quote:
-      'Known for tight follow-ups, tenant checks, and clean handoffs from viewing to lease signing.',
-  },
-]
-
-const brokerAssignmentUpdates: Record<string, BrokerAssignmentUpdate> = {
-  'alexander-pierce': {
-    leadsFound: 24,
-    qualifiedLeads: 9,
-    status: 'Tenant matching active',
-    nextAction: 'Shortlist review due today',
-    lastUpdated: 'Updated 8 mins ago',
-  },
-  'maya-deshpande': {
-    leadsFound: 18,
-    qualifiedLeads: 7,
-    status: 'Viewing slots being filled',
-    nextAction: 'Follow up with family leads',
-    lastUpdated: 'Updated 14 mins ago',
-  },
-  'jordan-lee': {
-    leadsFound: 15,
-    qualifiedLeads: 5,
-    status: 'Campaign in progress',
-    nextAction: 'Review furnished-unit leads',
-    lastUpdated: 'Updated 21 mins ago',
-  },
-  'priya-menon': {
-    leadsFound: 12,
-    qualifiedLeads: 4,
-    status: 'Verification calls active',
-    nextAction: 'Confirm two move-in dates',
-    lastUpdated: 'Updated 30 mins ago',
-  },
 }
 
 const benefits = [
@@ -181,7 +67,10 @@ export function OwnerPortfolio() {
   const { properties } = useOwnerPrototype()
   const registerPropertyDraft = useOwnerStore((state) => state.registerPropertyDraft)
   const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  const subscriptionPlan = useOwnerStore((state) => state.subscriptionPlan)
+  const isPremium = subscriptionPlan === 'PREMIUM'
   const currentPropertyId = properties.some((property) => property.id === selectedPropertyId) ? selectedPropertyId ?? PRIMARY_OWNER_PROPERTY_ID : properties[0]?.id ?? PRIMARY_OWNER_PROPERTY_ID
+  const activeProperty = properties.find((p) => p.id === currentPropertyId) ?? properties[0]
   const ownerId = user?.id ?? DEMO_OWNER.id
   const [brokerStatus, setBrokerStatus] = useState('Awaiting broker decision.')
   const [propertyPosted, setPropertyPosted] = useState(false)
@@ -195,6 +84,41 @@ export function OwnerPortfolio() {
   const assignSharedBroker = usePrototypeStore((state) => state.assignBroker)
   const removeSharedBroker = usePrototypeStore((state) => state.removeBrokerAssignment)
   const isBrokerReleasedForProperty = useOwnerStore((state) => state.isBrokerReleasedForProperty)
+  const prototypeUsers = usePrototypeStore((state) => state.users)
+  const prototypeLeads = usePrototypeStore((state) => state.applications)
+
+  // Build dynamic broker candidates from prototype store
+  const prototypeBrokers = useMemo(
+    () => prototypeUsers.filter((u) => u.roles.includes('broker')),
+    [prototypeUsers],
+  )
+  const brokerCandidates: BrokerCandidate[] = useMemo(
+    () => prototypeBrokers.map((broker, index) => ({
+      id: broker.id,
+      conversationId: index + 1,
+      name: `${broker.firstName} ${broker.lastName}`,
+      title: index === 0 ? 'Senior Portfolio Manager' : 'Tenant Acquisition Specialist',
+      rating: index === 0 ? 4.9 : 4.7,
+      reviews: index === 0 ? 128 : 96,
+      propertiesManaged: index === 0 ? '150+' : '92',
+      occupancyRate: index === 0 ? '98%' : '95%',
+      responseTime: index === 0 ? '12 mins' : '18 mins',
+      specialty: index === 0 ? 'Premium tenant vetting and luxury rentals' : 'Family tenants and lease coordination',
+      location: 'Bangalore',
+      avatar: broker.avatar ?? 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=240&q=80',
+      quote: index === 0
+        ? 'Specialized in high-occupancy strategies and premium tenant vetting for your properties.'
+        : 'Experienced in fast tenant onboarding and lease negotiations for families and couples.',
+    })),
+    [prototypeBrokers],
+  )
+  const suggestedBroker = brokerCandidates[0] ?? null
+
+  // Dynamic broker leads count for the assigned broker
+  const assignedBrokerLeadsCount = useMemo(
+    () => prototypeLeads.filter((app) => app.brokerId === assignedBrokerId && app.propertyId === currentPropertyId).length,
+    [prototypeLeads, assignedBrokerId, currentPropertyId],
+  )
   const onboardingRecords = useOnboardingStore((state) => state.records)
   const activeLease = useMemo(
     () =>
@@ -217,11 +141,8 @@ export function OwnerPortfolio() {
   const assignedBroker =
     brokerCandidates.find((broker) => broker.id === assignedBrokerId) ?? null
   const cardBroker = assignedBroker ?? suggestedBroker
-  const assignedBrokerUpdate = assignedBroker
-    ? brokerAssignmentUpdates[assignedBroker.id]
-    : null
-  const suggestedBrokerRejected = rejectedBrokerIds.includes(suggestedBroker.id)
-  const suggestedBrokerAssigned = assignedBrokerId === suggestedBroker.id
+  const suggestedBrokerRejected = suggestedBroker ? rejectedBrokerIds.includes(suggestedBroker.id) : false
+  const suggestedBrokerAssigned = suggestedBroker ? assignedBrokerId === suggestedBroker.id : false
   const visibleBrokers = brokerCandidates.filter((broker) => {
     const query = brokerSearch.trim().toLowerCase()
     if (!query) {
@@ -235,19 +156,19 @@ export function OwnerPortfolio() {
 
   const assignBroker = (broker: BrokerCandidate) => {
     assignBrokerToProperty(broker.id)
-    assignSharedBroker(currentPropertyId, broker.id === 'maya-deshpande' || broker.id === 'priya-menon' ? PROTOTYPE_USER_IDS.broker2 : PROTOTYPE_USER_IDS.broker1, ownerId)
+    assignSharedBroker(currentPropertyId, broker.id, ownerId)
     setRejectedBrokerIds((current) => current.filter((id) => id !== broker.id))
-    setBrokerStatus(`${broker.name} has been assigned to ${portfolioProperty.name}.`)
+    setBrokerStatus(`${broker.name} has been assigned to ${activeProperty?.title ?? 'your property'}.`)
     setPropertyPosted(true)
     setBrokerPickerOpen(false)
-    navigate(`${ROUTES.OWNER.MESSAGES}?conversation=${broker.conversationId}`)
+    navigate(ROUTES.OWNER.MESSAGES)
   }
 
   const rejectBroker = (broker: BrokerCandidate) => {
     setRejectedBrokerIds((current) =>
       current.includes(broker.id) ? current : [...current, broker.id],
     )
-    setBrokerStatus(`${broker.name} was rejected for ${portfolioProperty.name}.`)
+    setBrokerStatus(`${broker.name} was rejected for ${activeProperty?.title ?? 'your property'}.`)
   }
 
   const removeAssignedBroker = () => {
@@ -255,10 +176,9 @@ export function OwnerPortfolio() {
       return
     }
 
-    setBrokerStatus(`${assignedBroker.name} was removed from ${portfolioProperty.name}.`)
+    setBrokerStatus(`${assignedBroker.name} was removed from ${activeProperty?.title ?? 'your property'}.`)
     removeBrokerFromProperty()
-    removeSharedBroker(currentPropertyId, PROTOTYPE_USER_IDS.broker1)
-    removeSharedBroker(currentPropertyId, PROTOTYPE_USER_IDS.broker2)
+    removeSharedBroker(currentPropertyId, assignedBrokerId!)
     setPropertyPosted(false)
   }
 
@@ -290,9 +210,9 @@ export function OwnerPortfolio() {
             </div>
 
             <div className="flex flex-col gap-3">
-              <div className="inline-flex items-center gap-2 rounded-button bg-status-error-bg px-4 py-3 text-label font-bold text-status-error-text">
+              <div className={`inline-flex items-center gap-2 rounded-button px-4 py-3 text-label font-bold ${isPremium ? 'bg-amber-50 text-amber-700' : 'bg-status-error-bg text-status-error-text'}`}>
                 <BadgeInfo size={16} />
-                Free Plan: 1/1 Property Listed
+                {isPremium ? `Premium: ${properties.length} Properties Listed` : 'Free Plan: 1/1 Property Listed'}
               </div>
             </div>
           </div>
@@ -301,7 +221,7 @@ export function OwnerPortfolio() {
 
           <div className="flex items-center justify-between text-label text-text-primary">
             <span>Eligible Properties</span>
-            <span className="text-primary">3 Properties Available</span>
+            <span className="text-primary">{properties.length} {properties.length === 1 ? 'Property' : 'Properties'} Available</span>
           </div>
 
           <article
@@ -316,8 +236,8 @@ export function OwnerPortfolio() {
           >
             <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)_160px] md:items-center">
               <img
-                src="https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=700&q=80"
-                alt="Skyline Heights apartment building"
+                src={activeProperty?.image ?? 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=700&q=80'}
+                alt={activeProperty?.title ?? 'Property'}
                 className="h-36 w-full rounded-button object-cover"
               />
 
@@ -325,9 +245,9 @@ export function OwnerPortfolio() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="text-body-lg font-bold text-text-primary">
-                      {portfolioProperty.name}
+                      {activeProperty?.title ?? 'No property'}
                     </h2>
-                    <p className="mt-1 text-label text-text-primary">{portfolioProperty.address}</p>
+                    <p className="mt-1 text-label text-text-primary">{activeProperty ? `${activeProperty.neighborhood}, ${activeProperty.city}` : ''}</p>
                   </div>
                   <span
                     className={
@@ -345,26 +265,26 @@ export function OwnerPortfolio() {
                 <div className="mt-4 flex flex-wrap items-center gap-4 text-label text-text-muted">
                   <span className="inline-flex items-center gap-1">
                     <Bed size={14} />
-                    2 Beds
+                    {activeProperty?.beds ?? 2} Beds
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <Bath size={14} />
-                    2 Baths
+                    {activeProperty?.baths ?? 2} Baths
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <Ruler size={14} />
-                    1,200 sqft
+                    {activeProperty?.sqft ?? '1,240'} sqft
                   </span>
                 </div>
 
                 <p className="mt-8 text-heading-2 font-bold tracking-tight text-primary">
-                  ${Number(registerPropertyDraft.baseRent || 4500).toLocaleString('en-US')}{' '}
-                  <span className="text-label font-medium text-text-muted">/ mo</span>
+                  {activeProperty?.price ?? 'Rs. 85,000'}{' '}
+                  <span className="text-label font-medium text-text-muted">{activeProperty?.pricePeriod ?? '/ mo'}</span>
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 text-label font-semibold">
                   <span className="inline-flex items-center gap-1.5 rounded-pill bg-canvas-alt px-3 py-1.5 text-text-primary">
                     <CalendarClock size={14} />
-                    Visits: {registerPropertyDraft.visitWeekday}, {registerPropertyDraft.visitStartTime} - {registerPropertyDraft.visitEndTime}
+                    Visits: {activeProperty?.visitWeekday ?? registerPropertyDraft.visitWeekday}, {activeProperty?.visitStartTime ?? registerPropertyDraft.visitStartTime} - {activeProperty?.visitEndTime ?? registerPropertyDraft.visitEndTime}
                   </span>
                   <span className="inline-flex items-center gap-2 text-text-primary">
                     Price
@@ -489,7 +409,7 @@ export function OwnerPortfolio() {
               </div>
             </div>
 
-            {assignedBrokerUpdate && (
+            {assignedBroker && (
               <div className="mt-4 rounded-button border border-primary-700 bg-white/5 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-filter-label uppercase tracking-normal text-blue-200">
@@ -502,13 +422,13 @@ export function OwnerPortfolio() {
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-heading-3 font-bold text-white">
-                      {assignedBrokerUpdate.leadsFound}
+                      {assignedBrokerLeadsCount}
                     </p>
                     <p className="mt-1 text-filter-label uppercase text-slate-400">Leads Found</p>
                   </div>
                   <div>
                     <p className="text-heading-3 font-bold text-white">
-                      {assignedBrokerUpdate.qualifiedLeads}
+                      {assignedBrokerLeadsCount}
                     </p>
                     <p className="mt-1 text-filter-label uppercase text-slate-400">Qualified</p>
                   </div>
@@ -516,13 +436,12 @@ export function OwnerPortfolio() {
                 <div className="mt-4 space-y-2 text-label leading-5 text-slate-300">
                   <p>
                     <span className="font-bold text-white">Status:</span>{' '}
-                    {assignedBrokerUpdate.status}
+                    Tenant matching active
                   </p>
                   <p>
                     <span className="font-bold text-white">Next:</span>{' '}
-                    {assignedBrokerUpdate.nextAction}
+                    {assignedBrokerLeadsCount > 0 ? 'Review leads and schedule viewings' : 'Awaiting tenant interest'}
                   </p>
-                  <p className="text-slate-400">{assignedBrokerUpdate.lastUpdated}</p>
                 </div>
               </div>
             )}
@@ -535,7 +454,7 @@ export function OwnerPortfolio() {
               >
                 Remove Broker
               </button>
-            ) : (
+            ) : suggestedBroker ? (
               <div className="mt-6 space-y-0">
                 <button
                   type="button"
@@ -547,7 +466,7 @@ export function OwnerPortfolio() {
                     ? 'Assigned'
                     : suggestedBrokerRejected
                       ? 'Rejected'
-                      : 'Assign'}
+                      : 'Auto Assign'}
                   <ArrowRight size={18} />
                 </button>
                 <button
@@ -559,7 +478,7 @@ export function OwnerPortfolio() {
                   {suggestedBrokerRejected ? 'Rejected' : 'Reject'}
                 </button>
               </div>
-            )}
+            ) : null}
           </article>
 
           <article className="border-l-4 border-primary bg-primary-50 p-5">
@@ -616,7 +535,7 @@ export function OwnerPortfolio() {
                   Choose a Broker
                 </h2>
                 <p className="mt-1 text-body text-text-muted">
-                  Assign a broker to {portfolioProperty.name} or reject unsuitable matches.
+                  Assign a broker to {activeProperty?.title ?? 'your property'} or reject unsuitable matches.
                 </p>
               </div>
               <button
@@ -702,7 +621,7 @@ export function OwnerPortfolio() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setBrokerStatus(`Chat opened with ${broker.name} for ${portfolioProperty.name}.`)
+                                  setBrokerStatus(`Chat opened with ${broker.name} for ${activeProperty?.title ?? 'your property'}.`)
                                 }
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-button border border-outline text-navy transition-colors duration-200 hover:bg-primary-50"
                                 aria-label={`Chat with ${broker.name}`}
@@ -712,7 +631,7 @@ export function OwnerPortfolio() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setBrokerStatus(`Calling ${broker.name} about ${portfolioProperty.name}.`)
+                                  setBrokerStatus(`Calling ${broker.name} about ${activeProperty?.title ?? 'your property'}.`)
                                 }
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-button border border-outline text-navy transition-colors duration-200 hover:bg-primary-50"
                                 aria-label={`Call ${broker.name}`}

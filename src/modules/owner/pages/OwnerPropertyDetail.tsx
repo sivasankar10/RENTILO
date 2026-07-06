@@ -34,6 +34,7 @@ import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { usePaymentsStore } from '@shared/store/paymentsStore'
 import { useOwnerChatStore } from '../store/chatStore'
 import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
+import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 
 const galleryImages = [
   {
@@ -232,9 +233,13 @@ const visitStatusStyles: Record<VisitStatus, string> = {
 export function OwnerPropertyDetail() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { properties } = useOwnerPrototype()
   const ownerId = user?.id ?? DEMO_OWNER.id
   const { propertyId } = useParams<{ propertyId: string }>()
   const ownerPropertyId = propertyId ?? PRIMARY_OWNER_PROPERTY_ID
+  const activeProperty = properties.find((p) => p.id === ownerPropertyId) ?? properties[0]
+  const propertyTitle = activeProperty?.title ?? 'MultiOwner Skyline 14B'
+  const propertyLocation = activeProperty ? `${activeProperty.neighborhood}, ${activeProperty.city}` : 'Indiranagar, Bangalore'
   const [schedulerOpen, setSchedulerOpen] = useState(false)
   const [leadsOpen, setLeadsOpen] = useState(false)
   const [selectedScheduleDate, setSelectedScheduleDate] = useState(calendarDays[0].date)
@@ -305,7 +310,7 @@ export function OwnerPropertyDetail() {
     setCallStatus('')
     setChatMessages((current) => ({
       ...current,
-      [target.id]: current[target.id] ?? [`Hi ${target.name}, this is the owner of The Opus Tower, 14B.`],
+      [target.id]: current[target.id] ?? [`Hi ${target.name}, this is the owner of ${propertyTitle}.`],
     }))
   }
 
@@ -335,7 +340,7 @@ export function OwnerPropertyDetail() {
             <header>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-heading-1 font-extrabold tracking-tight text-navy">
-                  The Opus Tower, 14B
+                  {propertyTitle}
                 </h1>
                 {isOnboarded && (
                   <span className="rounded-pill bg-primary-50 px-3 py-1 text-badge font-bold uppercase text-primary">
@@ -350,7 +355,7 @@ export function OwnerPropertyDetail() {
               </div>
               <p className="mt-2 flex items-center gap-2 text-label font-medium text-text-primary">
                 <MapPin size={14} />
-                Downtown Financial District
+                {propertyLocation}
               </p>
             </header>
 
@@ -510,10 +515,10 @@ export function OwnerPropertyDetail() {
             <div className="sticky top-24 rounded-card border border-outline bg-white p-6 shadow-surface">
               <div className="text-right">
                 <p className="text-heading-2 font-extrabold tracking-tight text-navy">
-                  $4,500
+                  {activeProperty?.price ?? 'Rs. 85,000'}
                   <span className="ml-1 text-body font-semibold text-text-primary">/ mo</span>
                 </p>
-                <p className="text-filter-label uppercase text-text-primary">Deposit: $9,000</p>
+                <p className="text-filter-label uppercase text-text-primary">Deposit: {activeProperty?.deposit ?? 'Rs. 1,70,000'}</p>
               </div>
 
               <div className="mt-8 grid grid-cols-2 gap-5 border-y border-outline py-6">
@@ -877,7 +882,7 @@ export function OwnerPropertyDetail() {
               <div className="flex-1 space-y-3 overflow-y-auto bg-canvas-alt px-5 py-4">
                 <div className="flex justify-start">
                   <div className="max-w-[82%] rounded-2xl rounded-bl-sm bg-white px-4 py-3 text-body text-text-primary shadow-sm">
-                    <p>I saw your activity on The Opus Tower, 14B. How can I help with your visit or questions?</p>
+                    <p>I saw your activity on {propertyTitle}. How can I help with your visit or questions?</p>
                     <p className="mt-1 text-[11px] font-semibold text-text-muted">Owner prompt</p>
                   </div>
                 </div>
