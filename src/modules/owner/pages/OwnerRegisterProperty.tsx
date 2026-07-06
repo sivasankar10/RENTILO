@@ -52,7 +52,9 @@ export function OwnerRegisterProperty() {
   const saveRegisterPropertyDraft = useOwnerStore((state) => state.saveRegisterPropertyDraft)
   const submitRegisterProperty = useOwnerStore((state) => state.submitRegisterProperty)
   const resetRegisterPropertyDraft = useOwnerStore((state) => state.resetRegisterPropertyDraft)
+  const subscriptionPlan = useOwnerStore((state) => state.subscriptionPlan)
   const { createProperty } = useOwnerPrototype()
+  const isPremium = subscriptionPlan === 'PREMIUM'
 
   const update = <K extends keyof OwnerRegisterPropertyFormData>(
     key: K,
@@ -69,10 +71,47 @@ export function OwnerRegisterProperty() {
   }
 
   const handleSubmit = () => {
-    createProperty(formData)
+    const result = createProperty(formData)
     submitRegisterProperty()
     resetRegisterPropertyDraft()
+    // Select the newly created property in the sidebar dropdown
+    if (result?.propertyId) {
+      useOwnerStore.getState().setSelectedProperty(result.propertyId)
+    }
     navigate(ROUTES.OWNER.PROPERTIES)
+  }
+
+  // Block FREE users from registering new properties
+  if (!isPremium) {
+    return (
+      <div className="min-h-screen bg-canvas-alt px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-3xl text-center py-20">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+            <Lock size={28} />
+          </div>
+          <h1 className="mt-6 text-heading-1 font-bold text-text-primary">Premium Feature</h1>
+          <p className="mt-4 text-body text-text-muted">
+            Posting new properties is available only for Premium subscribers. Free plan owners can manage their single default listing.
+          </p>
+          <div className="mt-8 flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
+              className="rounded-button bg-primary px-6 py-3 text-body font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
+            >
+              Upgrade to Premium
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.OWNER.DASHBOARD)}
+              className="rounded-button border border-outline bg-white px-6 py-3 text-body font-semibold text-text-primary shadow-sm hover:bg-hover-light transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
