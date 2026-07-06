@@ -14,6 +14,7 @@ import { ROUTES } from '@shared/constants/routes'
 import { Toast, ToastContainer } from '@shared/ui/Toast'
 import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
 import { KycVerificationModal } from '@modules/tenant/components/KycVerificationModal'
+import { useOwnerStore } from '../store/ownerStore'
 
 const tierFeatures = [
   'Up to 50 Properties',
@@ -29,7 +30,8 @@ export function OwnerPlansRules() {
   const [isVerified, setIsVerified] = useState(false)
   const [verificationMessage, setVerificationMessage] = useState('')
   const [businessStatus, setBusinessStatus] = useState('Pending Upload')
-  const [brokersEnabled, setBrokersEnabled] = useState(false)
+  const brokerIntegrationEnabled = useOwnerStore((state) => state.brokerIntegrationEnabled)
+  const enableBrokerIntegration = useOwnerStore((state) => state.enableBrokerIntegration)
   const [notifications, setNotifications] = useState<
     { id: number; message: string; description?: string }[]
   >([])
@@ -47,21 +49,16 @@ export function OwnerPlansRules() {
   }
 
   const handleBrokerToggle = () => {
-    if (brokersEnabled) {
-      setBrokersEnabled(false)
+    if (brokerIntegrationEnabled) {
       return
     }
 
-    setBrokersEnabled(true)
-    showNotification('request sent to admin', 'Broker assignment approval is now in review.')
-
-    window.setTimeout(() => {
-      showNotification('admin has approved the request', 'Broker assignment is enabled for your portfolio.')
-    }, 900)
+    enableBrokerIntegration()
+    showNotification('Broker assignment enabled', 'You can now assign brokers from your Portfolio page.')
 
     window.setTimeout(() => {
       navigate(ROUTES.OWNER.PORTFOLIO)
-    }, 1800)
+    }, 1200)
   }
 
   return (
@@ -174,11 +171,11 @@ export function OwnerPlansRules() {
                     type="button"
                     onClick={handleBrokerToggle}
                     className={
-                      brokersEnabled
+                      brokerIntegrationEnabled
                         ? 'flex h-6 w-11 cursor-default items-center justify-end rounded-pill bg-primary p-1'
                         : 'flex h-6 w-11 items-center justify-start rounded-pill bg-primary-100 p-1'
                     }
-                    aria-pressed={brokersEnabled}
+                    aria-pressed={brokerIntegrationEnabled}
                   >
                     <span className="h-4 w-4 rounded-full bg-white shadow-sm" />
                   </button>

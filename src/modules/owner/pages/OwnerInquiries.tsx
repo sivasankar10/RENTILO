@@ -79,7 +79,7 @@ const activeLeads: ActiveLead[] = [
     name: 'Elena Kostic',
     initials: 'EK',
     subtitle: 'Viewing tomorrow at 10 AM',
-    property: 'Parkview Residences',
+    property: 'MultiOwner Skyline 14B',
     propertyUnit: '',
     monthlyRent: 1850,
     score: 45,

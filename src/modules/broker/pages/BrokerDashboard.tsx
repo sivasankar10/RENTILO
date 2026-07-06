@@ -780,7 +780,7 @@ function visitTimeInMinutes(time: string) {
 
 export function BrokerDashboard() {
   const navigate = useNavigate()
-  const { assignedProperties, leads, commissions } = useBrokerPrototype()
+  const { assignedProperties, leads, commissions, users, properties } = useBrokerPrototype()
   const successfulCommission = commissions.filter((item) => item.status === 'Successful').reduce((sum, item) => sum + item.amount, 0)
   const [visits, setVisits] = useState(initialVisits)
   const [activities, setActivities] = useState<Activity[]>(loadActivities)
@@ -919,22 +919,28 @@ export function BrokerDashboard() {
             <h2 className="text-[15px] font-bold text-[#0f172a]">Recent Leads</h2>
             <button className="text-label font-semibold text-primary hover:underline">View CRM</button>
           </div>
-          <LeadRow
-            avatar="https://randomuser.me/api/portraits/women/44.jpg"
-            name="Julianna Smith"
-            property="Penthouse Loft A"
-            pill="hot"
-            conversationId="lead-julianna-smith"
-            onChat={openLeadChat}
-          />
-          <LeadRow
-            avatar="https://randomuser.me/api/portraits/men/32.jpg"
-            name="Robert King"
-            property="Skyline Heights 14B"
-            pill="follow-up"
-            conversationId="lead-robert-king"
-            onChat={openLeadChat}
-          />
+          {leads.length > 0 ? (
+            leads.slice(0, 5).map((lead) => {
+              const tenant = users.find((u) => u.id === lead.tenantId)
+              const property = properties.find((p) => p.id === lead.propertyId)
+              return (
+                <LeadRow
+                  key={lead.id}
+                  avatar={tenant?.avatar ?? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80'}
+                  name={tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Unknown Tenant'}
+                  property={property?.title ?? 'Unknown Property'}
+                  pill={lead.status === 'interest_shown' ? 'hot' : 'follow-up'}
+                  conversationId={lead.id}
+                  onChat={openLeadChat}
+                />
+              )
+            })
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-[13px] text-text-muted">No tenant leads yet.</p>
+              <p className="text-[12px] text-text-muted mt-1">Leads will appear when tenants show interest in your assigned listings.</p>
+            </div>
+          )}
         </div>
 
         {/* Activity Timeline */}

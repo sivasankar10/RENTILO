@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Building2, Check, Edit3, Plus } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Building2, Check, Edit3, Lock, Plus } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
 import { useOwnerStore, type OwnerRegisterPropertyFormData } from '../store/ownerStore'
@@ -21,6 +21,9 @@ export function OwnerProperties() {
   const { propertyId } = useParams<{ propertyId: string }>()
   const { properties, updateProperty } = useOwnerPrototype()
   const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  const subscriptionPlan = useOwnerStore((state) => state.subscriptionPlan)
+  const showUpgradePrompt = useOwnerStore((state) => state.showUpgradePrompt)
+  const isPremium = subscriptionPlan === 'PREMIUM'
   const targetPropertyId = propertyId ?? selectedPropertyId ?? properties[0]?.id
   const targetProperty = properties.find((property) => property.id === targetPropertyId)
   const [currentStep, setCurrentStep] = useState<StepNumber>(1)
@@ -58,6 +61,7 @@ export function OwnerProperties() {
     updateRegisterPropertyDraft('noticePeriod', targetProperty.noticePeriod)
     updateRegisterPropertyDraft('photos', targetProperty.gallery)
   }, [propertyId, targetProperty, updateRegisterPropertyDraft])
+
   const goNext = () => setCurrentStep((step) => Math.min(5, step + 1) as StepNumber)
   const goPrev = () => setCurrentStep((step) => Math.max(1, step - 1) as StepNumber)
 
@@ -99,13 +103,35 @@ export function OwnerProperties() {
     navigate(ROUTES.OWNER.DASHBOARD)
   }
 
+  const handleAddProperty = () => {
+    if (isPremium) {
+      navigate(ROUTES.OWNER.REGISTER_PROPERTY)
+    } else {
+      showUpgradePrompt('bulk_property_management')
+    }
+  }
+
   if (!propertyId) {
     return (
       <div className="min-h-screen bg-canvas-alt px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-            <div><p className="text-filter-label font-bold uppercase tracking-wider text-primary">Owner portfolio</p><h1 className="mt-2 text-heading-1 font-bold text-text-primary">Properties</h1><p className="mt-1 text-body text-text-muted">Published properties are shared with tenant, broker, and admin views.</p></div>
-            <button type="button" onClick={() => navigate(ROUTES.OWNER.REGISTER_PROPERTY)} className="inline-flex items-center gap-2 rounded-button bg-primary px-5 py-3 text-label font-bold text-white"><Plus size={17} /> Add property</button>
+            <div>
+              <p className="text-filter-label font-bold uppercase tracking-wider text-primary">Owner portfolio</p>
+              <h1 className="mt-2 text-heading-1 font-bold text-text-primary">Properties</h1>
+              <p className="mt-1 text-body text-text-muted">Published properties are shared with tenant, broker, and admin views.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddProperty}
+              className={cn(
+                'inline-flex items-center gap-2 rounded-button px-5 py-3 text-label font-bold text-white',
+                isPremium ? 'bg-primary' : 'bg-slate-400 cursor-not-allowed opacity-70'
+              )}
+            >
+              {isPremium ? <Plus size={17} /> : <Lock size={17} />}
+              {isPremium ? 'Add property' : 'Upgrade to Add'}
+            </button>
           </div>
           {properties.length ? (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -113,20 +139,37 @@ export function OwnerProperties() {
                 <article key={property.id} className="overflow-hidden rounded-card border border-outline bg-white shadow-sm">
                   <img src={property.image} alt="" className="aspect-[16/9] w-full object-cover" />
                   <div className="p-5">
-                    <div className="flex items-start justify-between gap-3"><div><h2 className="text-heading-3 font-bold text-text-primary">{property.title}</h2><p className="mt-1 text-label text-text-muted">{property.address}</p></div><Building2 size={20} className="shrink-0 text-primary" /></div>
-                    <p className="mt-4 text-body font-bold text-primary">{property.price}<span className="font-normal text-text-muted">{property.pricePeriod}</span></p>
-                    <div className="mt-5 flex gap-2"><button type="button" onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(property.id))} className="flex-1 rounded-button border border-outline px-3 py-2 text-label font-semibold text-text-primary">View</button><button type="button" onClick={() => navigate(`/owner/properties/${property.id}/edit`)} className="inline-flex items-center justify-center gap-2 rounded-button bg-navy px-4 py-2 text-label font-semibold text-white"><Edit3 size={15} /> Edit</button></div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h2 className="text-heading-3 font-bold text-text-primary">{property.title}</h2>
+                        <p className="mt-1 text-label text-text-muted">{property.address}</p>
+                      </div>
+                      <Building2 size={20} className="shrink-0 text-primary" />
+                    </div>
+                    <p className="mt-4 text-body font-bold text-primary">
+                      {property.price}
+                      <span className="font-normal text-text-muted">{property.pricePeriod}</span>
+                    </p>
+                    <div className="mt-5 flex gap-2">
+                      <button type="button" onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(property.id))} className="flex-1 rounded-button border border-outline px-3 py-2 text-label font-semibold text-text-primary">View</button>
+                      <button type="button" onClick={() => navigate(`/owner/properties/${property.id}/edit`)} className="inline-flex items-center justify-center gap-2 rounded-button bg-navy px-4 py-2 text-label font-semibold text-white"><Edit3 size={15} /> Edit</button>
+                    </div>
                   </div>
                 </article>
               ))}
             </div>
           ) : (
-            <div className="rounded-card border border-dashed border-outline bg-white p-12 text-center"><Building2 className="mx-auto text-text-muted" size={40} /><h2 className="mt-4 text-heading-3 font-bold">No owner properties</h2><p className="mt-2 text-body text-text-muted">Publish your first property to start the shared prototype flow.</p></div>
+            <div className="rounded-card border border-dashed border-outline bg-white p-12 text-center">
+              <Building2 className="mx-auto text-text-muted" size={40} />
+              <h2 className="mt-4 text-heading-3 font-bold">No owner properties</h2>
+              <p className="mt-2 text-body text-text-muted">Publish your first property to start the shared prototype flow.</p>
+            </div>
           )}
         </div>
       </div>
     )
   }
+
   return (
     <div className="min-h-screen bg-canvas-alt px-4 py-8 sm:px-6">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -177,35 +220,7 @@ export function OwnerProperties() {
                 {steps.map((step) => {
                   const isCompleted = step.number < currentStep
                   const isActive = step.number === currentStep
-                  if (!propertyId) {
-    return (
-      <div className="min-h-screen bg-canvas-alt px-4 py-8 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-            <div><p className="text-filter-label font-bold uppercase tracking-wider text-primary">Owner portfolio</p><h1 className="mt-2 text-heading-1 font-bold text-text-primary">Properties</h1><p className="mt-1 text-body text-text-muted">Published properties are shared with tenant, broker, and admin views.</p></div>
-            <button type="button" onClick={() => navigate(ROUTES.OWNER.REGISTER_PROPERTY)} className="inline-flex items-center gap-2 rounded-button bg-primary px-5 py-3 text-label font-bold text-white"><Plus size={17} /> Add property</button>
-          </div>
-          {properties.length ? (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {properties.map((property) => (
-                <article key={property.id} className="overflow-hidden rounded-card border border-outline bg-white shadow-sm">
-                  <img src={property.image} alt="" className="aspect-[16/9] w-full object-cover" />
-                  <div className="p-5">
-                    <div className="flex items-start justify-between gap-3"><div><h2 className="text-heading-3 font-bold text-text-primary">{property.title}</h2><p className="mt-1 text-label text-text-muted">{property.address}</p></div><Building2 size={20} className="shrink-0 text-primary" /></div>
-                    <p className="mt-4 text-body font-bold text-primary">{property.price}<span className="font-normal text-text-muted">{property.pricePeriod}</span></p>
-                    <div className="mt-5 flex gap-2"><button type="button" onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(property.id))} className="flex-1 rounded-button border border-outline px-3 py-2 text-label font-semibold text-text-primary">View</button><button type="button" onClick={() => navigate(`/owner/properties/${property.id}/edit`)} className="inline-flex items-center justify-center gap-2 rounded-button bg-navy px-4 py-2 text-label font-semibold text-white"><Edit3 size={15} /> Edit</button></div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-card border border-dashed border-outline bg-white p-12 text-center"><Building2 className="mx-auto text-text-muted" size={40} /><h2 className="mt-4 text-heading-3 font-bold">No owner properties</h2><p className="mt-2 text-body text-text-muted">Publish your first property to start the shared prototype flow.</p></div>
-          )}
-        </div>
-      </div>
-    )
-  }
-  return (
+                  return (
                     <button
                       type="button"
                       key={step.number}

@@ -60,9 +60,9 @@ const initialConversations: OwnerChatConversation[] = [
     property: 'Skyline Heights - Unit 402',
     propertyImage:
       'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=180&q=80',
-    listing: 'Modern Penthouse Suite',
-    location: 'Park Avenue, New York',
-    price: '$4,500',
+    listing: 'MultiOwner Skyline 14B',
+    location: 'Indiranagar, Bangalore',
+    price: 'Rs. 85,000',
     messages: [
       {
         id: 1,
@@ -94,12 +94,12 @@ const initialConversations: OwnerChatConversation[] = [
     unread: 0,
     avatar:
       'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-    property: 'Parkview Residences - 8A',
+    property: 'MultiOwner Skyline 14B',
     propertyImage:
-      'https://images.unsplash.com/photo-1560185008-b033106af5c3?auto=format&fit=crop&w=180&q=80',
-    listing: 'Parkview Residences',
-    location: 'Velachery, Chennai',
-    price: 'Rs. 38,000',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=180&q=80',
+    listing: 'MultiOwner Skyline 14B',
+    location: 'Indiranagar, Bangalore',
+    price: 'Rs. 85,000',
     messages: [
       {
         id: 1,
@@ -119,12 +119,12 @@ const initialConversations: OwnerChatConversation[] = [
     unread: 0,
     avatar:
       'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=120&q=80',
-    property: 'Skyline Heights - Unit 402',
+    property: 'MultiOwner Skyline 14B',
     propertyImage:
-      'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=180&q=80',
-    listing: 'Modern Penthouse Suite',
-    location: 'Park Avenue, New York',
-    price: '$4,500',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=180&q=80',
+    listing: 'MultiOwner Skyline 14B',
+    location: 'Indiranagar, Bangalore',
+    price: 'Rs. 85,000',
     messages: [
       {
         id: 1,
@@ -144,12 +144,12 @@ const initialConversations: OwnerChatConversation[] = [
     unread: 0,
     avatar:
       'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=120&q=80',
-    property: 'Skyline Heights - Unit 402',
+    property: 'MultiOwner Skyline 14B',
     propertyImage:
-      'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=180&q=80',
-    listing: 'Modern Penthouse Suite',
-    location: 'Park Avenue, New York',
-    price: '$4,500',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=180&q=80',
+    listing: 'MultiOwner Skyline 14B',
+    location: 'Indiranagar, Bangalore',
+    price: 'Rs. 85,000',
     messages: [
       {
         id: 1,
@@ -169,12 +169,12 @@ const initialConversations: OwnerChatConversation[] = [
     unread: 2,
     avatar:
       'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=120&q=80',
-    property: '2BHK in Chennai',
+    property: 'MultiOwner Skyline 14B',
     propertyImage:
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=180&q=80',
-    listing: 'Modern Penthouse Suite',
-    location: 'Adyar, Chennai',
-    price: 'Rs. 45,000',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=180&q=80',
+    listing: 'MultiOwner Skyline 14B',
+    location: 'Indiranagar, Bangalore',
+    price: 'Rs. 85,000',
     messages: [
       {
         id: 1,
