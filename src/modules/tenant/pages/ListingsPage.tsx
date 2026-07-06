@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 import { useListingPromotionStore } from '@shared/store/listingPromotionStore'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import type { Property } from '../types/property'
 import { useTenantMarketplace } from '../hooks/useTenantMarketplace'
 import { ListingCard } from '../components/ListingCard'
@@ -113,22 +114,27 @@ export function ListingsPage() {
   const [tenantTypes, setTenantTypes] = useState(DEFAULT_TENANT_TYPES)
   const [bhkConfig, setBhkConfig] = useState(DEFAULT_BHK_CONFIG)
   const promotedListingIds = useListingPromotionStore((state) => state.getActivePromotedTenantListingIds())
+  const brokerAssignments = usePrototypeStore((state) => state.brokerAssignments)
 
   const selectedTenantTypes = useMemo(() => getSelectedKeys(tenantTypes), [tenantTypes])
   const selectedBhkConfigs = useMemo(() => getSelectedKeys(bhkConfig), [bhkConfig])
   const minRentPercent = ((rentRange.min - RENT_MIN) / (RENT_MAX - RENT_MIN)) * 100
   const maxRentPercent = ((rentRange.max - RENT_MIN) / (RENT_MAX - RENT_MIN)) * 100
   const promotedIdSet = useMemo(() => new Set(promotedListingIds), [promotedListingIds])
+  const brokerAssignedListingIds = useMemo(
+    () => new Set(brokerAssignments.filter((a) => a.status === 'Active').map((a) => a.listingId)),
+    [brokerAssignments],
+  )
   const tenantProperties = useMemo(() => {
     return sessionListings.map((property) => {
-      if (promotedIdSet.has(property.id)) {
+      if (promotedIdSet.has(property.id) || brokerAssignedListingIds.has(property.id)) {
         return { ...property, badge: 'Suggested' as const }
       }
 
 
       return property
     })
-  }, [promotedIdSet, sessionListings])
+  }, [promotedIdSet, brokerAssignedListingIds, sessionListings])
 
   const hasActiveFilters =
     activeSearchTerms.length > 0 ||

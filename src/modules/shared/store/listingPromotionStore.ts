@@ -5,6 +5,7 @@ import {
   LISTING_PROMOTION_DURATION_DAYS,
   LISTING_PROMOTION_PRICE_INR,
 } from '@shared/constants/listingPromotion'
+import { usePrototypeStore } from './prototypeStore'
 
 export interface ListingPromotion {
   ownerPropertyId: string
@@ -39,7 +40,13 @@ export const useListingPromotionStore = create<ListingPromotionState>()(
       promotions: [],
 
       activatePromotion: (input) => {
-        const tenantListingId = getTenantListingIdForOwnerProperty(input.ownerPropertyId)
+        // Try static map first, then dynamic lookup from prototype store
+        let tenantListingId = getTenantListingIdForOwnerProperty(input.ownerPropertyId)
+        if (!tenantListingId) {
+          const listings = usePrototypeStore.getState().listings
+          const listing = listings.find((l) => l.propertyId === input.ownerPropertyId)
+          tenantListingId = listing?.id
+        }
         if (!tenantListingId) return null
 
         const now = new Date()

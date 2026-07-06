@@ -6,7 +6,11 @@ export const OWNER_TO_TENANT_LISTING_ID: Record<string, string> = {
 export const LISTING_PROMOTION_PRICE_INR = 59
 export const LISTING_PROMOTION_DURATION_DAYS = 30
 
-export function getTenantListingIdForOwnerProperty(ownerPropertyId: string) {
+/**
+ * Resolves the tenant-facing listing ID for an owner property.
+ * Checks the static map first.
+ */
+export function getTenantListingIdForOwnerProperty(ownerPropertyId: string): string | undefined {
   return OWNER_TO_TENANT_LISTING_ID[ownerPropertyId]
 }
 
