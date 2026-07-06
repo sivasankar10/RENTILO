@@ -10,6 +10,7 @@ import {
   isPromotionActive,
   useListingPromotionStore,
 } from '@shared/store/listingPromotionStore'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 
 export function OwnerListingPromotionTable() {
@@ -17,6 +18,7 @@ export function OwnerListingPromotionTable() {
   const { properties, listings } = useOwnerPrototype()
   const promotions = useListingPromotionStore((state) => state.promotions)
   const getPromotionForProperty = useListingPromotionStore((state) => state.getPromotionForProperty)
+  const brokerAssignments = usePrototypeStore((state) => state.brokerAssignments)
 
   return (
     <section
@@ -55,8 +57,12 @@ export function OwnerListingPromotionTable() {
           <tbody>
             {properties.map((property) => {
               const promotion = getPromotionForProperty(property.id)
-              const active = promotion ? isPromotionActive(promotion) : false
+              const paidActive = promotion ? isPromotionActive(promotion) : false
               const tenantListingId = listings.find((listing) => listing.propertyId === property.id)?.id
+              const hasBrokerAssigned = brokerAssignments.some(
+                (a) => a.propertyId === property.id && a.status === 'Active',
+              )
+              const active = paidActive || hasBrokerAssigned
               const canPromote = Boolean(tenantListingId)
 
               return (
@@ -85,9 +91,11 @@ export function OwnerListingPromotionTable() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-body text-text-primary">
-                    {active && promotion
+                    {paidActive && promotion
                       ? formatPromotionDate(promotion.promotedUntilIso)
-                      : 'â€”'}
+                      : hasBrokerAssigned
+                        ? 'While broker active'
+                        : '—'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
