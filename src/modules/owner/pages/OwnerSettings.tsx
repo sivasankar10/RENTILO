@@ -16,6 +16,8 @@ import {
 import { useAuth } from '@shared/hooks/useAuth'
 import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { useOwnerStore } from '../store/ownerStore'
+import { PLAN_CONFIG } from '../config/features'
+import { formatSubscriptionDate, getSubscriptionAge } from '../services/subscription.service'
 
 const bankFields = [
   { label: 'Account Holder Name', placeholder: 'Enter full name' },
@@ -359,6 +361,115 @@ export function OwnerSettings() {
         </div>
       </div>
     </div>
+  )
+}
+
+/* ─────────────────────────────────────────────
+   Subscription Status Card
+───────────────────────────────────────────── */
+function SubscriptionStatusCard() {
+  const { subscriptionPlan, subscribedAt } = useOwnerStore()
+  const isPremium = subscriptionPlan === 'PREMIUM'
+  const planConfig = PLAN_CONFIG[subscriptionPlan]
+  const subscriptionAge = getSubscriptionAge()
+
+  return (
+    <article className="rounded-card border border-outline bg-white p-6 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="inline-flex items-center gap-2 text-body font-bold text-text-primary">
+          <Crown size={16} className={isPremium ? 'text-amber-500' : 'text-text-muted'} />
+          Subscription
+        </h2>
+        <span
+          className={`rounded-pill px-2.5 py-1 text-badge uppercase font-bold ${
+            isPremium ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          {planConfig.name}
+        </span>
+      </div>
+
+      <div className="mt-4 space-y-2 text-label text-text-muted">
+        <p>{planConfig.description}</p>
+        {isPremium && subscribedAt && (
+          <p>
+            Subscribed on <span className="font-semibold text-text-primary">{formatSubscriptionDate(subscribedAt)}</span>
+            {subscriptionAge !== null && ` (${subscriptionAge} days ago)`}
+          </p>
+        )}
+      </div>
+
+      {!isPremium && (
+        <p className="mt-4 text-label text-text-muted">
+          Upgrade to Premium to unlock analytics, inquiries, promotions, and financial reports.
+        </p>
+      )}
+    </article>
+  )
+}
+
+/* ─────────────────────────────────────────────
+   Developer Tools Card (for testing)
+───────────────────────────────────────────── */
+function DeveloperToolsCard() {
+  const { subscriptionPlan, resetSubscriptionState, upgradeToPremium, isUpgrading } = useOwnerStore()
+  const [isResetting, setIsResetting] = useState(false)
+
+  const handleReset = () => {
+    setIsResetting(true)
+    setTimeout(() => {
+      resetSubscriptionState()
+      setIsResetting(false)
+    }, 500)
+  }
+
+  const handleQuickUpgrade = async () => {
+    try {
+      await upgradeToPremium()
+    } catch (error) {
+      console.error('Quick upgrade failed:', error)
+    }
+  }
+
+  return (
+    <article className="rounded-card border-2 border-dashed border-amber-300 bg-amber-50 p-5">
+      <h2 className="inline-flex items-center gap-2 text-body font-bold text-amber-800">
+        <Wrench size={16} />
+        Developer Tools
+      </h2>
+      <p className="text-xs text-amber-700 mt-1 mb-4">
+        Testing utilities - will be removed in production
+      </p>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-amber-700">Current Plan:</span>
+          <span className={`font-semibold ${subscriptionPlan === 'PREMIUM' ? 'text-amber-600' : 'text-slate-600'}`}>
+            {subscriptionPlan}
+          </span>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleQuickUpgrade}
+            disabled={isUpgrading || subscriptionPlan === 'PREMIUM'}
+            className="flex-1 rounded-button bg-amber-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-40"
+          >
+            {isUpgrading ? 'Upgrading…' : 'Quick Upgrade'}
+          </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={isResetting}
+            className="inline-flex items-center gap-1.5 rounded-button border border-amber-300 bg-white px-3 py-2 text-xs font-bold text-amber-700 disabled:opacity-40"
+          >
+            <RotateCcw size={12} className={isResetting ? 'animate-spin' : ''} />
+            Reset
+          </button>
+        </div>
+      </div>
+    </article>
   )
 }
 
