@@ -3,11 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { MapPin, TrendingUp, CheckCircle2, BadgeCheck, ChevronRight, Medal, Trophy } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
-import {
-  BROKER_ASSIGNED_PROPERTIES,
-  getBrokerPropertyById,
-  type BrokerAssignedProperty,
-} from '../constants/assignedProperties'
+import { type BrokerAssignedProperty } from '../constants/assignedProperties'
+import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 
@@ -117,10 +114,20 @@ function PropertyCard({ property, active, onSelect }: PropertyCardProps) {
 ───────────────────────────────────────────── */
 export function BrokerPortfolio() {
   const navigate = useNavigate()
-  const portfolioProperties = BROKER_ASSIGNED_PROPERTIES.slice(0, 2)
-  const defaultPortfolioProperty = portfolioProperties[0] ?? BROKER_ASSIGNED_PROPERTIES[0]!
-  const [selectedPropertyId, setSelectedPropertyId] = useState(defaultPortfolioProperty.id)
-  const selectedProperty = getBrokerPropertyById(selectedPropertyId) ?? defaultPortfolioProperty
+  const { assignedProperties: portfolioProperties } = useBrokerPrototype()
+  const [selectedPropertyId, setSelectedPropertyId] = useState('')
+  const selectedProperty =
+    portfolioProperties.find((property) => property.id === selectedPropertyId) ??
+    portfolioProperties[0]
+
+  if (!selectedProperty) {
+    return (
+      <div className="rounded-card border border-outline bg-white p-10 text-center">
+        <h1 className="text-heading-2 font-bold text-text-primary">Portfolio awaiting assignment</h1>
+        <p className="mt-2 text-body text-text-muted">Approved properties will populate this portfolio.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 pb-10">

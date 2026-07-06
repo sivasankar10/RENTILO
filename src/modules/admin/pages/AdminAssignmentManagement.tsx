@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { AlertTriangle, Building2, CheckCircle2, Download, Home, Plus, Search, TrendingUp, UserCheck, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore, type AdminBroker } from '../store/adminStore'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { toast } from '../components/Toast'
 import { exportToCsv } from '../utils/exportCsv'
 
@@ -18,6 +19,7 @@ interface EnterpriseProperty {
 }
 
 interface StandardProperty {
+  id: string
   image: string
   name: string
   type: string
@@ -77,39 +79,6 @@ const enterpriseQueue: EnterpriseProperty[] = [
   },
 ]
 
-const standardQueue: StandardProperty[] = [
-  {
-    image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=120&q=80',
-    name: 'Skyview Unit 402',
-    type: '2BR Apartment',
-    ownerType: 'Private Individual',
-    rentPrice: '$4,500/mo',
-    location: 'Chicago, River North',
-    status: 'Urgent',
-    statusColor: 'bg-status-error-bg text-status-error-text',
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=120&q=80',
-    name: 'Oak Ridge Residences',
-    type: 'Condominium',
-    ownerType: 'Investment Group',
-    rentPrice: '$820,000',
-    location: 'Austin, TX',
-    status: 'Processing',
-    statusColor: 'bg-slate-100 text-slate-600',
-  },
-  {
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=120&q=80',
-    name: 'The Loft Collective',
-    type: 'Studio Loft',
-    ownerType: 'Property REIT',
-    rentPrice: '$3,200/mo',
-    location: 'Portland, Pearl District',
-    status: 'New',
-    statusColor: 'bg-slate-100 text-slate-600',
-  },
-]
-
 function createInitialEnterpriseRows(property: EnterpriseProperty): EnterpriseAssignmentRow[] {
   return [
     {
@@ -148,6 +117,28 @@ function createInitialStandardRows(property: StandardProperty): StandardAssignme
 
 export function AdminAssignmentManagement() {
   const brokers = useAdminStore((state) => state.brokers)
+  const properties = usePrototypeStore((state) => state.properties)
+  const users = usePrototypeStore((state) => state.users)
+  const assignments = usePrototypeStore((state) => state.brokerAssignments)
+  const assignBrokerToProperty = usePrototypeStore((state) => state.assignBroker)
+  const standardQueue: StandardProperty[] = properties
+    .filter((property) => !assignments.some(
+      (assignment) => assignment.propertyId === property.id && assignment.status === 'Active',
+    ))
+    .map((property) => {
+      const owner = users.find((user) => user.id === property.ownerId)
+      return {
+        id: property.id,
+        image: property.image,
+        name: property.title,
+        type: property.propertyType,
+        ownerType: owner?.accountName ?? 'Property Owner',
+        rentPrice: property.price,
+        location: `${property.neighborhood}, ${property.city}`,
+        status: 'Ready',
+        statusColor: 'bg-status-success-bg text-status-success-text',
+      }
+    })
   const [searchParams, setSearchParams] = useSearchParams()
   const [assignModalOpen, setAssignModalOpen] = useState(false)
   const [standardAssignModalOpen, setStandardAssignModalOpen] = useState(false)
@@ -512,6 +503,7 @@ export function AdminAssignmentManagement() {
           property={selectedStandardProperty}
           brokers={brokers}
           rows={standardAssignments[selectedStandardProperty.name] ?? createInitialStandardRows(selectedStandardProperty)}
+          onAssign={(brokerId) => assignBrokerToProperty(selectedStandardProperty.id, brokerId, 'user-admin-1')}
           onRowsChange={(rows) =>
             setStandardAssignments((current) => ({
               ...current,
@@ -839,12 +831,14 @@ function StandardAssignModal({
   brokers,
   rows,
   onRowsChange,
+  onAssign,
 }: {
   onClose: () => void
   property: StandardProperty
   brokers: AdminBroker[]
   rows: StandardAssignmentRow[]
   onRowsChange: (rows: StandardAssignmentRow[]) => void
+  onAssign: (brokerId: string) => void
 }) {
   const [brokerPickerRowId, setBrokerPickerRowId] = useState<string | null>(rows[0]?.id ?? null)
   const [brokerSearch, setBrokerSearch] = useState('')
@@ -867,6 +861,7 @@ function StandardAssignModal({
   }
 
   const assignBroker = (row: StandardAssignmentRow, broker: AdminBroker) => {
+    onAssign(broker.id)
     updateRow(row.id, { assignedBrokerId: broker.id })
     toast.success('Broker assigned', `${broker.name} assigned to ${row.propertyName}.`)
   }

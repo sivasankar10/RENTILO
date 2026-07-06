@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Accessibility,
@@ -27,6 +27,7 @@ import {
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
 import { useOwnerStore, type OwnerRegisterPropertyFormData } from '../store/ownerStore'
+import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 
 export type StepNumber = 1 | 2 | 3 | 4 | 5
 
@@ -50,6 +51,8 @@ export function OwnerRegisterProperty() {
   const updateRegisterPropertyDraft = useOwnerStore((state) => state.updateRegisterPropertyDraft)
   const saveRegisterPropertyDraft = useOwnerStore((state) => state.saveRegisterPropertyDraft)
   const submitRegisterProperty = useOwnerStore((state) => state.submitRegisterProperty)
+  const resetRegisterPropertyDraft = useOwnerStore((state) => state.resetRegisterPropertyDraft)
+  const { createProperty } = useOwnerPrototype()
 
   const update = <K extends keyof OwnerRegisterPropertyFormData>(
     key: K,
@@ -63,12 +66,12 @@ export function OwnerRegisterProperty() {
 
   const handleSaveDraft = () => {
     saveRegisterPropertyDraft()
-    alert('Property saved as a draft for this session.')
   }
 
   const handleSubmit = () => {
+    createProperty(formData)
     submitRegisterProperty()
-    alert('Property submitted for review and saved for this session!')
+    resetRegisterPropertyDraft()
     navigate(ROUTES.OWNER.PROPERTIES)
   }
 
@@ -152,7 +155,7 @@ export function OwnerRegisterProperty() {
                 Our onboarding specialists are available 24x7 to help you optimize your listing.
               </p>
               <button type="button" className="mt-4 inline-flex items-center gap-2 text-label font-bold text-navy hover:text-primary transition-colors">
-                📞 Contact Support
+                ðŸ“ž Contact Support
               </button>
             </div>
           </div>
@@ -197,7 +200,7 @@ export function OwnerRegisterProperty() {
   )
 }
 
-/* ───────── STEP 1: Basic Information ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 1: Basic Information â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export function Step1BasicInfo({ formData, update }: StepProps) {
   return (
     <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
@@ -286,7 +289,7 @@ export function Step1BasicInfo({ formData, update }: StepProps) {
   )
 }
 
-/* ───────── STEP 2: Property Location ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 2: Property Location â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export function Step2Location({ formData, update }: StepProps) {
   return (
     <div className="space-y-6">
@@ -361,7 +364,7 @@ export function Step2Location({ formData, update }: StepProps) {
   )
 }
 
-/* ───────── STEP 3: Amenities & Features ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 3: Amenities & Features â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export function Step3Amenities({ formData, update }: StepProps) {
   const amenities = formData.amenities
   const features = formData.buildingFeatures
@@ -452,7 +455,7 @@ export function Step3Amenities({ formData, update }: StepProps) {
   )
 }
 
-/* ───────── STEP 4: Media & Gallery ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 4: Media & Gallery â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export function Step4Media({ formData, update }: StepProps) {
   return (
     <div className="space-y-6">
@@ -527,7 +530,7 @@ export function Step4Media({ formData, update }: StepProps) {
   )
 }
 
-/* ───────── STEP 5: Pricing & Lease ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 5: Pricing & Lease â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { onComplete: () => void; goPrev: () => void }) {
   const utilities = formData.utilities
   const toggleUtility = (key: keyof typeof utilities) => {
@@ -714,7 +717,7 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
   )
 }
 
-/* ───────── Bottom Info Cards ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ Bottom Info Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export function BottomInfoCards() {
   const cards = [
     { icon: ShieldCheck, title: 'Verified Listings', desc: 'Verified properties receive 5x more views and inquiries.', color: 'bg-primary-100 text-primary' },
@@ -742,7 +745,7 @@ export function BottomInfoCards() {
   )
 }
 
-/* ───────── Types ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export type StepProps = {
   formData: OwnerRegisterPropertyFormData
   update: <K extends keyof OwnerRegisterPropertyFormData>(

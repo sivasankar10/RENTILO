@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -18,6 +18,7 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
 import { toast } from '../components/Toast'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 
 type FilterKey = 'All' | 'Unread' | 'Important'
 type Tone = 'blue' | 'amber' | 'slate' | 'red' | 'green'
@@ -151,6 +152,27 @@ export function AdminNotifications() {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All')
   const [items, setItems] = useState<AdminNotification[]>(initialNotifications)
+  const sharedNotifications = usePrototypeStore((state) => state.notifications)
+  const markSharedNotificationRead = usePrototypeStore((state) => state.markNotificationRead)
+
+  useEffect(() => {
+    const sessionItems: AdminNotification[] = sharedNotifications
+      .filter((notification) => notification.role === 'admin' || notification.role === 'all')
+      .map((notification) => ({
+        id: notification.id,
+        icon: notification.action === 'review_broker_request' ? ShieldAlert : notification.action === 'broadcast' ? Megaphone : Bell,
+        title: notification.title,
+        description: notification.description,
+        time: new Date(notification.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+        tone: notification.important ? 'red' : notification.action === 'broadcast' ? 'slate' : 'blue',
+        unread: notification.unread,
+        important: notification.important,
+        actionLabel: notification.action === 'review_broker_request' ? 'Review request' : undefined,
+        actionRoute: notification.action === 'review_broker_request' ? ROUTES.ADMIN.PLATFORM_CONFIGURATION : undefined,
+      }))
+    const sessionIds = new Set(sessionItems.map((item) => item.id))
+    setItems((current) => [...sessionItems, ...current.filter((item) => !sessionIds.has(item.id))])
+  }, [sharedNotifications])
 
   const visibleItems = useMemo(() => {
     if (activeFilter === 'Unread') return items.filter((i) => i.unread)
@@ -161,6 +183,7 @@ export function AdminNotifications() {
   const unreadCount = items.filter((i) => i.unread).length
 
   const markAsRead = (id: string) => {
+    markSharedNotificationRead(id)
     setItems((current) =>
       current.map((item) => (item.id === id ? { ...item, unread: false } : item)),
     )
@@ -181,6 +204,9 @@ export function AdminNotifications() {
       toast.info('Already up to date', "You're all caught up.")
       return
     }
+    sharedNotifications.forEach((notification) => {
+      if (notification.unread) markSharedNotificationRead(notification.id)
+    })
     setItems((current) => current.map((item) => ({ ...item, unread: false })))
     toast.success('Marked all as read', `${unreadCount} notifications cleared.`)
   }

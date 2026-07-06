@@ -1,7 +1,6 @@
-import { useNavigate } from 'react-router-dom'
+﻿import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
-import { PROPERTIES } from '../constants/properties'
-import { useSavedPropertiesStore } from '../store/savedPropertiesStore'
+import { useTenantMarketplace } from '../hooks/useTenantMarketplace'
 import { ListingCard } from '../components/ListingCard'
 import { TenantFooter } from '../components/TenantFooter'
 import { MaterialIcon } from '../components/MaterialIcon'
@@ -9,9 +8,7 @@ import { tenantStyles } from '../utils/tenantStyles'
 
 export function SavedPropertiesPage() {
   const navigate = useNavigate()
-  const { savedPropertyIds, toggleSaved, isSaved } = useSavedPropertiesStore()
-
-  const savedProperties = PROPERTIES.filter((p) => savedPropertyIds.includes(p.id))
+  const { savedListings: savedProperties, unsave, isSaved } = useTenantMarketplace()
 
   return (
     <div className={tenantStyles.page}>
@@ -64,7 +61,7 @@ export function SavedPropertiesPage() {
                 onSelect={() => navigate(ROUTES.TENANT.PROPERTY(property.id))}
                 onFavoriteClick={(e) => {
                   e.stopPropagation()
-                  toggleSaved(property.id)
+                  unsave(property.id)
                 }}
               />
             ))}

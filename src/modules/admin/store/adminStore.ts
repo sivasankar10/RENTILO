@@ -1,4 +1,7 @@
-﻿import { create } from 'zustand'
+import { create } from 'zustand'
+import { usePrototypeStore, type PrototypeState } from '@shared/store/prototypeStore'
+import { toAdminListing, toAdminTransaction, toAdminUser } from '@shared/store/prototypeAdapters'
+import type { PrototypeUser } from '@shared/types/prototype'
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export type BrokerStatus = 'ACTIVE' | 'BANNED'
@@ -73,7 +76,7 @@ export interface AdminListing {
   maintenanceCharges?: string
 }
 
-export type UserRoleTag = 'OWNER' | 'TENANT' | 'BROKER'
+export type UserRoleTag = 'OWNER' | 'TENANT' | 'BROKER' | 'ADMIN' | 'OWNER / TENANT'
 export type KycStatus = 'Verified' | 'Pending' | 'Rejected'
 export type UserStatusTag = 'Active' | 'Temp Banned'
 
@@ -145,16 +148,16 @@ const initialQueue: AdminQueueItem[] = [
 ]
 
 const initialListings: AdminListing[] = [
-  { id: '#ENT-55201', slug: 'ent-55201', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=120&q=80', owner: 'Skyline Corp', location: 'Whitefield, Bangalore', rent: 'â‚¹4,50,000', status: 'Active', postedDate: '12 Oct 2023', updated: 'Just now' },
-  { id: '#ENT-55202', slug: 'ent-55202', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=120&q=80', owner: 'Prestige Group', location: 'Indiranagar, Bangalore', rent: 'â‚¹3,20,000', status: 'Active', postedDate: '08 Oct 2023', updated: '1 day ago' },
-  { id: '#ENT-55203', slug: 'ent-55203', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=120&q=80', owner: 'Brigade Enterprises', location: 'Bandra West, Mumbai', rent: 'â‚¹6,80,000', status: 'Paused', postedDate: '01 Oct 2023', updated: '3 days ago' },
-  { id: '#ENT-55204', slug: 'ent-55204', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=120&q=80', owner: 'DLF Limited', location: 'Cyber City, Gurgaon', rent: 'â‚¹8,50,000', status: 'Active', postedDate: '25 Sep 2023', updated: '5 hours ago' },
-  { id: '#ENT-55205', slug: 'ent-55205', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=120&q=80', owner: 'Godrej Properties', location: 'Worli, Mumbai', rent: 'â‚¹5,20,000', status: 'Flagged', postedDate: '18 Sep 2023', updated: '1 week ago' },
-  { id: '#LST-88210', slug: 'lst-88210', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=120&q=80', owner: 'Arjun Raghavan', location: 'Koramangala 4th B', rent: 'â‚¹85,000', status: 'Active', postedDate: '12 Oct 2023', updated: 'Just now' },
-  { id: '#LST-45902', slug: 'lst-45902', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=120&q=80', owner: 'Priya Sharma', location: 'EPIP Zone, Whitefield', rent: 'â‚¹1,20,000', status: 'Paused', postedDate: '05 Oct 2023', updated: '2 days ago' },
-  { id: '#LST-22314', slug: 'lst-22314', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=120&q=80', owner: 'Vikram Malhotra', location: 'Indiranagar, Doublewood', rent: 'â‚¹45,000', status: 'Flagged', postedDate: '28 Sep 2023', updated: '5 days ago' },
-  { id: '#LST-11005', slug: 'lst-11005', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=120&q=80', owner: 'Sanya Reddy', location: 'Sarjapur Road, Bangalore', rent: 'â‚¹32,000', status: 'Removed', postedDate: '15 Sep 2023', updated: '1 week ago' },
-  { id: '#LST-99203', slug: 'lst-99203', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=120&q=80', owner: 'Karan Singh', location: 'HSR Layout Sector 7', rent: 'â‚¹32,500', status: 'Active', postedDate: '10 Sep 2023', updated: '3 hours ago' },
+  { id: '#ENT-55201', slug: 'ent-55201', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=120&q=80', owner: 'Skyline Corp', location: 'Whitefield, Bangalore', rent: 'Rs. 4,50,000', status: 'Active', postedDate: '12 Oct 2023', updated: 'Just now' },
+  { id: '#ENT-55202', slug: 'ent-55202', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=120&q=80', owner: 'Prestige Group', location: 'Indiranagar, Bangalore', rent: 'Rs. 3,20,000', status: 'Active', postedDate: '08 Oct 2023', updated: '1 day ago' },
+  { id: '#ENT-55203', slug: 'ent-55203', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1460317442991-0ec209397118?auto=format&fit=crop&w=120&q=80', owner: 'Brigade Enterprises', location: 'Bandra West, Mumbai', rent: 'Rs. 6,80,000', status: 'Paused', postedDate: '01 Oct 2023', updated: '3 days ago' },
+  { id: '#ENT-55204', slug: 'ent-55204', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=120&q=80', owner: 'DLF Limited', location: 'Cyber City, Gurgaon', rent: 'Rs. 8,50,000', status: 'Active', postedDate: '25 Sep 2023', updated: '5 hours ago' },
+  { id: '#ENT-55205', slug: 'ent-55205', segment: 'enterprise', image: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=120&q=80', owner: 'Godrej Properties', location: 'Worli, Mumbai', rent: 'Rs. 5,20,000', status: 'Flagged', postedDate: '18 Sep 2023', updated: '1 week ago' },
+  { id: '#LST-88210', slug: 'lst-88210', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=120&q=80', owner: 'Arjun Raghavan', location: 'Koramangala 4th B', rent: 'Rs. 85,000', status: 'Active', postedDate: '12 Oct 2023', updated: 'Just now' },
+  { id: '#LST-45902', slug: 'lst-45902', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=120&q=80', owner: 'Priya Sharma', location: 'EPIP Zone, Whitefield', rent: 'Rs. 1,20,000', status: 'Paused', postedDate: '05 Oct 2023', updated: '2 days ago' },
+  { id: '#LST-22314', slug: 'lst-22314', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=120&q=80', owner: 'Vikram Malhotra', location: 'Indiranagar, Doublewood', rent: 'Rs. 45,000', status: 'Flagged', postedDate: '28 Sep 2023', updated: '5 days ago' },
+  { id: '#LST-11005', slug: 'lst-11005', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=120&q=80', owner: 'Sanya Reddy', location: 'Sarjapur Road, Bangalore', rent: 'Rs. 32,000', status: 'Removed', postedDate: '15 Sep 2023', updated: '1 week ago' },
+  { id: '#LST-99203', slug: 'lst-99203', segment: 'non-enterprise', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=120&q=80', owner: 'Karan Singh', location: 'HSR Layout Sector 7', rent: 'Rs. 32,500', status: 'Active', postedDate: '10 Sep 2023', updated: '3 hours ago' },
 ]
 
 const initialUsers: AdminUser[] = [
@@ -164,10 +167,10 @@ const initialUsers: AdminUser[] = [
 ]
 
 const initialTransactions: AdminTransaction[] = [
-  { id: '#TRX-82910', user: 'Amit Kumar', userInitials: 'AK', avatarColor: 'bg-teal-500', type: 'Rent', amount: 'â‚¹ 45,000', status: 'Success', date: 'Oct 24, 2023' },
-  { id: '#TRX-82911', user: 'Sneha Patil', userInitials: 'SP', avatarColor: 'bg-slate-400', type: 'Commission', amount: 'â‚¹ 8,400', status: 'Pending', date: 'Oct 23, 2023' },
-  { id: '#TRX-82912', user: 'Rajesh Khanna', userInitials: 'RK', avatarColor: 'bg-blue-500', type: 'Subscription', amount: 'â‚¹ 2,499', status: 'Failed', date: 'Oct 22, 2023' },
-  { id: '#TRX-82913', user: 'Maanav D.', userInitials: 'MD', avatarColor: 'bg-indigo-400', type: 'Rent', amount: 'â‚¹ 32,500', status: 'Success', date: 'Oct 22, 2023' },
+  { id: '#TRX-82910', user: 'Amit Kumar', userInitials: 'AK', avatarColor: 'bg-teal-500', type: 'Rent', amount: 'Rs.  45,000', status: 'Success', date: 'Oct 24, 2023' },
+  { id: '#TRX-82911', user: 'Sneha Patil', userInitials: 'SP', avatarColor: 'bg-slate-400', type: 'Commission', amount: 'Rs.  8,400', status: 'Pending', date: 'Oct 23, 2023' },
+  { id: '#TRX-82912', user: 'Rajesh Khanna', userInitials: 'RK', avatarColor: 'bg-blue-500', type: 'Subscription', amount: 'Rs.  2,499', status: 'Failed', date: 'Oct 22, 2023' },
+  { id: '#TRX-82913', user: 'Maanav D.', userInitials: 'MD', avatarColor: 'bg-indigo-400', type: 'Rent', amount: 'Rs.  32,500', status: 'Success', date: 'Oct 22, 2023' },
 ]
 
 const initialListingApprovals: ApprovalRequest[] = [
@@ -221,7 +224,7 @@ interface AdminState {
   toggleKyc: () => void
 }
 
-export const useAdminStore = create<AdminState>((set) => ({
+const useAdminUiStore = create<AdminState>((set) => ({
   brokers: initialBrokers,
   enterpriseBrokers: initialEnterpriseBrokers,
   assignmentQueue: initialQueue,
@@ -329,4 +332,201 @@ export const useAdminStore = create<AdminState>((set) => ({
 
   toggleKyc: () => set((s) => ({ kycConnected: !s.kycConnected })),
 }))
+function sharedListingForAdminId(state: PrototypeState, adminId: string) {
+  const normalized = adminId.replace(/^#/, '').toLowerCase()
+  return state.listings.find((listing) => listing.id.toLowerCase() === normalized)
+}
 
+function sharedUserForAdminId(state: PrototypeState, adminId: string): PrototypeUser | undefined {
+  return state.users.find((user) => user.id === adminId)
+}
+
+function buildAdminState(prototype: PrototypeState, ui: AdminState): AdminState {
+  const brokerUsers = prototype.users.filter((user) => user.roles.includes('broker'))
+  const brokers: AdminBroker[] = brokerUsers.map((broker) => {
+    const assignments = prototype.brokerAssignments.filter(
+      (assignment) => assignment.brokerId === broker.id && assignment.status === 'Active',
+    )
+    const applications = prototype.applications.filter((application) => application.brokerId === broker.id)
+    const closed = applications.filter((application) => application.status === 'active').length
+    return {
+      id: broker.id,
+      name: broker.accountName,
+      role: broker.id.endsWith('1') ? 'Primary Broker' : 'Associate Broker',
+      avatar: `${broker.firstName[0] ?? ''}${broker.lastName[0] ?? ''}`,
+      brokerId: broker.phone,
+      status: broker.status === 'Active' ? 'ACTIVE' : 'BANNED',
+      activeDeals: assignments.length,
+      dealsClosed: closed,
+      successRate: applications.length ? Math.round((closed / applications.length) * 100) : 0,
+      avgTime: closed ? '14 Days' : 'N/A',
+    }
+  })
+  const assignedPropertyIds = new Set(
+    prototype.brokerAssignments
+      .filter((assignment) => assignment.status === 'Active')
+      .map((assignment) => assignment.propertyId),
+  )
+  const assignmentQueue: AdminQueueItem[] = prototype.properties
+    .filter((property) => !assignedPropertyIds.has(property.id))
+    .map((property) => ({
+      id: property.id,
+      name: property.title,
+      location: `${property.neighborhood}, ${property.city}`,
+      assigned: false,
+      type: 'standard',
+    }))
+  const listingBundles = prototype.listings.flatMap((listing) => {
+    const property = prototype.properties.find((item) => item.id === listing.propertyId)
+    const owner = prototype.users.find((item) => item.id === listing.ownerId)
+    if (!property || !owner) return []
+    return [{ listing, property, owner }]
+  })
+  const listings = [
+    ...ui.listings.filter((listing) => listing.segment === 'enterprise'),
+    ...listingBundles.map(toAdminListing),
+  ]
+  const broadcasts = prototype.notifications
+    .filter((notification) => notification.action === 'broadcast')
+    .map((notification) => ({
+      id: notification.id,
+      audience: notification.role,
+      title: notification.title,
+      body: notification.description,
+      sentAt: notification.createdAt,
+    }))
+  const dynamicTransactions = prototype.payments.map((payment) =>
+    toAdminTransaction(payment, prototype.users),
+  )
+
+  return {
+    ...ui,
+    brokers,
+    assignmentQueue,
+    listings,
+    users: prototype.users.map(toAdminUser),
+    broadcasts,
+    transactions: [...dynamicTransactions, ...ui.transactions],
+    setBrokerStatus: (id, status) => {
+      const user = sharedUserForAdminId(usePrototypeStore.getState(), id)
+      if (user && (user.status === 'Active') !== (status === 'ACTIVE')) {
+        usePrototypeStore.getState().toggleUserStatus(id)
+      }
+    },
+    removeBroker: (id) => usePrototypeStore.getState().removeUser(id),
+    removeEnterpriseBroker: ui.removeEnterpriseBroker,
+    assignQueueItem: (propertyId) => {
+      const state = usePrototypeStore.getState()
+      const broker = state.users.find(
+        (user) => user.roles.includes('broker') && user.status === 'Active',
+      )
+      if (broker) state.assignBroker(propertyId, broker.id, 'user-admin-1')
+    },
+    assignAllQueueItems: () => {
+      const state = usePrototypeStore.getState()
+      const available = state.users.filter(
+        (user) => user.roles.includes('broker') && user.status === 'Active',
+      )
+      if (!available.length) return
+      assignmentQueue.forEach((item, index) => {
+        state.assignBroker(item.id, available[index % available.length]!.id, 'user-admin-1')
+      })
+    },
+    setListingStatus: (id, status) => {
+      const state = usePrototypeStore.getState()
+      const listing = sharedListingForAdminId(state, id)
+      if (listing) state.setListingStatus(listing.id, status)
+      else ui.setListingStatus(id, status)
+    },
+    updateListing: (id, patch) => {
+      const state = usePrototypeStore.getState()
+      const listing = sharedListingForAdminId(state, id)
+      if (!listing) {
+        ui.updateListing(id, patch)
+        return
+      }
+      state.updateOwnerProperty(listing.propertyId, {
+        title: patch.propertyTitle,
+        propertyType: patch.propertyType,
+        description: patch.description,
+        address: patch.streetAddress,
+        unit: patch.unit,
+        postalCode: patch.postalCode,
+        city: patch.city,
+        neighborhood: patch.neighborhood,
+        price: patch.rent,
+        deposit: patch.deposit,
+        sqft: patch.builtUpArea,
+        availableFrom: patch.availableFrom,
+        gallery: patch.mediaUrls,
+        image: patch.mediaUrls?.[0],
+      })
+      if (patch.status) state.setListingStatus(listing.id, patch.status)
+    },
+    removeListing: (id) => {
+      const state = usePrototypeStore.getState()
+      const listing = sharedListingForAdminId(state, id)
+      if (listing) state.setListingStatus(listing.id, 'Removed')
+      else ui.removeListing(id)
+    },
+    addListing: (listing) => {
+      if (listing.segment === 'enterprise') {
+        ui.addListing(listing)
+        return
+      }
+      const state = usePrototypeStore.getState()
+      const owner = state.users.find(
+        (user) => `${user.firstName} ${user.lastName}` === listing.owner && user.roles.includes('owner'),
+      ) ?? state.users.find((user) => user.accountName === 'Owner1')
+      if (!owner) return
+      state.createOwnerProperty(owner.id, {
+        propertyName: listing.propertyTitle ?? listing.location,
+        propertyType: listing.propertyType,
+        description: listing.description,
+        streetAddress: listing.streetAddress,
+        unit: listing.unit,
+        postalCode: listing.postalCode,
+        city: listing.city,
+        neighborhood: listing.neighborhood,
+        baseRent: listing.rent,
+        securityDeposit: listing.deposit,
+        availableFrom: listing.availableFrom,
+        photos: listing.mediaUrls?.length ? listing.mediaUrls : [listing.image],
+      })
+    },
+    toggleUserStatus: (id) => usePrototypeStore.getState().toggleUserStatus(id),
+    removeUser: (id) => usePrototypeStore.getState().removeUser(id),
+    addBroadcast: (audience, title, body) => {
+      const role = audience.toLowerCase().replace(' users', '').replace('all users', 'all')
+      usePrototypeStore.getState().addBroadcast(role, title, body)
+    },
+    refundTransaction: (id) => {
+      const payment = usePrototypeStore.getState().payments.find(
+        (item) => `#${item.txnId}` === id,
+      )
+      if (payment) usePrototypeStore.getState().setPaymentStatus(payment.id, 'Refunded')
+      else ui.refundTransaction(id)
+    },
+    retryTransaction: (id) => {
+      const payment = usePrototypeStore.getState().payments.find(
+        (item) => `#${item.txnId}` === id,
+      )
+      if (payment) usePrototypeStore.getState().setPaymentStatus(payment.id, 'Successful')
+      else ui.retryTransaction(id)
+    },
+  }
+}
+
+type AdminStoreHook = {
+  <T>(selector: (state: AdminState) => T): T
+  getState: () => AdminState
+}
+
+export const useAdminStore = ((selector) => {
+  const prototype = usePrototypeStore()
+  const ui = useAdminUiStore()
+  return selector(buildAdminState(prototype, ui))
+}) as AdminStoreHook
+
+useAdminStore.getState = () =>
+  buildAdminState(usePrototypeStore.getState(), useAdminUiStore.getState())

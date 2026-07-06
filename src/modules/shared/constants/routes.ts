@@ -1,4 +1,4 @@
-﻿/** Centralized route path constants for all modules */
+/** Centralized route path constants for all modules */
 
 export const ROUTES = {
   HOME: '/',
@@ -102,6 +102,3 @@ export const ROUTES = {
     MESSAGES: '/admin/messages',
   },
 } as const
-
-
-

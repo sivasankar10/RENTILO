@@ -274,9 +274,3 @@ export function OwnerPlansRules() {
     </div>
   )
 }
-
-
-
-
-
-

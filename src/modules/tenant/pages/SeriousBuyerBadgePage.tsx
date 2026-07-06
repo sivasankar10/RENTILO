@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 import { MaterialIcon } from '../components/MaterialIcon'
+import { TenantHomeBackBar } from '../components/TenantHomeBackBar'
 
 const PRICING_ROWS = [
   { label: 'Type', value: 'One-time paid purchase', highlight: false },
@@ -36,6 +37,7 @@ export function SeriousBuyerBadgePage() {
   return (
     <div className="flex flex-1 flex-col bg-gradient-to-b from-brand-container-low via-brand-background to-brand-background font-body">
       <div className="flex-1 w-full max-w-4xl mx-auto px-6 py-12 md:py-16">
+        <TenantHomeBackBar />
         {/* Hero */}
         <section className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-gold shadow-md mb-6">

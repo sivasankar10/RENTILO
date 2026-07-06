@@ -2,7 +2,6 @@ import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { authApi } from '../services/auth.api'
 import { useAuth } from '@shared/hooks/useAuth'
-import { ROUTES } from '@shared/constants/routes'
 import { getRoleHome } from '@shared/constants/roleHome'
 import type { UserRole } from '@shared/constants/roles'
 import type { VerifyOtpPayload } from '../types'
@@ -17,19 +16,14 @@ export function useVerifyOtp() {
 
   return useMutation({
     mutationFn: (payload: VerifyOtpPayload) => authApi.verifyOtp(payload),
-    onSuccess: (response, variables) => {
-      const { user, token, isNewUser } = response.data
+    onSuccess: (response) => {
+      const { user, token } = response.data
       // Get subscriptionPlan from extended response (mock only)
       const subscriptionPlan = (response.data as { subscriptionPlan?: 'FREE' | 'PREMIUM' }).subscriptionPlan
 
-      if (isNewUser || !user) {
-        navigate(ROUTES.AUTH.REGISTER, {
-          state: {
-            phone: variables.phone,
-            otpSessionId: variables.otpSessionId,
-          },
-        })
-        return
+      // Unknown phone — not in mock accounts. Surface as an error.
+      if (!user) {
+        throw new Error('Phone number not recognised. Use one of the demo accounts.')
       }
 
       const normalized = normalizeUser(user as User)

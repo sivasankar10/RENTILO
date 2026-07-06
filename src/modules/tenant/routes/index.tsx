@@ -20,10 +20,12 @@ import { TenantOnboardingPayment } from '../pages/TenantOnboardingPayment'
 import { TenantMyLease } from '../pages/TenantMyLease'
 import { TenantMaintenanceDetail } from '../pages/TenantMaintenanceDetail'
 import { PaymentReceiptPage } from '@shared/pages/PaymentReceiptPage'
+import { TenantHomeBackBar } from '../components/TenantHomeBackBar'
 
 function TenantPageShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex-1 w-full max-w-[1200px] mx-auto px-8 py-8 font-body">
+      <TenantHomeBackBar />
       {children}
     </div>
   )

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { useAuth } from '@shared/hooks/useAuth'
 import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
 import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { usePaymentsStore } from '@shared/store/paymentsStore'
@@ -230,6 +231,8 @@ const visitStatusStyles: Record<VisitStatus, string> = {
 
 export function OwnerPropertyDetail() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const ownerId = user?.id ?? DEMO_OWNER.id
   const { propertyId } = useParams<{ propertyId: string }>()
   const ownerPropertyId = propertyId ?? PRIMARY_OWNER_PROPERTY_ID
   const [schedulerOpen, setSchedulerOpen] = useState(false)
@@ -250,11 +253,11 @@ export function OwnerPropertyDetail() {
   )
   const activeLease = useMemo(
     () =>
-      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, ownerPropertyId, [
+      getOwnerLeaseForProperty(onboardingRecords, ownerId, ownerPropertyId, [
         'payment_completed',
         'active',
       ]),
-    [onboardingRecords, ownerPropertyId],
+    [onboardingRecords, ownerId, ownerPropertyId],
   )
   const isOnboarded = activeLease?.status === 'active'
   const activeAgreement = activeLease?.agreementVersions[activeLease.agreementVersions.length - 1]
@@ -945,10 +948,3 @@ export function OwnerPropertyDetail() {
     </div>
   )
 }
-
-
-
-
-
-
-

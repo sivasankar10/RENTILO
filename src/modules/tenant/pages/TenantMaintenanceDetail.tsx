@@ -1,6 +1,6 @@
 import { FormEvent, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Send, StickyNote } from 'lucide-react'
+import { Send, StickyNote } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
 import {
@@ -57,15 +57,6 @@ export function TenantMaintenanceDetail() {
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
-        onClick={() => navigate(ROUTES.TENANT.MAINTENANCE)}
-        className="inline-flex items-center gap-2 text-body font-semibold text-text-muted hover:text-navy"
-      >
-        <ArrowLeft size={16} />
-        Back to Maintenance
-      </button>
-
       <div className="rounded-card border border-outline bg-white p-6 shadow-surface">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

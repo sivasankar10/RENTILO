@@ -1,10 +1,12 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { cn } from '@shared/utils/cn'
 import { MaterialIcon } from '../components/MaterialIcon'
 import { tenantStyles } from '../utils/tenantStyles'
 import { EnableOwnerModeCard } from '../components/EnableOwnerModeCard'
 import { TenantKycSection } from '../components/TenantKycSection'
+import { TenantHomeBackBar } from '../components/TenantHomeBackBar'
 
 const AVATAR_SRC =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuBsjFwGI8TSSdoEXUZWAE-nRGmK8p1eH8KgYLjT3Urn8_obEczpwXsONy_TGRwKE0xPxoIiwJBviAzhbr8_8hIDA4l_kLNXdDbBX6-QfmRcjzG89x6vzPJXOX37ffQJu6xx0_zNwcREd9vf8PK0Du-IaTWhO6oVo0nqBbRArkk5eIc0SIYI174D3jXGPi3s-g82-4iFdrt9-Rhjwsej9Y7K0PTNiC4gdcsm5cL4dCFxk6wfXLf_ncUSgwvGRPdp_YbPZzioXRLYcnuV'
@@ -18,7 +20,7 @@ export function EditProfilePage() {
     user ? `${user.firstName} ${user.lastName}`.trim() : 'Danush'
   )
   const [email, setEmail] = useState(user?.email ?? 'danush@example.com')
-  const [phone, setPhone] = useState('+1 (555) 012-3456')
+  const [phone, setPhone] = useState(user?.phone ?? '')
   const [whatsappEnabled, setWhatsappEnabled] = useState(false)
   const [accountHolder, setAccountHolder] = useState('')
   const [bankName, setBankName] = useState('')
@@ -28,6 +30,19 @@ export function EditProfilePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (user) {
+      const [firstName, ...rest] = name.trim().split(/\s+/)
+      usePrototypeStore.setState((state) => ({
+        users: state.users.map((item) => item.id === user.id ? {
+          ...item,
+          firstName: firstName || item.firstName,
+          lastName: rest.join(' ') || item.lastName,
+          email: email.trim() || item.email,
+          phone: phone.replace(/\D/g, '').slice(-10) || item.phone,
+          updatedAt: new Date().toISOString(),
+        } : item),
+      }))
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -35,6 +50,7 @@ export function EditProfilePage() {
   return (
     <div className="flex flex-1 flex-col bg-brand-background font-body">
       <main className="flex-1 w-full max-w-[900px] mx-auto px-8 py-8 pb-16">
+        <TenantHomeBackBar />
         <form
           className="bg-brand-container-lowest rounded-2xl border border-brand-outline-variant shadow-card px-10 py-8 max-md:px-5"
           onSubmit={handleSubmit}
@@ -195,7 +211,7 @@ export function EditProfilePage() {
         </form>
 
         <p className="mt-6 text-[11px] font-semibold tracking-wider text-brand-outline text-center">
-          PROPERTY ID: RTL-882-DAN • LEASE ACTIVE UNTIL OCT 2024
+          PROPERTY ID: RTL-882-DAN â€¢ LEASE ACTIVE UNTIL OCT 2024
         </p>
       </main>
     </div>

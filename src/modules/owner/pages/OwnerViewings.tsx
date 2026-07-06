@@ -8,7 +8,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
-import { FeatureGate } from '../components/FeatureGate'
+
 
 import harborResidencesImg from '@/assets/images/harbor_residences.png'
 import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
@@ -170,7 +170,7 @@ export function OwnerViewings() {
   ]
 
   return (
-    <FeatureGate feature="viewings_calendar">
+    
       <div className="min-h-screen bg-[#f8fafc]">
         <div className="flex">
           {/* ── Main Content (Calendar) ── */}
@@ -384,6 +384,6 @@ export function OwnerViewings() {
           </div>
         </div>
       </div>
-    </FeatureGate>
+    
   )
 }

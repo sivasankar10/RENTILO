@@ -36,8 +36,6 @@ interface CardFormData {
 const PREMIUM_FEATURES: OwnerFeature[] = [
   'analytics',
   'inquiry_management',
-  'viewings_calendar',
-  'broker_management',
   'promoted_listings',
   'financial_reports',
   'smart_match',

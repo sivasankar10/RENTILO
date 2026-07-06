@@ -1,8 +1,8 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
-import { useSavedPropertiesStore } from '../store/savedPropertiesStore'
+import { useTenantMarketplace } from '../hooks/useTenantMarketplace'
 import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
 import { MaterialIcon } from './MaterialIcon'
 import { isProfileSectionPath, TenantProfileMenu } from './TenantProfileMenu'
@@ -13,7 +13,7 @@ const AVATAR_SRC =
 export function TenantHeader() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const savedPropertyIds = useSavedPropertiesStore((s) => s.savedPropertyIds)
+  const { savedIds } = useTenantMarketplace()
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
 
   const profileActive = isProfileSectionPath(pathname)
@@ -71,10 +71,10 @@ export function TenantHeader() {
             aria-label="Saved properties"
             onClick={() => navigate(ROUTES.TENANT.SAVED)}
           >
-            <MaterialIcon name="favorite" filled={savedPropertyIds.length > 0} />
-            {savedPropertyIds.length > 0 && (
+            <MaterialIcon name="favorite" filled={savedIds.size > 0} />
+            {savedIds.size > 0 && (
               <span className="absolute top-0 right-0 min-w-4 h-4 px-1 rounded-lg bg-brand-favorite text-white text-[10px] font-bold leading-4 text-center">
-                {savedPropertyIds.length}
+                {savedIds.size}
               </span>
             )}
           </button>

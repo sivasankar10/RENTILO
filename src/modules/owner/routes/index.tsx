@@ -58,4 +58,3 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'promotions', element: <OwnerPromotions /> },
   { path: 'financials', element: <OwnerFinancials /> },
 ]
-

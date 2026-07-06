@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CalendarCheck, Check, FileSignature, MessageCircle, Phone, Send, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { useAuth } from '@shared/hooks/useAuth'
 import {
   DEMO_OWNER,
   type AgreementTerms,
@@ -37,11 +38,13 @@ const defaultTerms = (record: OnboardingRecord): AgreementTerms => ({
   maintenanceResponsibility: 'Owner handles structural repairs; tenant handles routine upkeep.',
   petPolicy: 'Pets require written owner approval.',
   specialClauses: 'No subletting without written consent.',
-  ownerSignature: DEMO_OWNER.name,
+  ownerSignature: record.owner.name,
 })
 
 export function OwnerLeases() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const ownerId = user?.id ?? DEMO_OWNER.id
   const [tab, setTab] = useState<'applications' | 'leases' | 'agreements'>('applications')
   const [draftFor, setDraftFor] = useState<OnboardingRecord | null>(null)
   const [terms, setTerms] = useState<AgreementTerms | null>(null)
@@ -54,8 +57,8 @@ export function OwnerLeases() {
   const ensureLeaseThread = useLeaseChatStore((state) => state.ensureThread)
 
   const ownerRecords = useMemo(
-    () => records.filter((record) => record.owner.id === DEMO_OWNER.id),
-    [records],
+    () => records.filter((record) => record.owner.id === ownerId),
+    [ownerId, records],
   )
   const applications = ownerRecords.filter((record) => !['active', 'rejected'].includes(record.status))
   const activeLeases = ownerRecords.filter((record) => record.status === 'active')
@@ -136,8 +139,8 @@ export function OwnerLeases() {
                           <h2 className="text-body-lg font-bold text-navy">{record.tenant.name}</h2>
                           <span className="rounded-pill bg-primary-50 px-2.5 py-1 text-badge font-bold text-primary">{statusLabels[record.status]}</span>
                         </div>
-                        <p className="mt-1 text-label font-semibold text-text-primary">{record.propertyName} � {record.unit}</p>
-                        <p className="mt-1 text-label text-text-muted">{record.tenant.email} � {record.tenant.phone}</p>
+                        <p className="mt-1 text-label font-semibold text-text-primary">{record.propertyName} - {record.unit}</p>
+                        <p className="mt-1 text-label text-text-muted">{record.tenant.email} - {record.tenant.phone}</p>
                         {latest?.changeRequest && <p className="mt-2 rounded-button bg-status-warning-bg px-3 py-2 text-label font-semibold text-status-warning-text">Requested change: {latest.changeRequest}</p>}
                       </div>
                     </div>
@@ -190,7 +193,7 @@ export function OwnerLeases() {
                 className="cursor-pointer rounded-card border border-outline bg-white p-6 shadow-surface transition-shadow hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div><p className="text-filter-label font-bold uppercase text-status-success">Active lease</p><h2 className="mt-2 text-heading-3 font-bold text-navy">{record.propertyName}</h2><p className="text-label text-text-muted">{record.unit} · {record.address}</p></div>
+                  <div><p className="text-filter-label font-bold uppercase text-status-success">Active lease</p><h2 className="mt-2 text-heading-3 font-bold text-navy">{record.propertyName}</h2><p className="text-label text-text-muted">{record.unit} - {record.address}</p></div>
                   <CalendarCheck className="text-status-success" />
                 </div>
                 <div className="mt-5 grid grid-cols-2 gap-4 border-y border-outline py-5 text-label">
@@ -210,7 +213,7 @@ export function OwnerLeases() {
           <section className="mt-7 space-y-4">
             {agreements.map((record) => record.agreementVersions.map((agreement) => (
               <article key={agreement.id} className="flex flex-col gap-4 rounded-card border border-outline bg-white p-5 md:flex-row md:items-center md:justify-between">
-                <div><p className="text-body font-bold text-navy">{record.propertyName} � Version {agreement.version}</p><p className="mt-1 text-label text-text-muted">{record.tenant.name} � Sent {agreement.sentAt}</p></div>
+                <div><p className="text-body font-bold text-navy">{record.propertyName} - Version {agreement.version}</p><p className="mt-1 text-label text-text-muted">{record.tenant.name} - Sent {agreement.sentAt}</p></div>
                 <span className={cn('rounded-pill px-3 py-1 text-badge font-bold uppercase', agreement.tenantApprovedAt ? 'bg-status-success-bg text-status-success' : 'bg-status-warning-bg text-status-warning-text')}>{agreement.tenantApprovedAt ? 'Signed' : 'Awaiting signature'}</span>
               </article>
             )))}
@@ -223,7 +226,7 @@ export function OwnerLeases() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-navy/55 p-4" role="dialog" aria-modal="true">
           <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-card bg-white shadow-modal">
             <div className="sticky top-0 z-10 flex items-start justify-between border-b border-outline bg-white p-6">
-              <div><h2 className="text-heading-2 font-bold text-navy">Create Rental Agreement</h2><p className="mt-1 text-label text-text-muted">{draftFor.tenant.name} � {draftFor.propertyName}</p></div>
+              <div><h2 className="text-heading-2 font-bold text-navy">Create Rental Agreement</h2><p className="mt-1 text-label text-text-muted">{draftFor.tenant.name} - {draftFor.propertyName}</p></div>
               <button type="button" onClick={() => setDraftFor(null)} className="rounded-button border border-outline p-2"><X size={18} /></button>
             </div>
             <div className="grid gap-4 p-6 md:grid-cols-2">

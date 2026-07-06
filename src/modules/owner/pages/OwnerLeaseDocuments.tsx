@@ -3,14 +3,17 @@ import { ArrowLeft, Download, FileSignature, Printer, ReceiptText } from 'lucide
 import { ROUTES } from '@shared/constants/routes'
 import { useOnboardingStore } from '@shared/store/onboardingStore'
 import { DEMO_OWNER } from '@shared/store/onboardingStore'
+import { useAuth } from '@shared/hooks/useAuth'
 import { printPaymentReceipt } from '@shared/utils/downloadReceipt'
 import { usePaymentsStore } from '@shared/store/paymentsStore'
 
 export function OwnerLeaseDocuments() {
   const { onboardingId } = useParams<{ onboardingId: string }>()
+  const { user } = useAuth()
+  const ownerId = user?.id ?? DEMO_OWNER.id
   const navigate = useNavigate()
   const record = useOnboardingStore((state) =>
-    state.records.find((item) => item.id === onboardingId && item.owner.id === DEMO_OWNER.id),
+    state.records.find((item) => item.id === onboardingId && item.owner.id === ownerId),
   )
   const payments = usePaymentsStore((state) =>
     state.payments.filter((payment) => payment.onboardingId === onboardingId),
@@ -42,7 +45,7 @@ export function OwnerLeaseDocuments() {
       <div>
         <p className="text-filter-label font-bold uppercase tracking-wider text-primary">Active Lease Documents</p>
         <h1 className="mt-2 text-heading-1 font-extrabold text-navy">{record.propertyName}</h1>
-        <p className="mt-1 text-body text-text-muted">{record.tenant.name} · {record.unit} · Lease {record.lease?.id}</p>
+        <p className="mt-1 text-body text-text-muted">{record.tenant.name} - {record.unit} - Lease {record.lease?.id}</p>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">

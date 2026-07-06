@@ -3,16 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { MapPin, Filter, TrendingUp, Plus, ChevronDown } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
-import {
-  BROKER_ASSIGNED_PROPERTIES,
-  type BrokerAssignedProperty,
-  type BrokerPropertyStatus,
-} from '../constants/assignedProperties'
+import { type BrokerAssignedProperty, type BrokerPropertyStatus } from '../constants/assignedProperties'
+import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 
 /* ─────────────────────────────────────────────
    Types
 ───────────────────────────────────────────── */
-const ASSIGNED_PROPERTIES = BROKER_ASSIGNED_PROPERTIES
 
 /* ─────────────────────────────────────────────
    Owner chip (matches design's document icon + name layout)
@@ -170,11 +166,11 @@ function PropertyCard({
    Main Page
 ───────────────────────────────────────────── */
 export function BrokerAssignedProperties() {
+  const { assignedProperties } = useBrokerPrototype()
   const [statusFilter, setStatusFilter] = useState('Active Status')
   const [sortFilter, setSortFilter] = useState('Rent: High to Low')
-  const defaultAssignedProperty = ASSIGNED_PROPERTIES[0]!
-  const [selectedPropertyId, setSelectedPropertyId] = useState(defaultAssignedProperty.id)
-  const visibleProperties = ASSIGNED_PROPERTIES.filter((property) =>
+  const [selectedPropertyId, setSelectedPropertyId] = useState('')
+  const visibleProperties = assignedProperties.filter((property) =>
     statusFilter === 'Active Status' ? property.status === 'Active' : true
   ).sort((a, b) => {
     const rentA = Number(a.price.replace(/[^0-9]/g, ''))
@@ -182,9 +178,19 @@ export function BrokerAssignedProperties() {
     return sortFilter === 'Rent: High to Low' ? rentB - rentA : rentA - rentB
   })
   const selectedProperty =
-    ASSIGNED_PROPERTIES.find((property) => property.id === selectedPropertyId) ??
-    visibleProperties[0] ??
-    defaultAssignedProperty
+    assignedProperties.find((property) => property.id === selectedPropertyId) ??
+    visibleProperties[0]
+
+  if (!selectedProperty) {
+    return (
+      <div className="rounded-card border border-outline bg-white p-10 text-center">
+        <h1 className="text-heading-2 font-bold text-text-primary">No assigned properties</h1>
+        <p className="mt-2 text-body text-text-muted">
+          Admin-approved assignments will appear here for this broker.
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 pb-10">

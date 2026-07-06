@@ -20,6 +20,7 @@ import {
   X,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 import skylineImg from '@/assets/images/skyline_heights.png'
 
 /* ─────────────────────────────────────────────
@@ -779,6 +780,8 @@ function visitTimeInMinutes(time: string) {
 
 export function BrokerDashboard() {
   const navigate = useNavigate()
+  const { assignedProperties, leads, commissions } = useBrokerPrototype()
+  const successfulCommission = commissions.filter((item) => item.status === 'Successful').reduce((sum, item) => sum + item.amount, 0)
   const [visits, setVisits] = useState(initialVisits)
   const [activities, setActivities] = useState<Activity[]>(loadActivities)
   const [activityEditorOpen, setActivityEditorOpen] = useState(false)
@@ -883,25 +886,25 @@ export function BrokerDashboard() {
         <StatCard
           icon={<Building2 size={16} />}
           label="Assigned Properties"
-          value="8"
+          value={String(assignedProperties.length)}
           badge={<GreenBadge>2 this month</GreenBadge>}
         />
         <StatCard
           icon={<Users size={16} />}
           label="Active Leads"
-          value="12"
+          value={String(leads.length)}
           badge={<NeutralBadge>Stable interest</NeutralBadge>}
         />
         <StatCard
           icon={<Handshake size={16} />}
           label="Deals in Progress"
-          value="3"
+          value={String(leads.filter((lead) => !['active', 'rejected'].includes(lead.status)).length)}
           badge={<WarningBadge>Closing pending</WarningBadge>}
         />
         <StatCard
           icon={<DollarSign size={16} />}
           label="Monthly Earnings"
-          value="₹45,000"
+          value={`Rs. ${successfulCommission.toLocaleString('en-IN')}`}
           badge={<CurrentPeriodBadge />}
           dark
         />

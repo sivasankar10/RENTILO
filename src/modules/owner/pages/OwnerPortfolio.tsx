@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -24,10 +24,14 @@ import {
   X,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
+import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
+import { PROTOTYPE_USER_IDS } from '@shared/data/prototypeSeed'
 import { DEMO_OWNER, getOwnerLeaseForProperty, useOnboardingStore } from '@shared/store/onboardingStore'
 import { OwnerListingPromotionTable } from '../components/OwnerListingPromotionTable'
 import { PRIMARY_OWNER_PROPERTY_ID, primaryPortfolioProperty } from '../constants/portfolioProperty'
 import { useOwnerStore } from '../store/ownerStore'
+import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 
 type BrokerCandidate = {
   id: string
@@ -173,7 +177,12 @@ const benefits = [
 
 export function OwnerPortfolio() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { properties } = useOwnerPrototype()
   const registerPropertyDraft = useOwnerStore((state) => state.registerPropertyDraft)
+  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  const currentPropertyId = properties.some((property) => property.id === selectedPropertyId) ? selectedPropertyId ?? PRIMARY_OWNER_PROPERTY_ID : properties[0]?.id ?? PRIMARY_OWNER_PROPERTY_ID
+  const ownerId = user?.id ?? DEMO_OWNER.id
   const [brokerStatus, setBrokerStatus] = useState('Awaiting broker decision.')
   const [propertyPosted, setPropertyPosted] = useState(false)
   const [brokerPickerOpen, setBrokerPickerOpen] = useState(false)
@@ -183,23 +192,25 @@ export function OwnerPortfolio() {
   const assignedBrokerId = useOwnerStore((state) => state.assignedBrokerId)
   const assignBrokerToProperty = useOwnerStore((state) => state.assignBrokerToProperty)
   const removeBrokerFromProperty = useOwnerStore((state) => state.removeBrokerFromProperty)
+  const assignSharedBroker = usePrototypeStore((state) => state.assignBroker)
+  const removeSharedBroker = usePrototypeStore((state) => state.removeBrokerAssignment)
   const isBrokerReleasedForProperty = useOwnerStore((state) => state.isBrokerReleasedForProperty)
   const onboardingRecords = useOnboardingStore((state) => state.records)
   const activeLease = useMemo(
     () =>
-      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, ['active']),
-    [onboardingRecords],
+      getOwnerLeaseForProperty(onboardingRecords, ownerId, currentPropertyId, ['active']),
+    [currentPropertyId, onboardingRecords, ownerId],
   )
   const leaseWithPayment = useMemo(
     () =>
-      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, [
+      getOwnerLeaseForProperty(onboardingRecords, ownerId, currentPropertyId, [
         'payment_completed',
         'active',
       ]),
-    [onboardingRecords],
+    [currentPropertyId, onboardingRecords, ownerId],
   )
   const propertyOccupied = Boolean(activeLease)
-  const brokerReleased = isBrokerReleasedForProperty(PRIMARY_OWNER_PROPERTY_ID)
+  const brokerReleased = isBrokerReleasedForProperty(currentPropertyId)
   const brokerPanelVisible =
     (brokerIntegrationEnabled || Boolean(assignedBrokerId)) && !brokerReleased && !leaseWithPayment
 
@@ -224,6 +235,7 @@ export function OwnerPortfolio() {
 
   const assignBroker = (broker: BrokerCandidate) => {
     assignBrokerToProperty(broker.id)
+    assignSharedBroker(currentPropertyId, broker.id === 'maya-deshpande' || broker.id === 'priya-menon' ? PROTOTYPE_USER_IDS.broker2 : PROTOTYPE_USER_IDS.broker1, ownerId)
     setRejectedBrokerIds((current) => current.filter((id) => id !== broker.id))
     setBrokerStatus(`${broker.name} has been assigned to ${portfolioProperty.name}.`)
     setPropertyPosted(true)
@@ -245,6 +257,8 @@ export function OwnerPortfolio() {
 
     setBrokerStatus(`${assignedBroker.name} was removed from ${portfolioProperty.name}.`)
     removeBrokerFromProperty()
+    removeSharedBroker(currentPropertyId, PROTOTYPE_USER_IDS.broker1)
+    removeSharedBroker(currentPropertyId, PROTOTYPE_USER_IDS.broker2)
     setPropertyPosted(false)
   }
 
@@ -292,7 +306,7 @@ export function OwnerPortfolio() {
 
           <article
             onClick={() => {
-              if (leaseWithPayment) navigate(ROUTES.OWNER.PROPERTY_DETAIL(PRIMARY_OWNER_PROPERTY_ID))
+              if (leaseWithPayment) navigate(ROUTES.OWNER.PROPERTY_DETAIL(currentPropertyId))
             }}
             className={
               leaseWithPayment
@@ -749,10 +763,3 @@ export function OwnerPortfolio() {
     </div>
   )
 }
-
-
-
-
-
-
-

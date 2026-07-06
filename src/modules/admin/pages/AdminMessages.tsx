@@ -30,12 +30,16 @@ const roleSubtitles = {
   OWNER: 'Property owner',
   TENANT: 'Tenant account',
   BROKER: 'Broker partner',
+  ADMIN: 'Platform administrator',
+  'OWNER / TENANT': 'Owner and tenant account',
 } as const
 
 const roleTone = {
   OWNER: 'bg-navy text-white',
   TENANT: 'bg-primary text-white',
   BROKER: 'bg-slate-700 text-white',
+  ADMIN: 'bg-status-error text-white',
+  'OWNER / TENANT': 'bg-teal-700 text-white',
 } as const
 
 function createInitialMessages(user: AdminUser): AdminChatMessage[] {

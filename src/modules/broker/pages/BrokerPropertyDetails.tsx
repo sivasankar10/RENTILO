@@ -24,10 +24,8 @@ import {
   X,
 } from 'lucide-react'
 import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
-import {
-  BROKER_ASSIGNED_PROPERTIES,
-  getBrokerPropertyById,
-} from '../constants/assignedProperties'
+import type { BrokerAssignedProperty } from '../constants/assignedProperties'
+import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 import { ROUTES } from '@shared/constants/routes'
 import locationAerialImg from '@/assets/images/property_location_aerial.png'
 import julianVaneImg from '@/assets/images/julian_vane_owner.png'
@@ -537,9 +535,26 @@ function LeadFormModal({
 }
 
 export function BrokerPropertyDetails() {
-  const navigate = useNavigate()
   const { propertyId } = useParams<{ propertyId: string }>()
-  const property = getBrokerPropertyById(propertyId) ?? BROKER_ASSIGNED_PROPERTIES[0]!
+  const { assignedProperties } = useBrokerPrototype()
+  const property = assignedProperties.find((item) => item.id === propertyId)
+
+  if (!property) {
+    return (
+      <div className="rounded-card border border-outline bg-white p-10 text-center">
+        <h1 className="text-heading-2 font-bold text-text-primary">Property not assigned</h1>
+        <p className="mt-2 text-body text-text-muted">
+          This broker can only open assigned or admin-approved properties.
+        </p>
+      </div>
+    )
+  }
+
+  return <BrokerPropertyDetailsContent property={property} />
+}
+
+function BrokerPropertyDetailsContent({ property }: { property: BrokerAssignedProperty }) {
+  const navigate = useNavigate()
   const gallery = property.gallery.length ? property.gallery : [property.image]
   const seedAssociatedLeads = propertyLeadMap[property.id] ?? defaultAssociatedLeads
   const [leads, setLeads] = useState<PropertyLead[]>(() =>

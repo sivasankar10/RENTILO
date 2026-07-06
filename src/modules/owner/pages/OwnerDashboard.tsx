@@ -319,54 +319,54 @@ export function OwnerDashboard() {
                   </p>
                 </div>
 
-                <div className="mt-8 space-y-4">
-                  {activityItems.map((item) => (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => toggleActivity(item.label)}
-                      className={
-                        item.complete
-                          ? 'flex w-full items-center gap-3 rounded-button border border-slate-700 bg-white/5 px-4 py-3 text-left text-label font-semibold text-white transition-colors duration-200 hover:bg-white/10'
-                          : 'flex w-full items-center gap-3 rounded-button border border-slate-800 bg-navy px-4 py-3 text-left text-label font-semibold text-slate-500'
-                      }
-                    >
-                      {item.complete ? (
-                        <CheckCircle2 size={18} className="text-status-success" />
-                      ) : (
-                        <Circle size={18} className="text-slate-600" />
-                      )}
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </article>
+                    <div className="mt-8 space-y-4">
+                      {activityItems.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={() => toggleActivity(item.label)}
+                          className={
+                            item.complete
+                              ? 'flex w-full items-center gap-3 rounded-button border border-slate-700 bg-white/5 px-4 py-3 text-left text-label font-semibold text-white transition-colors duration-200 hover:bg-white/10'
+                              : 'flex w-full items-center gap-3 rounded-button border border-slate-800 bg-navy px-4 py-3 text-left text-label font-semibold text-slate-500'
+                          }
+                        >
+                          {item.complete ? (
+                            <CheckCircle2 size={18} className="text-status-success" />
+                          ) : (
+                            <Circle size={18} className="text-slate-600" />
+                          )}
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </article>
 
-              <article className="rounded-card border border-dashed border-primary-100 bg-white p-6 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Zap size={18} className="text-primary" />
-                  <h2 className="text-body-lg font-semibold text-text-primary">Pro Advantage</h2>
-                </div>
-                <p className="mt-4 text-label leading-5 text-text-muted">
-                  Unlock full analytics, unlimited listings, and priority tenant communication
-                  tools.
-                </p>
-                <ul className="mt-6 space-y-3">
-                  {advantageItems.map((item) => (
-                    <li key={item} className="flex items-center gap-2 text-label text-text-muted">
-                      <CheckCircle2 size={14} className="text-status-success" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  type="button"
-                  onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
-                  className="mt-6 w-full rounded-button bg-primary px-4 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
-                >
-                  Upgrade to Premium
-                </button>
-              </article>
+                  <article className="rounded-card border border-dashed border-primary-100 bg-white p-6 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <Zap size={18} className="text-primary" />
+                      <h2 className="text-body-lg font-semibold text-text-primary">Pro Advantage</h2>
+                    </div>
+                    <p className="mt-4 text-label leading-5 text-text-muted">
+                      Unlock full analytics, unlimited listings, and priority tenant communication
+                      tools.
+                    </p>
+                    <ul className="mt-6 space-y-3">
+                      {advantageItems.map((item) => (
+                        <li key={item} className="flex items-center gap-2 text-label text-text-muted">
+                          <CheckCircle2 size={14} className="text-status-success" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
+                      className="mt-6 w-full rounded-button bg-primary px-4 py-3 text-body font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
+                    >
+                      Upgrade to Premium
+                    </button>
+                  </article>
             </aside>
           </div>
         </section>
@@ -471,3 +471,4 @@ function PremiumStatsRow() {
     </div>
   )
 }
+

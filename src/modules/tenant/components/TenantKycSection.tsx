@@ -1,6 +1,8 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { CheckCircle2, FileCheck2, Upload } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { MaterialIcon } from './MaterialIcon'
 import { KycVerificationModal } from './KycVerificationModal'
 import { useTenantKycStore } from '../store/tenantKycStore'
@@ -9,10 +11,12 @@ const inputClass =
   'w-full px-3.5 py-3 border border-brand-outline-variant rounded-lg font-body text-[15px] text-brand-on-surface bg-brand-container-lowest outline-none focus:border-brand'
 
 export function TenantKycSection() {
+  const { user } = useAuth()
   const status = useTenantKycStore((s) => s.status)
   const document = useTenantKycStore((s) => s.document)
+  const sharedVerified = usePrototypeStore((state) => state.users.find((item) => item.id === user?.id)?.kycStatus === 'Verified')
   const [showModal, setShowModal] = useState(false)
-  const isVerified = status === 'verified'
+  const isVerified = status === 'verified' || sharedVerified
 
   return (
     <section className="mb-9">
@@ -62,19 +66,19 @@ export function TenantKycSection() {
           </div>
         </div>
 
-        {isVerified && document ? (
+        {isVerified ? (
           <div className="grid gap-4 sm:grid-cols-2 mb-5">
             <div>
               <p className="text-[13px] font-semibold text-brand-on-surface-variant mb-2">
                 Aadhaar Number
               </p>
-              <p className={inputClass}>{document.aadhaarMasked}</p>
+              <p className={inputClass}>{document?.aadhaarMasked ?? 'Verified identity on file'}</p>
             </div>
             <div>
               <p className="text-[13px] font-semibold text-brand-on-surface-variant mb-2">
                 Verified On
               </p>
-              <p className={inputClass}>{document.verifiedAt}</p>
+              <p className={inputClass}>{document?.verifiedAt ?? 'Verified for this demo account'}</p>
             </div>
           </div>
         ) : (
@@ -120,6 +124,13 @@ export function TenantKycSection() {
         onClose={() => setShowModal(false)}
         onVerified={(aadhaarRaw) => {
           useTenantKycStore.getState().setVerified(aadhaarRaw)
+          if (user) {
+            usePrototypeStore.setState((state) => ({
+              users: state.users.map((item) => item.id === user.id
+                ? { ...item, kycStatus: 'Verified', updatedAt: new Date().toISOString() }
+                : item),
+            }))
+          }
           setShowModal(false)
         }}
       />

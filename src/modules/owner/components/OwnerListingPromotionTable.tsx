@@ -4,17 +4,17 @@ import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import {
   formatPromotionDate,
-  getTenantListingIdForOwnerProperty,
   LISTING_PROMOTION_PRICE_INR,
 } from '@shared/constants/listingPromotion'
 import {
   isPromotionActive,
   useListingPromotionStore,
 } from '@shared/store/listingPromotionStore'
-import { OWNER_MANAGED_PROPERTIES } from '../store/ownerStore'
+import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 
 export function OwnerListingPromotionTable() {
   const navigate = useNavigate()
+  const { properties, listings } = useOwnerPrototype()
   const promotions = useListingPromotionStore((state) => state.promotions)
   const getPromotionForProperty = useListingPromotionStore((state) => state.getPromotionForProperty)
 
@@ -31,7 +31,7 @@ export function OwnerListingPromotionTable() {
           </p>
           <h2 className="mt-1 text-heading-3 font-bold text-navy">Promote your properties</h2>
           <p className="mt-1 text-body text-text-muted">
-            ₹{LISTING_PROMOTION_PRICE_INR}/month per listing · Suggested badge on tenant search
+            Rs. {LISTING_PROMOTION_PRICE_INR}/month per listing - Suggested badge on tenant search
           </p>
         </div>
         <div className="inline-flex items-center gap-2 rounded-button bg-primary-50 px-4 py-2 text-label font-semibold text-primary">
@@ -53,16 +53,16 @@ export function OwnerListingPromotionTable() {
             </tr>
           </thead>
           <tbody>
-            {OWNER_MANAGED_PROPERTIES.map((property) => {
+            {properties.map((property) => {
               const promotion = getPromotionForProperty(property.id)
               const active = promotion ? isPromotionActive(promotion) : false
-              const tenantListingId = getTenantListingIdForOwnerProperty(property.id)
+              const tenantListingId = listings.find((listing) => listing.propertyId === property.id)?.id
               const canPromote = Boolean(tenantListingId)
 
               return (
                 <tr key={property.id} className="border-b border-outline last:border-0">
                   <td className="px-6 py-4">
-                    <p className="text-body font-bold text-text-primary">{property.name}</p>
+                    <p className="text-body font-bold text-text-primary">{property.title}</p>
                     <p className="mt-0.5 text-label text-text-muted">{property.address}</p>
                   </td>
                   <td className="px-6 py-4 text-label text-text-muted">
@@ -87,7 +87,7 @@ export function OwnerListingPromotionTable() {
                   <td className="px-6 py-4 text-body text-text-primary">
                     {active && promotion
                       ? formatPromotionDate(promotion.promotedUntilIso)
-                      : '—'}
+                      : 'â€”'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button
