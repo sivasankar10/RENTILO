@@ -2,6 +2,7 @@ import { Navigate, type RouteObject } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 import { BrokerDashboard } from '../pages/BrokerDashboard'
 import { BrokerPortfolio } from '../pages/BrokerPortfolio'
+import { BrokerOwnerPortfolio } from '../pages/BrokerOwnerPortfolio'
 import { BrokerAssignedProperties } from '../pages/BrokerAssignedProperties'
 import { BrokerListings } from '../pages/BrokerListings'
 import { BrokerClients } from '../pages/BrokerClients'
@@ -18,6 +19,7 @@ export const brokerRoutes: RouteObject[] = [
   { path: 'dashboard', element: <BrokerDashboard /> },
   { path: 'portfolio', element: <BrokerPortfolio /> },
   { path: 'portfolio/:propertyId', element: <BrokerPropertyDetails /> },
+  { path: 'owner-portfolio/:ownerId', element: <BrokerOwnerPortfolio /> },
   { path: 'assigned-properties', element: <BrokerAssignedProperties /> },
   { path: 'listings', element: <BrokerListings /> },
   { path: 'clients', element: <BrokerClients /> },
