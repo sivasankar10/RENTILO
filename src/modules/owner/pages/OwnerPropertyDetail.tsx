@@ -144,10 +144,10 @@ export function OwnerPropertyDetail() {
   const prototypeApplications = usePrototypeStore((state) => state.applications)
   const prototypeUsers = usePrototypeStore((state) => state.users)
 
-  // Interested leads: tenants who showed interest in this property
+  // Interested leads: tenants who showed interest in this property (still active leads)
   const interestedLeads = useMemo(
     () => prototypeApplications
-      .filter((app) => app.propertyId === ownerPropertyId && app.status === 'interest_shown')
+      .filter((app) => app.propertyId === ownerPropertyId && !['active', 'rejected', 'payment_completed'].includes(app.status))
       .map((app) => {
         const tenant = prototypeUsers.find((u) => u.id === app.tenantId)
         return {

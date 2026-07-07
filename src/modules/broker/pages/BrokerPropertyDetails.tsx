@@ -29,7 +29,6 @@ import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 import { ROUTES } from '@shared/constants/routes'
 import locationAerialImg from '@/assets/images/property_location_aerial.png'
 import julianVaneImg from '@/assets/images/julian_vane_owner.png'
-import sarahJenkinsImg from '@/assets/images/sarah_jenkins.png'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 
 type PropertyLead = {
@@ -45,12 +44,6 @@ type PropertyLead = {
   conversationId: string
 }
 
-type SeedPropertyLead = Omit<
-  PropertyLead,
-  'id' | 'propertyName' | 'phone' | 'email' | 'conversationId'
-> &
-  Partial<Pick<PropertyLead, 'phone' | 'email' | 'conversationId'>>
-
 type LeadFormState = {
   propertyName: string
   name: string
@@ -59,113 +52,6 @@ type LeadFormState = {
   note: string
   status: string
   lastAction: string
-}
-
-const defaultAssociatedLeads: SeedPropertyLead[] = [
-  {
-    name: 'Sarah Miller',
-    note: 'Qualified - $1.9M Pre-approved',
-    image: sarahJenkinsImg,
-    status: 'Hot lead',
-    lastAction: 'Viewing scheduled',
-  },
-  {
-    name: 'Robert Blackstone',
-    note: 'Pending ID - Cash Offer',
-    image: brokerProfileImg,
-    status: 'Follow-up',
-    lastAction: 'Awaiting documents',
-  },
-]
-
-const propertyLeadMap: Record<string, SeedPropertyLead[]> = {
-  'skyline-plaza': [
-    {
-      name: 'Sarah Miller',
-      note: 'Corporate tenant - 18 month lease interest',
-      image: sarahJenkinsImg,
-      status: 'Hot lead',
-      lastAction: 'Viewing scheduled for Friday',
-    },
-    {
-      name: 'Robert Blackstone',
-      note: 'Executive relocation - budget approved',
-      image: brokerProfileImg,
-      status: 'Qualified',
-      lastAction: 'Lease terms shared',
-    },
-    {
-      name: 'Julian Thorne',
-      note: 'Family tenant - wants concierge and parking',
-      image: julianVaneImg,
-      status: 'Follow-up',
-      lastAction: 'Call back requested',
-    },
-  ],
-  'harbor-residences': [
-    {
-      name: 'Eleonor Vance',
-      note: 'Waterfront preference - move-in within 30 days',
-      image: sarahJenkinsImg,
-      status: 'New',
-      lastAction: 'Brochure sent',
-    },
-    {
-      name: 'Marcus Chen',
-      note: 'Couple lead - asked for pet policy',
-      image: brokerProfileImg,
-      status: 'Contacted',
-      lastAction: 'Pet approval pending',
-    },
-  ],
-  'canary-wharf': [
-    {
-      name: 'Nisha Rao',
-      note: 'Professional tenant - office commute priority',
-      image: sarahJenkinsImg,
-      status: 'Qualified',
-      lastAction: 'Video tour completed',
-    },
-    {
-      name: 'Daniel Brooks',
-      note: 'Finance professional - immediate occupancy',
-      image: brokerProfileImg,
-      status: 'Hot lead',
-      lastAction: 'Deposit discussion active',
-    },
-  ],
-  'shoreditch-penthouse': [
-    {
-      name: 'Amelia Hart',
-      note: 'Creative founder - rooftop terrace preference',
-      image: sarahJenkinsImg,
-      status: 'Hot lead',
-      lastAction: 'Viewing scheduled',
-    },
-    {
-      name: 'Oscar Flynn',
-      note: 'Designer couple - needs work-from-home setup',
-      image: brokerProfileImg,
-      status: 'Follow-up',
-      lastAction: 'Awaiting availability',
-    },
-  ],
-  'greenwich-modern-home': [
-    {
-      name: 'Meera Iyer',
-      note: 'Family tenant - school proximity required',
-      image: sarahJenkinsImg,
-      status: 'Qualified',
-      lastAction: 'School details shared',
-    },
-    {
-      name: 'Arjun Patel',
-      note: 'Long-term lease interest - garage required',
-      image: brokerProfileImg,
-      status: 'Contacted',
-      lastAction: 'Follow-up call tomorrow',
-    },
-  ],
 }
 
 const leadStatusOptions = ['Hot lead', 'Qualified', 'Follow-up', 'New', 'Contacted']
@@ -185,23 +71,6 @@ const getLeadBadgeClass = (status: string) => {
   if (normalized.includes('contact')) return 'bg-amber-50 text-amber-700'
   return 'bg-slate-100 text-slate-600'
 }
-
-const buildPropertyLeads = (
-  propertyId: string,
-  propertyName: string,
-  seedLeads: SeedPropertyLead[],
-): PropertyLead[] =>
-  seedLeads.map((lead, index) => {
-    const slug = slugify(lead.name) || `lead-${index + 1}`
-    return {
-      ...lead,
-      id: `${propertyId}-${slug}-${index + 1}`,
-      propertyName,
-      phone: lead.phone ?? `+1 212 555 01${String(index + 1).padStart(2, '0')}`,
-      email: lead.email ?? `${slug}@example.com`,
-      conversationId: lead.conversationId ?? `lead-${propertyId}-${slug}`,
-    }
-  })
 
 const createEmptyLeadForm = (propertyName: string): LeadFormState => ({
   propertyName,
@@ -555,11 +424,42 @@ export function BrokerPropertyDetails() {
 
 function BrokerPropertyDetailsContent({ property }: { property: BrokerAssignedProperty }) {
   const navigate = useNavigate()
+  const { leads: prototypeLeads, users } = useBrokerPrototype()
   const gallery = property.gallery.length ? property.gallery : [property.image]
-  const seedAssociatedLeads = propertyLeadMap[property.id] ?? defaultAssociatedLeads
-  const [leads, setLeads] = useState<PropertyLead[]>(() =>
-    buildPropertyLeads(property.id, property.name, seedAssociatedLeads)
-  )
+
+  // Build dynamic leads from prototype store applications for this property
+  const dynamicLeads: PropertyLead[] = prototypeLeads
+    .filter((app) => app.propertyId === property.id && !['active', 'rejected', 'payment_completed'].includes(app.status))
+    .map((app, index) => {
+      const tenant = users.find((u) => u.id === app.tenantId)
+      const tenantName = tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Unknown Tenant'
+      const status = app.scheduledVisit ? 'Hot lead' : app.status === 'interest_shown' ? 'New' : 'Follow-up'
+      const lastAction = app.scheduledVisit
+        ? `Viewing scheduled - ${app.scheduledVisit.date}`
+        : app.status === 'interest_shown'
+          ? 'Showed interest'
+          : app.status
+      return {
+        id: app.id,
+        propertyName: property.name,
+        name: tenantName,
+        note: tenant?.kycStatus === 'Verified' ? 'Verified tenant' : 'Pending verification',
+        image: tenant?.avatar ?? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
+        status,
+        lastAction,
+        phone: tenant?.phone ?? `+91 90000 0000${index}`,
+        email: tenant?.email ?? `tenant${index}@rentilo.test`,
+        conversationId: `lead-${app.id}`,
+      }
+    })
+
+  const [leads, setLeads] = useState<PropertyLead[]>(dynamicLeads)
+
+  // Update leads when prototype data changes
+  useEffect(() => {
+    setLeads(dynamicLeads)
+  }, [prototypeLeads.length, property.id])
+
   const [openLeadActionId, setOpenLeadActionId] = useState<string | null>(null)
   const [manageLeadsOpen, setManageLeadsOpen] = useState(false)
   const [leadFormMode, setLeadFormMode] = useState<'add' | 'edit' | null>(null)
@@ -569,7 +469,6 @@ function BrokerPropertyDetailsContent({ property }: { property: BrokerAssignedPr
   )
 
   useEffect(() => {
-    setLeads(buildPropertyLeads(property.id, property.name, propertyLeadMap[property.id] ?? defaultAssociatedLeads))
     setOpenLeadActionId(null)
     setManageLeadsOpen(false)
     setLeadFormMode(null)
@@ -580,12 +479,6 @@ function BrokerPropertyDetailsContent({ property }: { property: BrokerAssignedPr
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 })
   }, [])
-
-  const openAddLeadForm = () => {
-    setEditingLeadId(null)
-    setLeadForm(createEmptyLeadForm(property.name))
-    setLeadFormMode('add')
-  }
 
   const openEditLeadForm = (lead: PropertyLead) => {
     setEditingLeadId(lead.id)
@@ -917,14 +810,6 @@ function BrokerPropertyDetailsContent({ property }: { property: BrokerAssignedPr
                 ))
               )}
             </div>
-            <button
-              type="button"
-              onClick={openAddLeadForm}
-              className="mt-8 inline-flex h-9 w-full items-center justify-center gap-2 rounded bg-slate-50 text-[12px] font-semibold text-[#333] hover:bg-slate-100"
-            >
-              <Plus size={14} />
-              Add New Lead
-            </button>
           </section>
 
           <section className="rounded-lg border border-outline bg-white p-6">
