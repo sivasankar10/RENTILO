@@ -8,6 +8,7 @@ import { AdminUserManagement } from '../pages/AdminUserManagement'
 import { AdminFinancePayments } from '../pages/AdminFinancePayments'
 import { AdminPaymentReceipt } from '../pages/AdminPaymentReceipt'
 import { AdminPlatformConfiguration } from '../pages/AdminPlatformConfiguration'
+import { AdminApprovalRequests } from '../pages/AdminApprovalRequests'
 import { AdminAssignmentManagement } from '../pages/AdminAssignmentManagement'
 import { AdminNotifications } from '../pages/AdminNotifications'
 import { AdminMaintenanceTickets } from '../pages/AdminMaintenanceTickets'
@@ -24,6 +25,7 @@ export const adminRoutes: RouteObject[] = [
   { path: 'finance-payments', element: <AdminFinancePayments /> },
   { path: 'finance-payments/receipt/:transactionId', element: <AdminPaymentReceipt /> },
   { path: 'platform-configuration', element: <AdminPlatformConfiguration /> },
+  { path: 'approval-requests', element: <AdminApprovalRequests /> },
   { path: 'assignment-management', element: <AdminAssignmentManagement /> },
   { path: 'maintenance-tickets', element: <AdminMaintenanceTickets /> },
   { path: 'notifications', element: <AdminNotifications /> },
