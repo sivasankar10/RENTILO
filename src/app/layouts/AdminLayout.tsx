@@ -21,6 +21,9 @@ import { useMediaQuery } from '@shared/hooks/useMediaQuery'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { useAuthStore } from '@app/store/authStore'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
+import { STATIC_ADMIN_UNREAD_IDS } from '@modules/admin/constants/adminNotifications'
+import { useAdminNotificationsReadStore } from '@modules/admin/store/adminNotificationsReadStore'
 import { ToastContainer } from '@modules/admin/components/Toast'
 import { ConfirmDialog } from '@modules/admin/components/ConfirmDialog'
 
@@ -102,6 +105,18 @@ export function AdminLayout() {
   const isNotificationsPage = pathname.startsWith(ROUTES.ADMIN.NOTIFICATIONS)
   const isMessagesPage = pathname.startsWith(ROUTES.ADMIN.MESSAGES)
   const logout = useAuthStore((s) => s.logout)
+  const hasUnreadSharedNotifications = usePrototypeStore((state) =>
+    state.notifications.some(
+      (notification) =>
+        notification.unread && (notification.role === 'admin' || notification.role === 'all'),
+    ),
+  )
+  const hasUnreadStaticNotifications = useAdminNotificationsReadStore((state) =>
+    STATIC_ADMIN_UNREAD_IDS.some(
+      (id) => !state.readIds.includes(id) && !state.deletedIds.includes(id),
+    ),
+  )
+  const hasUnreadNotifications = hasUnreadSharedNotifications || hasUnreadStaticNotifications
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -161,7 +176,9 @@ export function AdminLayout() {
               aria-current={isNotificationsPage ? 'page' : undefined}
             >
               <Bell size={20} strokeWidth={1.75} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
+              {hasUnreadNotifications && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
+              )}
             </button>
             <button
               type="button"

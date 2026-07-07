@@ -1,146 +1,25 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  AlertTriangle,
   Bell,
   Check,
-  CheckCircle2,
-  CreditCard,
-  FileText,
   Megaphone,
   ShieldAlert,
   Star,
   Trash2,
-  UserPlus,
-  Wrench,
 } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
 import { toast } from '../components/Toast'
 import { usePrototypeStore } from '@shared/store/prototypeStore'
+import { initialNotifications, type AdminNotification } from '../constants/adminNotifications'
+import { useAdminNotificationsReadStore } from '../store/adminNotificationsReadStore'
 
 type FilterKey = 'All' | 'Unread' | 'Important'
-type Tone = 'blue' | 'amber' | 'slate' | 'red' | 'green'
-
-interface AdminNotification {
-  id: string
-  icon: LucideIcon
-  title: string
-  description: string
-  time: string
-  tone: Tone
-  unread: boolean
-  important: boolean
-  actionLabel?: string
-  actionRoute?: string
-}
 
 const filters: FilterKey[] = ['All', 'Unread', 'Important']
 
-const initialNotifications: AdminNotification[] = [
-  {
-    id: 'n-1',
-    icon: UserPlus,
-    title: 'New broker registration',
-    description:
-      "Aditi Sharma submitted KYC documents for review. Verify identity to activate the account.",
-    time: '2 mins ago',
-    tone: 'blue',
-    unread: true,
-    important: true,
-    actionLabel: 'Review broker',
-    actionRoute: ROUTES.ADMIN.BROKER_MANAGEMENT,
-  },
-  {
-    id: 'n-2',
-    icon: ShieldAlert,
-    title: '2 listings flagged for compliance',
-    description:
-      'Automated screening flagged listings #LST-22314 and #LST-99203 for missing documentation.',
-    time: '12 mins ago',
-    tone: 'red',
-    unread: true,
-    important: true,
-    actionLabel: 'View listings',
-    actionRoute: ROUTES.ADMIN.LISTING_MANAGEMENT,
-  },
-  {
-    id: 'n-3',
-    icon: AlertTriangle,
-    title: 'Standard queue volume alert',
-    description:
-      '452 unassigned listings exceed the auto-routing threshold. Consider bulk assignment.',
-    time: '1 hour ago',
-    tone: 'amber',
-    unread: true,
-    important: false,
-    actionLabel: 'Open queue',
-    actionRoute: ROUTES.ADMIN.ASSIGNMENT_MANAGEMENT,
-  },
-  {
-    id: 'n-4',
-    icon: CreditCard,
-    title: 'Payment refund processed',
-    description:
-      'Transaction #TRX-82911 was refunded successfully. The user has been notified by email.',
-    time: '3 hours ago',
-    tone: 'green',
-    unread: false,
-    important: false,
-    actionLabel: 'View transaction',
-    actionRoute: ROUTES.ADMIN.FINANCE_PAYMENTS,
-  },
-  {
-    id: 'n-5',
-    icon: FileText,
-    title: 'Listing approval pending',
-    description:
-      'Property RF-99210 in Bandra West is awaiting manual review from the platform team.',
-    time: 'Yesterday',
-    tone: 'blue',
-    unread: false,
-    important: true,
-    actionLabel: 'Review approval',
-    actionRoute: ROUTES.ADMIN.PLATFORM_CONFIGURATION,
-  },
-  {
-    id: 'n-6',
-    icon: Megaphone,
-    title: 'Broadcast delivered',
-    description:
-      'System maintenance announcement reached 1,240 users across all platform roles.',
-    time: '2 days ago',
-    tone: 'slate',
-    unread: false,
-    important: false,
-  },
-  {
-    id: 'n-7',
-    icon: Wrench,
-    title: 'Scheduled maintenance window',
-    description:
-      'Database migration scheduled for Sunday 2 AM - 4 AM IST. Expect brief read-only mode.',
-    time: '3 days ago',
-    tone: 'slate',
-    unread: false,
-    important: false,
-  },
-  {
-    id: 'n-8',
-    icon: CheckCircle2,
-    title: 'Monthly KYC report finalized',
-    description:
-      'October KYC verification report is ready. 94% of new users completed verification on time.',
-    time: 'Oct 12',
-    tone: 'green',
-    unread: false,
-    important: false,
-    actionLabel: 'Download report',
-  },
-]
-
-const toneStyles: Record<Tone, string> = {
+const toneStyles: Record<'blue' | 'amber' | 'slate' | 'red' | 'green', string> = {
   blue: 'bg-primary-100 text-primary',
   amber: 'bg-status-warning-bg text-status-warning-text',
   slate: 'bg-slate-100 text-text-primary',
@@ -151,11 +30,18 @@ const toneStyles: Record<Tone, string> = {
 export function AdminNotifications() {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All')
-  const [items, setItems] = useState<AdminNotification[]>(initialNotifications)
+  const [importantOverrides, setImportantOverrides] = useState<Record<string, boolean>>({})
   const sharedNotifications = usePrototypeStore((state) => state.notifications)
   const markSharedNotificationRead = usePrototypeStore((state) => state.markNotificationRead)
+  const readIds = useAdminNotificationsReadStore((state) => state.readIds)
+  const deletedIds = useAdminNotificationsReadStore((state) => state.deletedIds)
+  const markReadPersisted = useAdminNotificationsReadStore((state) => state.markRead)
+  const markManyReadPersisted = useAdminNotificationsReadStore((state) => state.markManyRead)
+  const removePersisted = useAdminNotificationsReadStore((state) => state.remove)
 
-  useEffect(() => {
+  // Single derived list: shared prototype notifications + static demo notifications,
+  // with read/deleted/important state applied from the persisted store.
+  const items = useMemo<AdminNotification[]>(() => {
     const sessionItems: AdminNotification[] = sharedNotifications
       .filter((notification) => notification.role === 'admin' || notification.role === 'all')
       .map((notification) => ({
@@ -171,8 +57,18 @@ export function AdminNotifications() {
         actionRoute: notification.action === 'review_broker_request' ? ROUTES.ADMIN.PLATFORM_CONFIGURATION : undefined,
       }))
     const sessionIds = new Set(sessionItems.map((item) => item.id))
-    setItems((current) => [...sessionItems, ...current.filter((item) => !sessionIds.has(item.id))])
-  }, [sharedNotifications])
+    const merged = [
+      ...sessionItems,
+      ...initialNotifications.filter((item) => !sessionIds.has(item.id)),
+    ]
+    return merged
+      .filter((item) => !deletedIds.includes(item.id))
+      .map((item) => ({
+        ...item,
+        unread: item.unread && !readIds.includes(item.id),
+        important: importantOverrides[item.id] ?? item.important,
+      }))
+  }, [sharedNotifications, readIds, deletedIds, importantOverrides])
 
   const visibleItems = useMemo(() => {
     if (activeFilter === 'Unread') return items.filter((i) => i.unread)
@@ -184,9 +80,7 @@ export function AdminNotifications() {
 
   const markAsRead = (id: string) => {
     markSharedNotificationRead(id)
-    setItems((current) =>
-      current.map((item) => (item.id === id ? { ...item, unread: false } : item)),
-    )
+    markReadPersisted(id)
   }
 
   const handleNotificationClick = (notification: AdminNotification) => {
@@ -195,7 +89,7 @@ export function AdminNotifications() {
 
   const handleDelete = (notification: AdminNotification, e: React.MouseEvent) => {
     e.stopPropagation()
-    setItems((current) => current.filter((item) => item.id !== notification.id))
+    removePersisted(notification.id)
     toast.info('Notification deleted', notification.title)
   }
 
@@ -204,19 +98,17 @@ export function AdminNotifications() {
       toast.info('Already up to date', "You're all caught up.")
       return
     }
-    sharedNotifications.forEach((notification) => {
-      if (notification.unread) markSharedNotificationRead(notification.id)
-    })
-    setItems((current) => current.map((item) => ({ ...item, unread: false })))
+    const unreadIds = items.filter((item) => item.unread).map((item) => item.id)
+    unreadIds.forEach((id) => markSharedNotificationRead(id))
+    markManyReadPersisted(unreadIds)
     toast.success('Marked all as read', `${unreadCount} notifications cleared.`)
   }
 
   const toggleImportant = (id: string) => {
-    setItems((current) =>
-      current.map((item) =>
-        item.id === id ? { ...item, important: !item.important } : item
-      )
-    )
+    setImportantOverrides((current) => {
+      const base = items.find((item) => item.id === id)?.important ?? false
+      return { ...current, [id]: !(current[id] ?? base) }
+    })
   }
 
   const handleToggleImportant = (notification: AdminNotification, e: React.MouseEvent) => {
