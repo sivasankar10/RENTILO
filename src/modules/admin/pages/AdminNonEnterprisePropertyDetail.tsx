@@ -28,6 +28,9 @@ import { ROUTES } from '@shared/constants/routes'
 import { useAdminStore, type AdminListing, type ListingStatus } from '../store/adminStore'
 import { toast } from '../components/Toast'
 
+import { usePrototypeStore } from '@shared/store/prototypeStore'
+import { useOnboardingStore } from '@shared/store/onboardingStore'
+
 type StepNumber = 1 | 2 | 3 | 4 | 5
 
 type Step = {
@@ -413,6 +416,11 @@ export function AdminNonEnterprisePropertyDetail() {
           </div>
 
           <div className="space-y-6">
+            {/* Property Overview Card (like owner portfolio) */}
+            {!editing && (
+              <PropertyOverviewCard listingForm={form} />
+            )}
+
             {activeStep === 1 && (
               <StepSection
                 icon={Home}
@@ -661,6 +669,120 @@ export function AdminNonEnterprisePropertyDetail() {
         </div>
       </div>
     </div>
+  )
+}
+
+function PropertyOverviewCard({ listingForm }: { listingForm: ListingForm }) {
+  const prototypeProperties = usePrototypeStore((state) => state.properties)
+  const prototypeUsers = usePrototypeStore((state) => state.users)
+  const brokerAssignments = usePrototypeStore((state) => state.brokerAssignments)
+  const onboardingRecords = useOnboardingStore((state) => state.records)
+
+  // Try to match this listing to a prototype property
+  const matchedProperty = prototypeProperties.find(
+    (p) => p.title.toLowerCase().includes(listingForm.propertyTitle.toLowerCase()) ||
+      listingForm.propertyTitle.toLowerCase().includes(p.title.toLowerCase())
+  )
+
+  const owner = matchedProperty ? prototypeUsers.find((u) => u.id === matchedProperty.ownerId) : null
+  const activeBroker = matchedProperty
+    ? brokerAssignments.find((a) => a.propertyId === matchedProperty.id && a.status === 'Active')
+    : null
+  const brokerUser = activeBroker ? prototypeUsers.find((u) => u.id === activeBroker.brokerId) : null
+  const activeOnboarding = matchedProperty
+    ? onboardingRecords.find((r) => r.ownerPropertyId === matchedProperty.id && ['active', 'payment_completed'].includes(r.status))
+    : null
+
+  return (
+    <article className="overflow-hidden rounded-card border border-outline bg-white shadow-surface">
+      <div className="relative h-52 overflow-hidden bg-slate-100">
+        <img
+          src={listingForm.image}
+          alt={listingForm.propertyTitle}
+          className="h-full w-full object-cover"
+        />
+        <span className={cn(
+          'absolute left-5 top-5 rounded-pill px-3 py-1 text-badge font-bold uppercase',
+          activeOnboarding?.status === 'active'
+            ? 'bg-primary-50 text-primary'
+            : activeOnboarding
+              ? 'bg-amber-50 text-amber-700'
+              : 'bg-green-50 text-green-700'
+        )}>
+          {activeOnboarding?.status === 'active' ? 'Occupied' : activeOnboarding ? 'Pending Onboarding' : 'Vacant'}
+        </span>
+      </div>
+
+      <div className="p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-heading-3 font-bold text-text-primary">{listingForm.propertyTitle}</h2>
+            <p className="mt-1 text-label text-text-muted flex items-center gap-1">
+              <MapPin size={13} />
+              {listingForm.neighborhood}, {listingForm.city}
+            </p>
+          </div>
+          <p className="text-heading-2 font-bold text-primary">{listingForm.rent}<span className="text-label font-normal text-text-muted"> /mo</span></p>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-label text-text-muted">
+          <span>{listingForm.bedrooms}</span>
+          <span>{listingForm.bathrooms} Baths</span>
+          <span>{listingForm.builtUpArea}</span>
+          <span>{listingForm.furnishing}</span>
+          <span>{listingForm.parking}</span>
+        </div>
+
+        {/* Owner & Broker Info */}
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg border border-outline bg-canvas-alt p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Owner</p>
+            <p className="mt-1 text-body font-bold text-text-primary">{owner ? `${owner.firstName} ${owner.lastName}` : listingForm.owner}</p>
+            <p className="mt-0.5 text-label text-text-muted">{owner?.email ?? 'owner@rentilo.test'}</p>
+          </div>
+
+          <div className="rounded-lg border border-outline bg-canvas-alt p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Assigned Broker</p>
+            {brokerUser ? (
+              <>
+                <p className="mt-1 text-body font-bold text-text-primary">{brokerUser.firstName} {brokerUser.lastName}</p>
+                <p className="mt-0.5 text-label text-text-muted">{brokerUser.phone}</p>
+              </>
+            ) : (
+              <p className="mt-1 text-body text-text-muted">No broker assigned</p>
+            )}
+          </div>
+        </div>
+
+        {/* Tenant Info (if onboarded) */}
+        {activeOnboarding && (
+          <div className="mt-4 rounded-lg border border-primary-100 bg-primary-50/50 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
+              {activeOnboarding.status === 'active' ? 'Current Tenant' : 'Tenant — Payment Received'}
+            </p>
+            <div className="mt-2 flex items-center gap-3">
+              {activeOnboarding.tenant.avatar && (
+                <img src={activeOnboarding.tenant.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+              )}
+              <div>
+                <p className="text-body font-bold text-navy">{activeOnboarding.tenant.name}</p>
+                <p className="text-label text-text-muted">{activeOnboarding.tenant.email} · {activeOnboarding.tenant.phone}</p>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 text-label">
+              <div>
+                <span className="text-text-muted">Monthly Rent:</span>
+                <span className="ml-1 font-semibold text-text-primary">{activeOnboarding.monthlyRent}</span>
+              </div>
+              <div>
+                <span className="text-text-muted">Unit:</span>
+                <span className="ml-1 font-semibold text-text-primary">{activeOnboarding.unit}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </article>
   )
 }
 

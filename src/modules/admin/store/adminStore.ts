@@ -189,6 +189,7 @@ interface AdminState {
   enterpriseBrokers: AdminEnterpriseBroker[]
   assignmentQueue: AdminQueueItem[]
   setBrokerStatus: (id: string, status: BrokerStatus) => void
+  addBroker: (broker: AdminBroker) => void
   removeBroker: (id: string) => void
   removeEnterpriseBroker: (id: string) => void
   assignQueueItem: (id: string) => void
@@ -240,6 +241,9 @@ const useAdminUiStore = create<AdminState>((set) => ({
     set((s) => ({
       brokers: s.brokers.map((b) => (b.id === id ? { ...b, status } : b)),
     })),
+
+  addBroker: (broker) =>
+    set((s) => ({ brokers: [...s.brokers, broker] })),
 
   removeBroker: (id) =>
     set((s) => ({ brokers: s.brokers.filter((b) => b.id !== id) })),
@@ -413,6 +417,7 @@ function buildAdminState(prototype: PrototypeState, ui: AdminState): AdminState 
         usePrototypeStore.getState().toggleUserStatus(id)
       }
     },
+    addBroker: ui.addBroker,
     removeBroker: (id) => usePrototypeStore.getState().removeUser(id),
     removeEnterpriseBroker: ui.removeEnterpriseBroker,
     assignQueueItem: (propertyId) => {

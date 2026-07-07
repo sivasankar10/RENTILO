@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   Building2,
@@ -9,7 +9,10 @@ import {
   Grid3X3,
   Layers,
   MapPin,
+  MessageSquare,
   Pencil,
+  Phone,
+  Plus,
   ShieldCheck,
   Trash2,
   UserPlus,
@@ -20,6 +23,7 @@ import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
 import { toast } from '../components/Toast'
 import { exportToCsv } from '../utils/exportCsv'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 
 interface Tenant {
   name: string
@@ -65,6 +69,26 @@ interface StructuralParameters {
   units: string
   occupancyPercent: string
   totalUnitCount: string
+}
+
+interface BlockUnit {
+  id: string
+  unitNumber: string
+  area: string
+  config: string
+  status: 'Available' | 'Occupied' | 'Reserved'
+}
+
+interface BlockFloor {
+  id: string
+  floorNumber: string
+  units: BlockUnit[]
+}
+
+interface BlockData {
+  id: string
+  name: string
+  floors: BlockFloor[]
 }
 
 const emptyTenant: Tenant = {
@@ -201,6 +225,15 @@ export function AdminEnterprisePropertyDetail() {
   const [structure, setStructure] = useState<StructuralParameters>(initialStructuralParameters)
   const [draftStructure, setDraftStructure] = useState<StructuralParameters>(initialStructuralParameters)
   const [editingStructure, setEditingStructure] = useState(false)
+  const [blockData, setBlockData] = useState<BlockData[]>(() => {
+    const names = initialStructuralParameters.blockDetail.split(',').map((n) => n.trim())
+    return names.map((name, i) => ({
+      id: `block-${i}`,
+      name,
+      floors: [],
+    }))
+  })
+  const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null)
   const [savedTenants, setSavedTenants] = useState<Tenant[]>(initialTenants)
   const [draftTenants, setDraftTenants] = useState<Tenant[]>(initialTenants)
   const [tenantStatusFilter, setTenantStatusFilter] = useState<TenantStatusFilter>('ALL')
@@ -211,6 +244,32 @@ export function AdminEnterprisePropertyDetail() {
   const [savedFloorDetails, setSavedFloorDetails] = useState<FloorDetail[]>(initialFloorDetails)
   const [draftFloorDetails, setDraftFloorDetails] = useState<FloorDetail[]>(initialFloorDetails)
   const [editingFloorIndex, setEditingFloorIndex] = useState<number | null>(null)
+
+  // Dynamic broker assignments for this enterprise property
+  const protoBrokerAssignments = usePrototypeStore((state) => state.brokerAssignments)
+  const protoUsers = usePrototypeStore((state) => state.users)
+  const removeBrokerAssignment = usePrototypeStore((state) => state.removeBrokerAssignment)
+  const assignedBrokers = useMemo(() => {
+    // For enterprise, show all active broker assignments
+    return protoBrokerAssignments
+      .filter((a) => a.status === 'Active')
+      .map((a) => {
+        const broker = protoUsers.find((u) => u.id === a.brokerId)
+        return {
+          id: a.id,
+          brokerId: a.brokerId,
+          propertyId: a.propertyId,
+          name: broker ? `${broker.firstName} ${broker.lastName}` : 'Unknown',
+          initials: broker ? `${broker.firstName[0]}${broker.lastName[0]}` : '??',
+          avatar: broker?.avatar,
+          phone: broker?.phone ?? '',
+          block: 'A1',
+          floor: '04',
+          unit: a.propertyId.slice(-4).toUpperCase(),
+        }
+      })
+  }, [protoBrokerAssignments, protoUsers])
+  const [showBrokerTable, setShowBrokerTable] = useState(false)
 
   const brokerCount = Number.parseInt(draftStats.brokersAssigned.value, 10)
   const extraBrokerCount = Number.isFinite(brokerCount) ? Math.max(brokerCount - 3, 0) : 0
@@ -726,66 +785,155 @@ export function AdminEnterprisePropertyDetail() {
             </div>
 
             {editingStructure ? (
-              <div className="mt-6 space-y-3">
-                <label className="block">
-                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Blocks</span>
-                  <input
-                    type="text"
-                    value={draftStructure.blocks}
-                    onChange={(event) => setDraftStructureField('blocks', event.target.value)}
-                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-filter-label uppercase tracking-wider text-text-muted">Block Names</span>
-                  <input
-                    type="text"
-                    value={draftStructure.blockDetail}
-                    onChange={(event) => setDraftStructureField('blockDetail', event.target.value)}
-                    className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body text-text-primary focus:border-primary focus:outline-none"
-                  />
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block">
-                    <span className="text-filter-label uppercase tracking-wider text-text-muted">Floors</span>
-                    <input
-                      type="text"
-                      value={draftStructure.floors}
-                      onChange={(event) => setDraftStructureField('floors', event.target.value)}
-                      className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-filter-label uppercase tracking-wider text-text-muted">Units</span>
-                    <input
-                      type="text"
-                      value={draftStructure.units}
-                      onChange={(event) => setDraftStructureField('units', event.target.value)}
-                      className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
-                    />
-                  </label>
-                </div>
+              <div className="mt-6 space-y-4">
+                {/* Top-level fields */}
                 <div className="grid grid-cols-2 gap-3">
                   <label className="block">
                     <span className="text-filter-label uppercase tracking-wider text-text-muted">Occupancy %</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={draftStructure.occupancyPercent}
-                      onChange={(event) => setDraftStructureField('occupancyPercent', event.target.value)}
-                      className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
-                    />
+                    <input type="number" min="0" max="100" value={draftStructure.occupancyPercent} onChange={(event) => setDraftStructureField('occupancyPercent', event.target.value)} className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none" />
                   </label>
                   <label className="block">
                     <span className="text-filter-label uppercase tracking-wider text-text-muted">Total Units</span>
-                    <input
-                      type="text"
-                      value={draftStructure.totalUnitCount}
-                      onChange={(event) => setDraftStructureField('totalUnitCount', event.target.value)}
-                      className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none"
-                    />
+                    <input type="text" value={draftStructure.totalUnitCount} onChange={(event) => setDraftStructureField('totalUnitCount', event.target.value)} className="mt-1 w-full rounded-button border border-outline px-3 py-2 text-body font-semibold text-text-primary focus:border-primary focus:outline-none" />
                   </label>
+                </div>
+
+                {/* Block list with + buttons */}
+                <div className="border-t border-outline pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-filter-label uppercase tracking-wider text-text-muted">Blocks</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newBlock: BlockData = { id: `block-${Date.now()}`, name: `Block ${blockData.length + 1}`, floors: [] }
+                        setBlockData((current) => [...current, newBlock])
+                      }}
+                      className="inline-flex items-center gap-1 text-label font-bold text-primary hover:underline"
+                    >
+                      <Plus size={13} /> Add Block
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {blockData.map((block) => {
+                      const isExpanded = expandedBlockId === block.id
+                      return (
+                        <div key={block.id} className="rounded-lg border border-outline bg-canvas-alt overflow-hidden">
+                          {/* Block header */}
+                          <div className="flex items-center justify-between px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <button type="button" onClick={() => setExpandedBlockId(isExpanded ? null : block.id)} className="text-body font-bold text-text-primary hover:text-primary">
+                                {isExpanded ? '▾' : '▸'} {block.name}
+                              </button>
+                              <span className="text-[10px] font-semibold text-text-muted">{block.floors.length} floors</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newFloor: BlockFloor = { id: `floor-${Date.now()}`, floorNumber: String(block.floors.length + 1), units: [] }
+                                  setBlockData((current) => current.map((b) => b.id === block.id ? { ...b, floors: [...b.floors, newFloor] } : b))
+                                  setExpandedBlockId(block.id)
+                                }}
+                                className="inline-flex items-center gap-1 rounded bg-primary-50 px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary-100"
+                              >
+                                <Plus size={11} /> Floor
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setBlockData((current) => current.filter((b) => b.id !== block.id))}
+                                className="p-1 rounded text-text-muted hover:text-red-600 hover:bg-red-50"
+                                title="Remove block"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Expanded: floors & units */}
+                          {isExpanded && (
+                            <div className="border-t border-outline bg-white px-4 py-3 space-y-3">
+                              {block.floors.length === 0 && (
+                                <p className="text-label text-text-muted text-center py-2">No floors added. Click "+ Floor" to start.</p>
+                              )}
+                              {block.floors.map((floor) => (
+                                <div key={floor.id} className="rounded-lg border border-outline p-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-label font-bold text-text-primary">Floor {floor.floorNumber}</span>
+                                      <span className="text-[10px] text-text-muted">{floor.units.length} units</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newUnit: BlockUnit = { id: `unit-${Date.now()}`, unitNumber: `${block.name}-${floor.floorNumber}0${floor.units.length + 1}`, area: '1200', config: '2 BHK', status: 'Available' }
+                                          setBlockData((current) => current.map((b) => b.id === block.id ? { ...b, floors: b.floors.map((f) => f.id === floor.id ? { ...f, units: [...f.units, newUnit] } : f) } : b))
+                                        }}
+                                        className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-1 text-[10px] font-bold text-text-primary hover:bg-slate-200"
+                                      >
+                                        <Plus size={10} /> Unit
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setBlockData((current) => current.map((b) => b.id === block.id ? { ...b, floors: b.floors.filter((f) => f.id !== floor.id) } : b))}
+                                        className="p-1 rounded text-text-muted hover:text-red-600 hover:bg-red-50"
+                                        title="Remove floor"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Units table */}
+                                  {floor.units.length > 0 && (
+                                    <div className="overflow-x-auto">
+                                      <table className="w-full text-left">
+                                        <thead>
+                                          <tr className="text-[10px] uppercase tracking-wider text-text-muted">
+                                            <th className="pb-1 pr-2">Unit</th>
+                                            <th className="pb-1 pr-2">Area (sqft)</th>
+                                            <th className="pb-1 pr-2">Config</th>
+                                            <th className="pb-1 pr-2">Status</th>
+                                            <th className="pb-1 w-8"></th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {floor.units.map((unit) => (
+                                            <tr key={unit.id} className="border-t border-outline">
+                                              <td className="py-1.5 pr-2">
+                                                <input value={unit.unitNumber} onChange={(e) => setBlockData((cur) => cur.map((b) => b.id === block.id ? { ...b, floors: b.floors.map((f) => f.id === floor.id ? { ...f, units: f.units.map((u) => u.id === unit.id ? { ...u, unitNumber: e.target.value } : u) } : f) } : b))} className="w-full rounded border border-outline px-2 py-1 text-[12px] text-text-primary focus:border-primary focus:outline-none" />
+                                              </td>
+                                              <td className="py-1.5 pr-2">
+                                                <input value={unit.area} onChange={(e) => setBlockData((cur) => cur.map((b) => b.id === block.id ? { ...b, floors: b.floors.map((f) => f.id === floor.id ? { ...f, units: f.units.map((u) => u.id === unit.id ? { ...u, area: e.target.value } : u) } : f) } : b))} className="w-full rounded border border-outline px-2 py-1 text-[12px] text-text-primary focus:border-primary focus:outline-none" />
+                                              </td>
+                                              <td className="py-1.5 pr-2">
+                                                <input value={unit.config} onChange={(e) => setBlockData((cur) => cur.map((b) => b.id === block.id ? { ...b, floors: b.floors.map((f) => f.id === floor.id ? { ...f, units: f.units.map((u) => u.id === unit.id ? { ...u, config: e.target.value } : u) } : f) } : b))} className="w-full rounded border border-outline px-2 py-1 text-[12px] text-text-primary focus:border-primary focus:outline-none" />
+                                              </td>
+                                              <td className="py-1.5 pr-2">
+                                                <select value={unit.status} onChange={(e) => setBlockData((cur) => cur.map((b) => b.id === block.id ? { ...b, floors: b.floors.map((f) => f.id === floor.id ? { ...f, units: f.units.map((u) => u.id === unit.id ? { ...u, status: e.target.value as BlockUnit['status'] } : u) } : f) } : b))} className="w-full rounded border border-outline px-2 py-1 text-[11px] font-semibold text-text-primary focus:border-primary focus:outline-none">
+                                                  <option value="Available">Available</option>
+                                                  <option value="Occupied">Occupied</option>
+                                                  <option value="Reserved">Reserved</option>
+                                                </select>
+                                              </td>
+                                              <td className="py-1.5">
+                                                <button type="button" onClick={() => setBlockData((cur) => cur.map((b) => b.id === block.id ? { ...b, floors: b.floors.map((f) => f.id === floor.id ? { ...f, units: f.units.filter((u) => u.id !== unit.id) } : f) } : b))} className="p-1 rounded text-text-muted hover:text-red-600 hover:bg-red-50"><Trash2 size={12} /></button>
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -838,6 +986,107 @@ export function AdminEnterprisePropertyDetail() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Assigned Brokers Section */}
+        <div className="rounded-card border border-outline bg-white shadow-surface overflow-hidden">
+          <div className="flex items-center justify-between border-b border-outline px-6 py-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-heading-3 font-bold text-text-primary">Top Assigned Brokers</h2>
+              <span className="rounded-pill bg-primary-100 px-2.5 py-1 text-badge font-bold text-primary">{assignedBrokers.length}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowBrokerTable((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-button border border-outline px-3 py-2 text-label font-medium text-text-muted hover:bg-hover-light transition-colors"
+            >
+              {showBrokerTable ? 'Hide Table' : 'View Details'}
+            </button>
+          </div>
+
+          {/* Broker avatars row */}
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-outline">
+            {assignedBrokers.length > 0 ? assignedBrokers.slice(0, 6).map((broker) => (
+              <button
+                key={broker.id}
+                type="button"
+                onClick={() => setShowBrokerTable(true)}
+                className="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity"
+                title={broker.name}
+              >
+                {broker.avatar ? (
+                  <img src={broker.avatar} alt={broker.name} className="h-10 w-10 rounded-full object-cover border-2 border-primary-100" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">{broker.initials}</div>
+                )}
+                <span className="text-[10px] font-semibold text-text-muted truncate max-w-[60px]">{broker.name.split(' ')[0]}</span>
+              </button>
+            )) : (
+              <p className="text-label text-text-muted">No brokers assigned yet.</p>
+            )}
+          </div>
+
+          {/* Broker config table */}
+          {showBrokerTable && (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px]">
+                <thead>
+                  <tr className="border-b border-outline bg-canvas-alt">
+                    <th className="px-6 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Broker Name</th>
+                    <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Block</th>
+                    <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Floor</th>
+                    <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Unit</th>
+                    <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignedBrokers.map((broker) => (
+                    <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          {broker.avatar ? (
+                            <img src={broker.avatar} alt={broker.name} className="h-9 w-9 rounded-full object-cover" />
+                          ) : (
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-badge font-bold text-text-primary">{broker.initials}</div>
+                          )}
+                          <div>
+                            <p className="text-body font-semibold text-text-primary">{broker.name}</p>
+                            <p className="text-label text-text-muted">{broker.phone}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-body text-text-primary">{broker.block}</td>
+                      <td className="px-4 py-4 text-body text-text-primary">{broker.floor}</td>
+                      <td className="px-4 py-4 text-body text-text-primary">{broker.unit}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button type="button" onClick={() => toast.info('Chat', `Opening chat with ${broker.name}`)} className="p-1.5 rounded text-text-muted hover:text-primary hover:bg-primary-50 transition-colors" title="Chat"><MessageSquare size={15} /></button>
+                          <button type="button" onClick={() => toast.info('Call', `Calling ${broker.name} at ${broker.phone}`)} className="p-1.5 rounded text-text-muted hover:text-primary hover:bg-primary-50 transition-colors" title="Call"><Phone size={15} /></button>
+                          <button type="button" onClick={() => toast.info('Edit', `Editing ${broker.name} assignment`)} className="p-1.5 rounded text-text-muted hover:text-amber-600 hover:bg-amber-50 transition-colors" title="Edit"><Pencil size={15} /></button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              removeBrokerAssignment(broker.propertyId, broker.brokerId)
+                              toast.success('Broker removed', `${broker.name} has been unassigned.`)
+                            }}
+                            className="p-1.5 rounded text-text-muted hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {assignedBrokers.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-body text-text-muted">No brokers assigned to this enterprise property.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Tenant Details */}
