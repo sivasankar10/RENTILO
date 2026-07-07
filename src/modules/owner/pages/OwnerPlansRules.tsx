@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { Toast, ToastContainer } from '@shared/ui/Toast'
+import { useAuth } from '@shared/hooks/useAuth'
 import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
 import { KycVerificationModal } from '@modules/tenant/components/KycVerificationModal'
 import { useOwnerStore } from '../store/ownerStore'
@@ -25,12 +26,15 @@ const tierFeatures = [
 
 export function OwnerPlansRules() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const ownerId = user?.id ?? ''
   const [showKycModal, setShowKycModal] = useState(false)
   const [kycStatus, setKycStatus] = useState('Not Started')
   const [isVerified, setIsVerified] = useState(false)
   const [verificationMessage, setVerificationMessage] = useState('')
   const [businessStatus, setBusinessStatus] = useState('Pending Upload')
   const brokerIntegrationEnabled = useOwnerStore((state) => state.brokerIntegrationEnabled)
+  const brokerEnabledOwnerId = useOwnerStore((state) => state.brokerEnabledOwnerId)
   const enableBrokerIntegration = useOwnerStore((state) => state.enableBrokerIntegration)
   const [notifications, setNotifications] = useState<
     { id: number; message: string; description?: string }[]
@@ -49,11 +53,11 @@ export function OwnerPlansRules() {
   }
 
   const handleBrokerToggle = () => {
-    if (brokerIntegrationEnabled) {
+    if (brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId) {
       return
     }
 
-    enableBrokerIntegration()
+    enableBrokerIntegration(ownerId)
     showNotification('Broker assignment enabled', 'You can now assign brokers from your Portfolio page.')
 
     window.setTimeout(() => {
@@ -171,11 +175,11 @@ export function OwnerPlansRules() {
                     type="button"
                     onClick={handleBrokerToggle}
                     className={
-                      brokerIntegrationEnabled
+                      brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId
                         ? 'flex h-6 w-11 cursor-default items-center justify-end rounded-pill bg-primary p-1'
                         : 'flex h-6 w-11 items-center justify-start rounded-pill bg-primary-100 p-1'
                     }
-                    aria-pressed={brokerIntegrationEnabled}
+                    aria-pressed={brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId}
                   >
                     <span className="h-4 w-4 rounded-full bg-white shadow-sm" />
                   </button>
