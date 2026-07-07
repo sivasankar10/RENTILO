@@ -23,22 +23,10 @@ export interface OwnerManagedProperty {
 
 export const OWNER_MANAGED_PROPERTIES: OwnerManagedProperty[] = [
   {
-    id: 'opus-tower-14b',
-    name: 'The Opus Tower, 14B',
-    unit: 'Unit 14B',
-    address: 'Downtown Financial District',
-  },
-  {
-    id: 'modern-penthouse-suite',
-    name: 'Modern Penthouse Suite',
-    unit: 'Unit 14B',
-    address: 'Adyar, Chennai',
-  },
-  {
-    id: 'parkview-residences',
-    name: 'Parkview Residences',
-    unit: 'Unit 204',
-    address: 'Velachery, Chennai',
+    id: 'property-multi-1',
+    name: 'MultiOwner Skyline 14B',
+    unit: '14B',
+    address: 'Indiranagar, Bangalore',
   },
 ]
 
@@ -246,19 +234,19 @@ const initialRegisterPropertyDraft: OwnerRegisterPropertyFormData = {
 }
 
 const seededPropertyEditDrafts: Record<string, OwnerRegisterPropertyFormData> = {
-  'opus-tower-14b': {
-    propertyName: 'The Opus Tower, 14B',
-    propertyType: 'Luxury Apartment',
+  'property-multi-1': {
+    propertyName: 'MultiOwner Skyline 14B',
+    propertyType: 'Apartment',
     yearBuilt: '2021',
-    referenceId: 'OPUS-14B',
+    referenceId: 'SKYLINE-14B',
     currentStatus: 'Available for Rent',
     description:
-      'Experience unparalleled luxury in this stunning high-rise residence at The Opus Tower. The home includes 2 bedrooms, 2 bathrooms, 1,200 sqft, hardwood flooring, floor-to-ceiling windows, a modular kitchen, and premium resident amenities.',
-    streetAddress: 'The Opus Tower, Downtown Financial District',
-    unit: 'Unit 14B',
-    postalCode: '600001',
-    city: 'Chennai',
-    neighborhood: 'Downtown Financial District',
+      'MultiOwner Skyline 14B is a session-prototype listing with verified owner details, visit scheduling, agreement flow, and cross-role visibility. 2 bedrooms, 2 bathrooms, 1,240 sqft with semi-furnished interiors.',
+    streetAddress: '14B Skyline Plaza, Indiranagar',
+    unit: '14B',
+    postalCode: '560001',
+    city: 'Bangalore',
+    neighborhood: 'Indiranagar',
     residentialZoning: true,
     mixedUse: false,
     amenities: {
@@ -276,20 +264,20 @@ const seededPropertyEditDrafts: Record<string, OwnerRegisterPropertyFormData> = 
       security: true,
     },
     sellingPoints:
-      'Semi-furnished apartment with sofa, wardrobes, dining setup, modular kitchen, secure parking, pet-friendly policy, and 24/7 gated security.',
-    customTags: ['2 Beds', '2 Baths', '1,200 sqft', 'Semi-Furnished', 'Both Parking'],
+      'Semi-furnished apartment with gated security, fitness center, bike and car parking, and pet-friendly policy.',
+    customTags: ['2 Beds', '2 Baths', '1,240 sqft', 'Semi-Furnished', 'Bike and Car'],
     photos: [
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=500&q=80',
-      'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=500&q=80',
-      'https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=500&q=80',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1556912173-46c336c7fd55?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=800&q=80',
     ],
-    virtualTourUrl: 'https://rentilo.example/tours/opus-14b',
-    baseRent: '4500',
-    priceNegotiable: false,
-    securityDeposit: '9000',
+    virtualTourUrl: '',
+    baseRent: '85000',
+    priceNegotiable: true,
+    securityDeposit: '170000',
     depositUnit: 'Fixed',
-    availableFrom: '06/24/2026',
+    availableFrom: '07/15/2026',
     visitWeekday: 'Saturday',
     visitStartTime: '10:00 AM',
     visitEndTime: '1:00 PM',

@@ -12,6 +12,8 @@ import {
 } from '@shared/store/onboardingStore'
 import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { useOwnerChatStore } from '../store/chatStore'
+import { useOwnerStore } from '../store/ownerStore'
+import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 
 const statusLabels: Record<OnboardingRecord['status'], string> = {
   interest_shown: 'Interest shown',
@@ -45,6 +47,11 @@ export function OwnerLeases() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const ownerId = user?.id ?? DEMO_OWNER.id
+  const { properties } = useOwnerPrototype()
+  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  const currentPropertyId = properties.some((p) => p.id === selectedPropertyId)
+    ? selectedPropertyId!
+    : properties[0]?.id ?? ''
   const [tab, setTab] = useState<'applications' | 'leases' | 'agreements'>('applications')
   const [draftFor, setDraftFor] = useState<OnboardingRecord | null>(null)
   const [terms, setTerms] = useState<AgreementTerms | null>(null)
@@ -57,8 +64,8 @@ export function OwnerLeases() {
   const ensureLeaseThread = useLeaseChatStore((state) => state.ensureThread)
 
   const ownerRecords = useMemo(
-    () => records.filter((record) => record.owner.id === ownerId),
-    [ownerId, records],
+    () => records.filter((record) => record.owner.id === ownerId && record.ownerPropertyId === currentPropertyId),
+    [ownerId, records, currentPropertyId],
   )
   const applications = ownerRecords.filter((record) => !['active', 'rejected'].includes(record.status))
   const activeLeases = ownerRecords.filter((record) => record.status === 'active')

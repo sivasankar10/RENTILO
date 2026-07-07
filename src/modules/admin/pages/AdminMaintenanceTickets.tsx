@@ -18,7 +18,6 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAuth } from '@shared/hooks/useAuth'
 import { usePrototypeStore } from '@shared/store/prototypeStore'
-import { OWNER_MANAGED_PROPERTIES } from '@modules/owner/store/ownerStore'
 import {
   useOwnerMaintenanceStore,
   type OwnerMaintenanceTicket,
@@ -45,16 +44,16 @@ const priorityStyles: Record<TicketPriority, string> = {
   Urgent: 'bg-red-50 text-red-700',
 }
 
-function getProperty(propertyId: string) {
-  return OWNER_MANAGED_PROPERTIES.find((property) => property.id === propertyId)
-}
-
 function getPropertyName(ticket: OwnerMaintenanceTicket) {
-  return getProperty(ticket.propertyId)?.name ?? ticket.propertyId.replace(/-/g, ' ')
+  const allProperties = usePrototypeStore.getState().properties
+  const property = allProperties.find((p) => p.id === ticket.propertyId)
+  return property?.title ?? ticket.propertyId.replace(/-/g, ' ')
 }
 
 function getPropertyAddress(ticket: OwnerMaintenanceTicket) {
-  return getProperty(ticket.propertyId)?.address ?? 'Address unavailable'
+  const allProperties = usePrototypeStore.getState().properties
+  const property = allProperties.find((p) => p.id === ticket.propertyId)
+  return property?.address ?? 'Address unavailable'
 }
 
 export function AdminMaintenanceTickets() {
@@ -193,9 +192,9 @@ export function AdminMaintenanceTickets() {
                   onChange={setPropertyFilter}
                   options={[
                     { value: 'All', label: 'All Properties' },
-                    ...OWNER_MANAGED_PROPERTIES.map((property) => ({
+                    ...usePrototypeStore.getState().properties.map((property) => ({
                       value: property.id,
-                      label: property.name,
+                      label: property.title,
                     })),
                   ]}
                 />

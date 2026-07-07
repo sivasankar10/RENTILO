@@ -12,7 +12,6 @@ import {
   Home,
   LayoutGrid,
   LogOut,
-  Megaphone,
   Menu,
   MessageSquare,
   Settings,
@@ -28,7 +27,7 @@ import { useAuth } from '@shared/hooks/useAuth'
 import { useMediaQuery } from '@shared/hooks/useMediaQuery'
 import { cn } from '@shared/utils/cn'
 import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
-import { OWNER_MANAGED_PROPERTIES, useOwnerStore } from '@modules/owner/store/ownerStore'
+import { useOwnerStore } from '@modules/owner/store/ownerStore'
 import { UpgradeDialog } from '@modules/owner/components/UpgradeDialog'
 import { usePrototypeStore } from '@shared/store/prototypeStore'
 import type { OwnerFeature } from '@modules/owner/config/features'
@@ -55,7 +54,6 @@ const baseSidebarItems: OwnerSidebarItem[] = [
 // Premium-only features (locked for FREE users)
 const premiumSidebarItems: OwnerSidebarItem[] = [
   { label: 'Inquiries', href: `${ROUTES.OWNER.ROOT}/inquiries`, icon: Users, feature: 'inquiry_management' },
-  { label: 'Promotions', href: `${ROUTES.OWNER.ROOT}/promotions`, icon: Megaphone, feature: 'promoted_listings' },
   { label: 'Financials', href: `${ROUTES.OWNER.ROOT}/financials`, icon: CreditCard, feature: 'financial_reports' },
 ]
 
@@ -204,6 +202,11 @@ export function OwnerLayout() {
   const hasFeature = useOwnerStore((state) => state.hasFeature)
   const showUpgradePrompt = useOwnerStore((state) => state.showUpgradePrompt)
 
+  // Dynamic properties from prototype store (filtered by logged-in owner)
+  const allProperties = usePrototypeStore((state) => state.properties)
+  const ownerId = user?.id ?? ''
+  const ownerProperties = allProperties.filter((p) => p.ownerId === ownerId)
+
   // Unread notification count from prototypeStore (broker requests, assignments etc.)
   const unreadProtoCount = usePrototypeStore((state) =>
     state.notifications.filter(
@@ -216,9 +219,9 @@ export function OwnerLayout() {
   const notificationsActive = pathname.startsWith(ROUTES.OWNER.NOTIFICATIONS)
   const messagesActive = pathname.startsWith(ROUTES.OWNER.MESSAGES)
   const profileActive = pathname.startsWith(ROUTES.OWNER.SETTINGS)
-  // const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
-  // const setSelectedProperty = useOwnerStore((state) => state.setSelectedProperty)
-  const currentPropertyId = selectedPropertyId ?? OWNER_MANAGED_PROPERTIES[0]?.id ?? ''
+  const currentPropertyId = ownerProperties.some((p) => p.id === selectedPropertyId)
+    ? selectedPropertyId!
+    : ownerProperties[0]?.id ?? ''
   const canSwitchMode =
     Boolean(user?.roles.includes(ROLES.TENANT)) && Boolean(user?.roles.includes(ROLES.OWNER))
   
@@ -266,9 +269,20 @@ export function OwnerLayout() {
             <RoleModeSwitcher className="hidden sm:inline-flex" />
             <button
               type="button"
-              onClick={() => navigate(ROUTES.OWNER.REGISTER_PROPERTY)}
-              title="Post a new property"
-              className="hidden rounded-button bg-brand px-4 py-2 text-label font-semibold text-white shadow-sm transition-all duration-200 hover:opacity-90 sm:inline-flex"
+              onClick={() => {
+                if (subscriptionPlan !== 'PREMIUM') {
+                  showUpgradePrompt('bulk_property_management')
+                } else {
+                  navigate(ROUTES.OWNER.REGISTER_PROPERTY)
+                }
+              }}
+              title={subscriptionPlan !== 'PREMIUM' ? 'Upgrade to Premium to post more properties' : 'Post a new property'}
+              className={cn(
+                'hidden rounded-button px-4 py-2 text-label font-semibold shadow-sm transition-all duration-200 sm:inline-flex',
+                subscriptionPlan !== 'PREMIUM'
+                  ? 'bg-slate-400 text-white cursor-not-allowed opacity-70'
+                  : 'bg-brand text-white hover:opacity-90'
+              )}
             >
               Post New Property
             </button>
@@ -386,9 +400,9 @@ export function OwnerLayout() {
             onChange={(event) => setSelectedProperty(event.target.value)}
             className="mt-4 w-full rounded-input border border-outline bg-white px-3 py-2 text-label font-medium text-text-primary outline-none transition-all duration-200 focus:border-primary focus:ring-2 focus:ring-primary-100"
           >
-            {OWNER_MANAGED_PROPERTIES.map((property) => (
+            {ownerProperties.map((property) => (
               <option key={property.id} value={property.id}>
-                {property.name}
+                {property.title}
               </option>
             ))}
           </select>

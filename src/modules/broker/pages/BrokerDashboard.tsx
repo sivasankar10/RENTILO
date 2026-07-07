@@ -7,7 +7,6 @@ import {
   DollarSign,
   MessageCircle,
   Phone,
-  MapPin,
   Calendar,
   CalendarDays,
   TrendingUp,
@@ -21,7 +20,6 @@ import {
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
-import skylineImg from '@/assets/images/skyline_heights.png'
 
 /* ─────────────────────────────────────────────
    Stat Card
@@ -214,29 +212,6 @@ function ActivityItem({
   )
 }
 
-type Visit = {
-  id: number
-  date: string
-  title: string
-  client: string
-  time: string
-  property: string
-}
-
-const initialVisits: Visit[] = [
-  {
-    id: 1,
-    date: '2026-10-15',
-    title: 'Penthouse Tour',
-    client: 'Julianna Smith',
-    time: '2:00 PM',
-    property: 'Skyline Heights 14B',
-  },
-]
-
-const visitProperties = ['Skyline Heights 14B', 'Harbor Residences 8C', 'Garden Lofts Apt 12']
-const visitClients = ['Julianna Smith', 'Robert King', 'Meera Iyer', 'Arjun Patel']
-
 const last30DayMetrics = [
   { label: 'Assigned Properties', value: '8', detail: '+2 new assignments' },
   { label: 'Active Leads', value: '12', detail: '5 hot leads, 7 follow-ups' },
@@ -352,32 +327,6 @@ function buildBrokerDashboardExportRows() {
       detail: `${property.status} - ${property.nextStep}`,
     })),
   ]
-}
-
-/* ─────────────────────────────────────────────
-   Upcoming Visit Card
-───────────────────────────────────────────── */
-function UpcomingVisitCard({ visit }: { visit: Visit }) {
-  const visitDate = new Date(`${visit.date}T00:00:00`)
-  const month = visitDate.toLocaleString('en-US', { month: 'short' }).toUpperCase()
-  const day = String(visitDate.getDate()).padStart(2, '0')
-
-  return (
-    <div className="border-l-4 border-primary rounded-r-xl bg-white shadow-ambient p-4 flex items-start gap-4">
-      <div className="text-center min-w-[48px]">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{month}</p>
-        <p className="text-[2rem] font-bold leading-none text-[#0f172a]">{day}</p>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-bold text-[#0f172a]">{visit.title}</p>
-        <p className="text-label text-text-muted">{visit.client} · {visit.time}</p>
-        <button className="mt-2 inline-flex items-center gap-1 text-label font-semibold text-primary hover:underline">
-          <MapPin size={11} />
-          {visit.property}
-        </button>
-      </div>
-    </div>
-  )
 }
 
 function Last30DaysReportModal({
@@ -627,18 +576,9 @@ function ActivityEditorModal({
   )
 }
 
-function ScheduleVisitModal({
-  onClose,
-  onSchedule,
-}: {
-  onClose: () => void
-  onSchedule: (visit: Visit) => void
-}) {
-  const defaultDate = new Date()
-  defaultDate.setDate(defaultDate.getDate() + 1)
-  const [client, setClient] = useState(visitClients[0])
-  const [property, setProperty] = useState(visitProperties[0])
-  const [date, setDate] = useState(
+/* ─────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+   Main Dashboard
     `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, '0')}-${String(defaultDate.getDate()).padStart(2, '0')}`,
   )
   const [time, setTime] = useState('11:30 AM')
@@ -767,38 +707,50 @@ function ScheduleVisitModal({
 }
 
 /* ─────────────────────────────────────────────
+/* ─────────────────────────────────────────────
    Main Dashboard
 ───────────────────────────────────────────── */
-function visitTimeInMinutes(time: string) {
-  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
-  if (!match) return 0
-
-  let hours = Number(match[1]) % 12
-  if (match[3].toUpperCase() === 'PM') hours += 12
-  return hours * 60 + Number(match[2])
-}
 
 export function BrokerDashboard() {
   const navigate = useNavigate()
-  const { assignedProperties, leads, commissions } = useBrokerPrototype()
+  const { assignedProperties, leads, commissions, users, properties } = useBrokerPrototype()
   const successfulCommission = commissions.filter((item) => item.status === 'Successful').reduce((sum, item) => sum + item.amount, 0)
-  const [visits, setVisits] = useState(initialVisits)
+
+  // Dynamic interested tenants from leads (applications with status interest_shown)
+  const interestedTenants = useMemo(() => leads
+    .filter((app) => app.status === 'interest_shown')
+    .map((app) => {
+      const tenant = users.find((u) => u.id === app.tenantId)
+      const property = properties.find((p) => p.id === app.propertyId)
+      return {
+        id: app.id,
+        name: tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Unknown',
+        avatar: tenant?.avatar ?? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
+        property: property?.title ?? 'Unknown Property',
+        time: new Date(app.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+      }
+    }), [leads, users, properties])
+
+  // Dynamic upcoming visits from leads with scheduledVisit
+  const upcomingVisits = useMemo(() => leads
+    .filter((app) => app.scheduledVisit && ['visit_scheduled', 'visit_confirmed'].includes(app.status))
+    .map((app) => {
+      const tenant = users.find((u) => u.id === app.tenantId)
+      const visit = app.scheduledVisit!
+      return {
+        id: app.id,
+        name: tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Unknown',
+        avatar: tenant?.avatar ?? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
+        date: visit.date,
+        time: visit.time,
+        status: app.status === 'visit_confirmed' ? 'Confirmed' : 'Pending',
+      }
+    }), [leads, users])
   const [activities, setActivities] = useState<Activity[]>(loadActivities)
   const [activityEditorOpen, setActivityEditorOpen] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
-  const [scheduleOpen, setScheduleOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [exportStatus, setExportStatus] = useState('')
-
-  const sortedVisits = useMemo(
-    () =>
-      [...visits].sort(
-        (firstVisit, secondVisit) =>
-          firstVisit.date.localeCompare(secondVisit.date) ||
-          visitTimeInMinutes(firstVisit.time) - visitTimeInMinutes(secondVisit.time),
-      ),
-    [visits],
-  )
 
   useEffect(() => {
     sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(activities))
@@ -811,11 +763,6 @@ export function BrokerDashboard() {
   const exportDashboardData = () => {
     downloadCsv('rentilo-broker-last-30-days.csv', buildBrokerDashboardExportRows())
     setExportStatus('Last 30 days CSV exported.')
-  }
-
-  const handleScheduleVisit = (visit: Visit) => {
-    setVisits((currentVisits) => [...currentVisits, visit])
-    setScheduleOpen(false)
   }
 
   const openActivityEditor = (activity: Activity | null) => {
@@ -919,22 +866,28 @@ export function BrokerDashboard() {
             <h2 className="text-[15px] font-bold text-[#0f172a]">Recent Leads</h2>
             <button className="text-label font-semibold text-primary hover:underline">View CRM</button>
           </div>
-          <LeadRow
-            avatar="https://randomuser.me/api/portraits/women/44.jpg"
-            name="Julianna Smith"
-            property="Penthouse Loft A"
-            pill="hot"
-            conversationId="lead-julianna-smith"
-            onChat={openLeadChat}
-          />
-          <LeadRow
-            avatar="https://randomuser.me/api/portraits/men/32.jpg"
-            name="Robert King"
-            property="Skyline Heights 14B"
-            pill="follow-up"
-            conversationId="lead-robert-king"
-            onChat={openLeadChat}
-          />
+          {leads.length > 0 ? (
+            leads.slice(0, 5).map((lead) => {
+              const tenant = users.find((u) => u.id === lead.tenantId)
+              const property = properties.find((p) => p.id === lead.propertyId)
+              return (
+                <LeadRow
+                  key={lead.id}
+                  avatar={tenant?.avatar ?? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80'}
+                  name={tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Unknown Tenant'}
+                  property={property?.title ?? 'Unknown Property'}
+                  pill={lead.status === 'interest_shown' ? 'hot' : 'follow-up'}
+                  conversationId={lead.id}
+                  onChat={openLeadChat}
+                />
+              )
+            })
+          ) : (
+            <div className="py-8 text-center">
+              <p className="text-[13px] text-text-muted">No tenant leads yet.</p>
+              <p className="text-[12px] text-text-muted mt-1">Leads will appear when tenants show interest in your assigned listings.</p>
+            </div>
+          )}
         </div>
 
         {/* Activity Timeline */}
@@ -963,68 +916,68 @@ export function BrokerDashboard() {
         </div>
       </div>
 
-      {/* ── Bottom Row: Property card + Visits ── */}
+      {/* ── Bottom Row: Interested Tenants + Upcoming Schedules ── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-4">
 
-        {/* Skyline Heights property card */}
-        <div className="relative rounded-xl overflow-hidden shadow-card min-h-[230px]">
-          <img
-            src={skylineImg}
-            alt="Skyline Heights"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          {/* gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h3 className="text-white text-[17px] font-bold">Skyline Heights</h3>
-            <p className="text-white/70 text-label mt-0.5">Unit 14B · Available for Showing</p>
-            <div className="flex items-center gap-2 mt-3 flex-wrap">
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white">
-                High Priority
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white backdrop-blur-sm">
-                $2.4M
-              </span>
+        {/* Interested Tenants */}
+        <div className="bg-white border border-outline rounded-xl p-5 shadow-ambient">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Users size={15} className="text-text-muted" />
+              <h2 className="text-[14px] font-bold text-[#0f172a]">Interested Tenants</h2>
             </div>
+            <span className="text-[11px] font-bold text-primary">{interestedTenants.length} leads</span>
+          </div>
+          <div className="space-y-3">
+            {interestedTenants.length > 0 ? interestedTenants.slice(0, 4).map((lead) => (
+              <div key={lead.id} className="flex items-center gap-3 py-2 border-b border-outline last:border-0">
+                <img src={lead.avatar} alt={lead.name} className="w-9 h-9 rounded-full object-cover shrink-0 bg-slate-200" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-[#0f172a] truncate">{lead.name}</p>
+                  <p className="text-[11px] text-text-muted truncate">{lead.property}</p>
+                </div>
+                <span className="text-[10px] font-bold text-text-muted shrink-0">{lead.time}</span>
+              </div>
+            )) : (
+              <div className="py-6 text-center border-2 border-dashed border-outline rounded-xl">
+                <Users size={24} className="mx-auto text-text-muted opacity-50" />
+                <p className="mt-2 text-[12px] text-text-muted">No interested tenants yet.</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Upcoming Visits panel */}
+        {/* Upcoming Schedules */}
         <div className="bg-white border border-outline rounded-xl p-5 shadow-ambient flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <Calendar size={15} className="text-text-muted" />
-            <h2 className="text-[14px] font-bold text-[#0f172a]">Upcoming Visits</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar size={15} className="text-text-muted" />
+              <h2 className="text-[14px] font-bold text-[#0f172a]">Upcoming Visits</h2>
+            </div>
+            <span className="text-[11px] font-bold text-primary">{upcomingVisits.length} scheduled</span>
           </div>
 
           <div className="space-y-3">
-            {sortedVisits.map((visit) => (
-              <UpcomingVisitCard key={visit.id} visit={visit} />
-            ))}
-          </div>
-
-          {/* No other visits today */}
-          <div className="flex-1 border-2 border-dashed border-outline rounded-xl flex flex-col items-center justify-center gap-2 py-5">
-            <CalendarDays size={28} className="text-text-muted opacity-50" />
-            <p className="text-label text-text-muted font-medium">
-              {visits.length > 1 ? `${visits.length - 1} mock visit added` : 'No other visits today'}
-            </p>
-            <button
-              type="button"
-              onClick={() => setScheduleOpen(true)}
-              className="mt-1 px-4 py-1.5 rounded-lg bg-[#0f172a] text-white text-label font-bold hover:bg-navy/80 transition-colors"
-            >
-              Schedule Visit
-            </button>
+            {upcomingVisits.length > 0 ? upcomingVisits.slice(0, 4).map((visit) => (
+              <div key={visit.id} className="flex items-center gap-3 py-2 border-b border-outline last:border-0">
+                <img src={visit.avatar} alt={visit.name} className="w-9 h-9 rounded-full object-cover shrink-0 bg-slate-200" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-[#0f172a] truncate">{visit.name}</p>
+                  <p className="text-[11px] text-text-muted">{visit.date} at {visit.time}</p>
+                </div>
+                <span className={`px-2 py-0.5 rounded-pill text-[10px] font-bold ${visit.status === 'Confirmed' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                  {visit.status}
+                </span>
+              </div>
+            )) : (
+              <div className="flex-1 border-2 border-dashed border-outline rounded-xl flex flex-col items-center justify-center gap-2 py-6">
+                <CalendarDays size={28} className="text-text-muted opacity-50" />
+                <p className="text-[12px] text-text-muted font-medium">No visits scheduled yet.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {scheduleOpen && (
-        <ScheduleVisitModal
-          onClose={() => setScheduleOpen(false)}
-          onSchedule={handleScheduleVisit}
-        />
-      )}
 
       {activityEditorOpen && (
         <ActivityEditorModal

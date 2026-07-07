@@ -34,6 +34,8 @@ import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { usePaymentsStore } from '@shared/store/paymentsStore'
 import { useOwnerChatStore } from '../store/chatStore'
 import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
+import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 
 const galleryImages = [
   {
@@ -102,29 +104,6 @@ const nearbyHighlights = [
 
 type VisitStatus = 'Confirmed' | 'Pending' | 'Completed'
 
-interface VisitSchedule {
-  id: string
-  date: string
-  day: string
-  weekday: string
-  tenantName: string
-  phone: string
-  avatar: string
-  time: string
-  status: VisitStatus
-  note: string
-}
-
-interface InterestedLead {
-  id: string
-  tenantName: string
-  phone: string
-  avatar: string
-  profile: string
-  budget: string
-  clickedAt: string
-}
-
 interface ContactTarget {
   id: string
   name: string
@@ -132,96 +111,6 @@ interface ContactTarget {
   avatar: string
   context: string
 }
-
-const visitSchedules: VisitSchedule[] = [
-  {
-    id: 'visit-priya-06',
-    date: '2026-06-06',
-    day: '06',
-    weekday: 'Sat',
-    tenantName: 'Priya Gopal',
-    phone: '+91 98765 43210',
-    avatar: 'https://i.pravatar.cc/96?img=47',
-    time: '10:30 AM',
-    status: 'Confirmed',
-    note: 'Wants to inspect parking and balcony view.',
-  },
-  {
-    id: 'visit-arjun-06',
-    date: '2026-06-06',
-    day: '06',
-    weekday: 'Sat',
-    tenantName: 'Arjun Menon',
-    phone: '+91 99887 77665',
-    avatar: 'https://i.pravatar.cc/96?img=12',
-    time: '3:00 PM',
-    status: 'Pending',
-    note: 'Asked for semi-furnished inventory details.',
-  },
-  {
-    id: 'visit-nisha-08',
-    date: '2026-06-08',
-    day: '08',
-    weekday: 'Mon',
-    tenantName: 'Nisha Varma',
-    phone: '+91 91234 56780',
-    avatar: 'https://i.pravatar.cc/96?img=32',
-    time: '11:00 AM',
-    status: 'Confirmed',
-    note: 'Family visit, prefers morning slot.',
-  },
-  {
-    id: 'visit-rahul-10',
-    date: '2026-06-10',
-    day: '10',
-    weekday: 'Wed',
-    tenantName: 'Rahul Das',
-    phone: '+91 90123 45678',
-    avatar: 'https://i.pravatar.cc/96?img=5',
-    time: '5:30 PM',
-    status: 'Confirmed',
-    note: 'Requested to review lease start date flexibility.',
-  },
-]
-
-const calendarDays = [
-  { date: '2026-06-06', day: '06', weekday: 'Sat' },
-  { date: '2026-06-07', day: '07', weekday: 'Sun' },
-  { date: '2026-06-08', day: '08', weekday: 'Mon' },
-  { date: '2026-06-09', day: '09', weekday: 'Tue' },
-  { date: '2026-06-10', day: '10', weekday: 'Wed' },
-  { date: '2026-06-11', day: '11', weekday: 'Thu' },
-]
-
-const interestedLeads: InterestedLead[] = [
-  {
-    id: 'lead-meera',
-    tenantName: 'Meera Iyer',
-    phone: '+91 93456 78901',
-    avatar: 'https://i.pravatar.cc/96?img=45',
-    profile: 'Family tenant, verified KYC',
-    budget: '$4,500 - $4,800',
-    clickedAt: '12 mins ago',
-  },
-  {
-    id: 'lead-sanjay',
-    tenantName: 'Sanjay Rao',
-    phone: '+91 90909 12345',
-    avatar: 'https://i.pravatar.cc/96?img=15',
-    profile: 'Corporate lease prospect',
-    budget: '$4,300 - $4,600',
-    clickedAt: '1 hour ago',
-  },
-  {
-    id: 'lead-aisha',
-    tenantName: 'Aisha Khan',
-    phone: '+91 98989 45678',
-    avatar: 'https://i.pravatar.cc/96?img=25',
-    profile: 'Couple, immediate move-in',
-    budget: '$4,500',
-    clickedAt: 'Yesterday',
-  },
-]
 
 const visitStatusStyles: Record<VisitStatus, string> = {
   Confirmed: 'bg-green-50 text-green-700',
@@ -232,12 +121,16 @@ const visitStatusStyles: Record<VisitStatus, string> = {
 export function OwnerPropertyDetail() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { properties } = useOwnerPrototype()
   const ownerId = user?.id ?? DEMO_OWNER.id
   const { propertyId } = useParams<{ propertyId: string }>()
   const ownerPropertyId = propertyId ?? PRIMARY_OWNER_PROPERTY_ID
+  const activeProperty = properties.find((p) => p.id === ownerPropertyId) ?? properties[0]
+  const propertyTitle = activeProperty?.title ?? 'MultiOwner Skyline 14B'
+  const propertyLocation = activeProperty ? `${activeProperty.neighborhood}, ${activeProperty.city}` : 'Indiranagar, Bangalore'
   const [schedulerOpen, setSchedulerOpen] = useState(false)
   const [leadsOpen, setLeadsOpen] = useState(false)
-  const [selectedScheduleDate, setSelectedScheduleDate] = useState(calendarDays[0].date)
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState('')
   const [activeContact, setActiveContact] = useState<ContactTarget | null>(null)
   const [chatDraft, setChatDraft] = useState('')
   const [callStatus, setCallStatus] = useState('')
@@ -247,9 +140,84 @@ export function OwnerPropertyDetail() {
   const ensureTenantConversation = useOwnerChatStore((state) => state.ensureTenantConversation)
   const ensureLeaseThread = useLeaseChatStore((state) => state.ensureThread)
 
+  // Dynamic applications from prototype store for this property
+  const prototypeApplications = usePrototypeStore((state) => state.applications)
+  const prototypeUsers = usePrototypeStore((state) => state.users)
+
+  // Interested leads: tenants who showed interest in this property
+  const interestedLeads = useMemo(
+    () => prototypeApplications
+      .filter((app) => app.propertyId === ownerPropertyId && app.status === 'interest_shown')
+      .map((app) => {
+        const tenant = prototypeUsers.find((u) => u.id === app.tenantId)
+        return {
+          id: app.id,
+          tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Unknown',
+          phone: tenant?.phone ?? '',
+          avatar: tenant?.avatar ?? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
+          profile: tenant?.kycStatus === 'Verified' ? 'Verified tenant' : 'Pending KYC',
+          budget: activeProperty?.price ?? '',
+          clickedAt: new Date(app.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        }
+      }),
+    [prototypeApplications, prototypeUsers, ownerPropertyId, activeProperty?.price],
+  )
+
+  // Scheduled visits: applications with a scheduledVisit
+  const scheduledVisits = useMemo(
+    () => prototypeApplications
+      .filter((app) => app.propertyId === ownerPropertyId && app.scheduledVisit && ['visit_scheduled', 'visit_confirmed'].includes(app.status))
+      .map((app) => {
+        const tenant = prototypeUsers.find((u) => u.id === app.tenantId)
+        const visit = app.scheduledVisit!
+        const dateObj = new Date(visit.date)
+        return {
+          id: app.id,
+          date: visit.date,
+          day: String(dateObj.getDate()).padStart(2, '0'),
+          weekday: dateObj.toLocaleDateString('en-US', { weekday: 'short' }),
+          tenantName: tenant ? `${tenant.firstName} ${tenant.lastName}` : 'Unknown',
+          phone: tenant?.phone ?? '',
+          avatar: tenant?.avatar ?? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
+          time: visit.time,
+          status: (app.status === 'visit_confirmed' ? 'Confirmed' : 'Pending') as VisitStatus,
+          note: `Visit scheduled for ${visit.date} at ${visit.time}`,
+        }
+      }),
+    [prototypeApplications, prototypeUsers, ownerPropertyId],
+  )
+
+  // Build calendar days from scheduled visits
+  const calendarDays = useMemo(() => {
+    const uniqueDates = [...new Set(scheduledVisits.map((v) => v.date))].sort()
+    if (uniqueDates.length === 0) {
+      // Show next 6 days if no visits
+      const days = []
+      const today = new Date()
+      for (let i = 0; i < 6; i++) {
+        const d = new Date(today)
+        d.setDate(d.getDate() + i)
+        days.push({
+          date: d.toISOString().slice(0, 10),
+          day: String(d.getDate()).padStart(2, '0'),
+          weekday: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        })
+      }
+      return days
+    }
+    return uniqueDates.map((date) => {
+      const d = new Date(date)
+      return {
+        date,
+        day: String(d.getDate()).padStart(2, '0'),
+        weekday: d.toLocaleDateString('en-US', { weekday: 'short' }),
+      }
+    })
+  }, [scheduledVisits])
+
   const selectedDayVisits = useMemo(
-    () => visitSchedules.filter((visit) => visit.date === selectedScheduleDate),
-    [selectedScheduleDate]
+    () => scheduledVisits.filter((visit) => visit.date === (selectedScheduleDate || calendarDays[0]?.date)),
+    [scheduledVisits, selectedScheduleDate, calendarDays],
   )
   const activeLease = useMemo(
     () =>
@@ -305,7 +273,7 @@ export function OwnerPropertyDetail() {
     setCallStatus('')
     setChatMessages((current) => ({
       ...current,
-      [target.id]: current[target.id] ?? [`Hi ${target.name}, this is the owner of The Opus Tower, 14B.`],
+      [target.id]: current[target.id] ?? [`Hi ${target.name}, this is the owner of ${propertyTitle}.`],
     }))
   }
 
@@ -335,7 +303,7 @@ export function OwnerPropertyDetail() {
             <header>
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-heading-1 font-extrabold tracking-tight text-navy">
-                  The Opus Tower, 14B
+                  {propertyTitle}
                 </h1>
                 {isOnboarded && (
                   <span className="rounded-pill bg-primary-50 px-3 py-1 text-badge font-bold uppercase text-primary">
@@ -350,7 +318,7 @@ export function OwnerPropertyDetail() {
               </div>
               <p className="mt-2 flex items-center gap-2 text-label font-medium text-text-primary">
                 <MapPin size={14} />
-                Downtown Financial District
+                {propertyLocation}
               </p>
             </header>
 
@@ -510,10 +478,10 @@ export function OwnerPropertyDetail() {
             <div className="sticky top-24 rounded-card border border-outline bg-white p-6 shadow-surface">
               <div className="text-right">
                 <p className="text-heading-2 font-extrabold tracking-tight text-navy">
-                  $4,500
+                  {activeProperty?.price ?? 'Rs. 85,000'}
                   <span className="ml-1 text-body font-semibold text-text-primary">/ mo</span>
                 </p>
-                <p className="text-filter-label uppercase text-text-primary">Deposit: $9,000</p>
+                <p className="text-filter-label uppercase text-text-primary">Deposit: {activeProperty?.deposit ?? 'Rs. 1,70,000'}</p>
               </div>
 
               <div className="mt-8 grid grid-cols-2 gap-5 border-y border-outline py-6">
@@ -666,14 +634,14 @@ export function OwnerPropertyDetail() {
                       <p className="mt-1 text-label text-text-muted">Tap a day to view tenants.</p>
                     </div>
                     <span className="rounded-pill bg-white px-2.5 py-1 text-badge font-bold text-navy">
-                      {visitSchedules.length} visits
+                      {scheduledVisits.length} visits
                     </span>
                   </div>
 
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     {calendarDays.map((day) => {
-                      const visitsForDay = visitSchedules.filter((visit) => visit.date === day.date)
-                      const isSelected = day.date === selectedScheduleDate
+                      const visitsForDay = scheduledVisits.filter((visit) => visit.date === day.date)
+                      const isSelected = day.date === (selectedScheduleDate || calendarDays[0]?.date)
 
                       return (
                         <button
@@ -877,7 +845,7 @@ export function OwnerPropertyDetail() {
               <div className="flex-1 space-y-3 overflow-y-auto bg-canvas-alt px-5 py-4">
                 <div className="flex justify-start">
                   <div className="max-w-[82%] rounded-2xl rounded-bl-sm bg-white px-4 py-3 text-body text-text-primary shadow-sm">
-                    <p>I saw your activity on The Opus Tower, 14B. How can I help with your visit or questions?</p>
+                    <p>I saw your activity on {propertyTitle}. How can I help with your visit or questions?</p>
                     <p className="mt-1 text-[11px] font-semibold text-text-muted">Owner prompt</p>
                   </div>
                 </div>

@@ -23,6 +23,7 @@ import { PRIMARY_OWNER_PROPERTY_ID } from '../constants/portfolioProperty'
 import { PLAN_CONFIG } from '../config/features'
 import { formatSubscriptionDate } from '../services/subscription.service'
 import { useOwnerStore } from '../store/ownerStore'
+import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
 
 const tenantSignals = [
   {
@@ -53,19 +54,25 @@ const advantageItems = [
 
 export function OwnerDashboard() {
   const navigate = useNavigate()
+  const { properties } = useOwnerPrototype()
   const onboardingRecords = useOnboardingStore((state) => state.records)
+  const selectedPropertyId = useOwnerStore((state) => state.selectedPropertyId)
+  const currentPropertyId = properties.some((p) => p.id === selectedPropertyId)
+    ? selectedPropertyId ?? PRIMARY_OWNER_PROPERTY_ID
+    : properties[0]?.id ?? PRIMARY_OWNER_PROPERTY_ID
+  const activeProperty = properties.find((p) => p.id === currentPropertyId) ?? properties[0]
   const activeLease = useMemo(
     () =>
-      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, ['active']),
-    [onboardingRecords],
+      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, currentPropertyId, ['active']),
+    [onboardingRecords, currentPropertyId],
   )
   const leaseWithPayment = useMemo(
     () =>
-      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, PRIMARY_OWNER_PROPERTY_ID, [
+      getOwnerLeaseForProperty(onboardingRecords, DEMO_OWNER.id, currentPropertyId, [
         'payment_completed',
         'active',
       ]),
-    [onboardingRecords],
+    [onboardingRecords, currentPropertyId],
   )
   const propertyOccupied = Boolean(activeLease)
   const [activityItems, setActivityItems] = useState(initialActivityItems)
@@ -131,13 +138,13 @@ export function OwnerDashboard() {
               <article className="overflow-hidden rounded-card border border-outline bg-white shadow-surface">
                 <button
                   type="button"
-                  onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(PRIMARY_OWNER_PROPERTY_ID))}
+                  onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(currentPropertyId))}
                   className="block w-full text-left"
                 >
                   <div className="relative h-64 overflow-hidden bg-slate-100">
                   <img
-                    src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80"
-                    alt="Modern rental property with pool and glass facade"
+                    src={activeProperty?.image ?? 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'}
+                    alt={activeProperty?.title ?? 'Rental property'}
                     className="h-full w-full object-cover"
                   />
                   <span
@@ -162,20 +169,20 @@ export function OwnerDashboard() {
                   <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <h2 className="text-body-lg font-semibold text-text-primary">
-                        The Opus Tower, 14B
+                        {activeProperty?.title ?? 'MultiOwner Skyline 14B'}
                       </h2>
                       <div className="mt-3 flex flex-wrap items-center gap-4 text-label text-text-muted">
                         <span className="inline-flex items-center gap-1">
                           <Bed size={14} />
-                          2 Beds
+                          {activeProperty?.beds ?? 2} Beds
                         </span>
                         <span className="inline-flex items-center gap-1">
                           <Bath size={14} />
-                          2 Baths
+                          {activeProperty?.baths ?? 2} Baths
                         </span>
                         <span className="inline-flex items-center gap-1">
                           <Ruler size={14} />
-                          1,200 sqft
+                          {activeProperty?.sqft ?? '1,240'} sqft
                         </span>
                       </div>
                       {leaseWithPayment && (
@@ -190,7 +197,7 @@ export function OwnerDashboard() {
 
                     <div className="text-left sm:text-right">
                       <p className="text-heading-2 font-bold tracking-tight text-primary">
-                        $4,500/mo
+                        {activeProperty?.price ?? 'Rs. 85,000'}/mo
                       </p>
                     </div>
                   </div>
@@ -199,7 +206,7 @@ export function OwnerDashboard() {
                 <div className="border-t border-outline px-6 pb-6 pt-0 text-left sm:text-right">
                     <button
                       type="button"
-                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_EDIT(PRIMARY_OWNER_PROPERTY_ID))}
+                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_EDIT(currentPropertyId))}
                       className="mt-2 inline-flex items-center gap-2 text-label font-bold text-primary transition-colors duration-200 hover:text-primary-700"
                     >
                       Edit Details
@@ -270,7 +277,7 @@ export function OwnerDashboard() {
                   <div className="mt-4 flex flex-wrap gap-3">
                     <button
                       type="button"
-                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(PRIMARY_OWNER_PROPERTY_ID))}
+                      onClick={() => navigate(ROUTES.OWNER.PROPERTY_DETAIL(currentPropertyId))}
                       className="rounded-button bg-navy px-4 py-2.5 text-label font-bold text-white"
                     >
                       View tenant & documents
