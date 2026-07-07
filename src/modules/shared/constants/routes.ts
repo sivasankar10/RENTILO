@@ -92,6 +92,7 @@ export const ROUTES = {
     ROOT: '/admin',
     DASHBOARD: '/admin/dashboard',
     BROKER_MANAGEMENT: '/admin/broker-management',
+    BROKER_PROFILE: (id: string) => `/admin/broker-management/${encodeURIComponent(id)}`,
     LISTING_MANAGEMENT: '/admin/listing-management',
     USER_MANAGEMENT: '/admin/user-management',
     FINANCE_PAYMENTS: '/admin/finance-payments',
