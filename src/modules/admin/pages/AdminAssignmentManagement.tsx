@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { AlertTriangle, Building2, CheckCircle2, Download, Home, Plus, Search, TrendingUp, UserCheck, X } from 'lucide-react'
+import { AlertTriangle, Building2, CheckCircle2, Download, Eye, Home, Plus, Search, Trash2, TrendingUp, UserCheck, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore, type AdminBroker } from '../store/adminStore'
 import { usePrototypeStore } from '@shared/store/prototypeStore'
+import { ActionMenu } from '../components/ActionMenu'
 import { toast } from '../components/Toast'
 import { exportToCsv } from '../utils/exportCsv'
 
@@ -121,12 +122,22 @@ export function AdminAssignmentManagement() {
   const users = usePrototypeStore((state) => state.users)
   const assignments = usePrototypeStore((state) => state.brokerAssignments)
   const assignBrokerToProperty = usePrototypeStore((state) => state.assignBroker)
+  const adminRequests = usePrototypeStore((state) => state.adminRequests)
   const standardQueue: StandardProperty[] = properties
-    .filter((property) => !assignments.some(
-      (assignment) => assignment.propertyId === property.id && assignment.status === 'Active',
-    ))
     .map((property) => {
       const owner = users.find((user) => user.id === property.ownerId)
+      const activeAssignment = assignments.find(
+        (a) => a.propertyId === property.id && a.status === 'Active',
+      )
+      const pendingRequest = adminRequests.find(
+        (r) => r.propertyId === property.id && r.type === 'broker_listing_access' && r.status === 'Pending',
+      )
+      const status = activeAssignment ? 'Assigned' : pendingRequest ? 'Processing' : 'Unassigned'
+      const statusColor = activeAssignment
+        ? 'bg-green-50 text-green-700'
+        : pendingRequest
+          ? 'bg-amber-50 text-amber-700'
+          : 'bg-slate-100 text-slate-600'
       return {
         id: property.id,
         image: property.image,
@@ -135,8 +146,8 @@ export function AdminAssignmentManagement() {
         ownerType: owner?.accountName ?? 'Property Owner',
         rentPrice: property.price,
         location: `${property.neighborhood}, ${property.city}`,
-        status: 'Ready',
-        statusColor: 'bg-status-success-bg text-status-success-text',
+        status,
+        statusColor,
       }
     })
   const [searchParams, setSearchParams] = useSearchParams()
@@ -144,6 +155,9 @@ export function AdminAssignmentManagement() {
   const [standardAssignModalOpen, setStandardAssignModalOpen] = useState(false)
   const [selectedProperty, setSelectedProperty] = useState<EnterpriseProperty | null>(null)
   const [selectedStandardProperty, setSelectedStandardProperty] = useState<StandardProperty | null>(null)
+  const [enterprisePage, setEnterprisePage] = useState(1)
+  const [standardPage, setStandardPage] = useState(1)
+  const ITEMS_PER_PAGE = 5
   const [enterpriseAssignments, setEnterpriseAssignments] = useState<Record<string, EnterpriseAssignmentRow[]>>(
     () =>
       Object.fromEntries(
@@ -325,7 +339,7 @@ export function AdminAssignmentManagement() {
                 </tr>
               </thead>
               <tbody>
-                {enterpriseQueue.map((property) => (
+                {enterpriseQueue.slice((enterprisePage - 1) * ITEMS_PER_PAGE, enterprisePage * ITEMS_PER_PAGE).map((property) => (
                   <tr
                     key={property.name}
                     className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors"
@@ -376,6 +390,30 @@ export function AdminAssignmentManagement() {
               </tbody>
             </table>
           </div>
+
+          {/* Enterprise Pagination */}
+          {enterpriseQueue.length > ITEMS_PER_PAGE && (
+            <div className="flex items-center justify-between px-2 pt-4">
+              <p className="text-label text-text-muted">
+                Showing {Math.min((enterprisePage - 1) * ITEMS_PER_PAGE + 1, enterpriseQueue.length)}–{Math.min(enterprisePage * ITEMS_PER_PAGE, enterpriseQueue.length)} of {enterpriseQueue.length}
+              </p>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.ceil(enterpriseQueue.length / ITEMS_PER_PAGE) }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setEnterprisePage(page)}
+                    className={cn(
+                      'h-8 w-8 rounded-lg text-label font-bold transition-colors',
+                      page === enterprisePage ? 'bg-navy text-white' : 'text-text-muted hover:bg-hover-light',
+                    )}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Non-Enterprise Assignment Queue */}
@@ -415,7 +453,7 @@ export function AdminAssignmentManagement() {
                 </tr>
               </thead>
               <tbody>
-                {standardQueue.map((property) => (
+                {standardQueue.slice((standardPage - 1) * ITEMS_PER_PAGE, standardPage * ITEMS_PER_PAGE).map((property) => (
                   <tr
                     key={property.name}
                     className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors"
@@ -453,13 +491,23 @@ export function AdminAssignmentManagement() {
                       </span>
                     </td>
                     <td className="px-4 py-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleStandardAssignClick(property)}
-                        className="text-body font-medium text-text-primary hover:text-primary transition-colors"
-                      >
-                        Assign
-                      </button>
+                      <ActionMenu
+                        ariaLabel={`Actions for ${property.name}`}
+                        items={[
+                          { label: 'View', icon: Eye, onClick: () => toast.info('Property details', `${property.name} - ${property.location}`) },
+                          ...(property.status === 'Unassigned' ? [{
+                            label: 'Assign',
+                            icon: UserCheck,
+                            onClick: () => handleStandardAssignClick(property),
+                          }] : []),
+                          {
+                            label: 'Delete',
+                            icon: Trash2,
+                            variant: 'danger' as const,
+                            onClick: () => toast.info('Delete', `${property.name} removal is not supported in prototype.`),
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -467,15 +515,26 @@ export function AdminAssignmentManagement() {
             </table>
           </div>
 
-          {/* View All */}
-          <div className="text-center">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 text-body font-medium text-text-muted hover:text-text-primary transition-colors"
-            >
-              View all properties
-              <Download size={14} className="rotate-180" />
-            </button>
+          {/* Non-Enterprise Pagination */}
+          <div className="flex items-center justify-between px-2 pt-4">
+            <p className="text-label text-text-muted">
+              Showing {Math.min((standardPage - 1) * ITEMS_PER_PAGE + 1, standardQueue.length)}–{Math.min(standardPage * ITEMS_PER_PAGE, standardQueue.length)} of {standardQueue.length}
+            </p>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.max(1, Math.ceil(standardQueue.length / ITEMS_PER_PAGE)) }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setStandardPage(page)}
+                  className={cn(
+                    'h-8 w-8 rounded-lg text-label font-bold transition-colors',
+                    page === standardPage ? 'bg-navy text-white' : 'text-text-muted hover:bg-hover-light',
+                  )}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { confirm } from '../components/ConfirmDialog'
 import { toast } from '../components/Toast'
 import { exportToCsv } from '../utils/exportCsv'
 import { ROUTES } from '@shared/constants/routes'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 
 type TabFilter = 'All' | 'Active' | 'Banned'
 type EnterpriseTab = 'Enterprise' | 'Non-Enterprise'
@@ -37,6 +38,35 @@ export function AdminBrokerManagement() {
   const removeBroker = useAdminStore((s) => s.removeBroker)
   const removeEnterpriseBroker = useAdminStore((s) => s.removeEnterpriseBroker)
   const navigate = useNavigate()
+
+  // Dynamic non-enterprise brokers from prototype store
+  const prototypeAssignments = usePrototypeStore((s) => s.brokerAssignments)
+  const prototypeUsers = usePrototypeStore((s) => s.users)
+  const prototypeProperties = usePrototypeStore((s) => s.properties)
+  const removeBrokerAssignment = usePrototypeStore((s) => s.removeBrokerAssignment)
+
+  const nonEnterpriseBrokers = useMemo(() => {
+    return prototypeAssignments
+      .filter((a) => a.status === 'Active')
+      .map((assignment) => {
+        const broker = prototypeUsers.find((u) => u.id === assignment.brokerId)
+        const property = prototypeProperties.find((p) => p.id === assignment.propertyId)
+        const brokerName = broker ? `${broker.firstName} ${broker.lastName}` : 'Unknown Broker'
+        const initials = broker ? `${broker.firstName[0]}${broker.lastName[0]}` : '??'
+        return {
+          id: assignment.id,
+          name: brokerName,
+          role: 'Assigned Broker',
+          avatar: initials,
+          commission: '—',
+          property: property?.neighborhood ?? property?.city ?? 'Unknown',
+          valuation: property ? parseInt(property.price.replace(/\D/g, '')) / 1000 : 0,
+          status: 'Open' as const,
+          propertyId: assignment.propertyId,
+          brokerId: assignment.brokerId,
+        }
+      })
+  }, [prototypeAssignments, prototypeUsers, prototypeProperties])
 
   const [activeTab, setActiveTab] = useState<TabFilter>('All')
   const [enterpriseTab, setEnterpriseTab] = useState<EnterpriseTab>('Enterprise')
@@ -110,12 +140,51 @@ export function AdminBrokerManagement() {
     navigate(ROUTES.ADMIN.ASSIGNMENT_MANAGEMENT)
   }
 
+  const handleAddBroker = () => {
+    const dummyNames = ['Anil Kumar', 'Neha Patel', 'Karthik Reddy', 'Divya Nair', 'Suresh Babu', 'Pooja Verma']
+    const randomName = dummyNames[Math.floor(Math.random() * dummyNames.length)]
+    const [firstName, lastName] = randomName.split(' ')
+    const phone = `90000${Math.floor(10000 + Math.random() * 90000)}`
+
+    // Add broker as a user in the prototype store so the merged admin store picks it up
+    const protoState = usePrototypeStore.getState()
+    const newUser = {
+      id: `user-broker-${Date.now()}`,
+      accountName: randomName.replace(' ', ''),
+      phone,
+      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@rentilo.test`,
+      firstName,
+      lastName,
+      roles: ['broker'] as ('broker')[],
+      primaryRole: 'broker' as const,
+      avatar: undefined,
+      kycStatus: 'Verified' as const,
+      status: 'Active' as const,
+      flags: 0,
+      lastActive: 'Just now',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    protoState.addUser(newUser)
+    toast.success('Broker added', `${randomName} (${phone}) has been onboarded.`)
+  }
+
   return (
     <div className="min-h-screen bg-canvas-alt px-2 py-8 sm:px-6">
       <div className="mx-auto max-w-7xl space-y-6">
-        <h1 className="text-heading-1 font-bold tracking-tight text-text-primary">
-          Broker Management
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-heading-1 font-bold tracking-tight text-text-primary">
+            Broker Management
+          </h1>
+          <button
+            type="button"
+            onClick={handleAddBroker}
+            className="inline-flex items-center gap-2 rounded-button bg-navy px-4 py-2.5 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
+          >
+            <UserCheck size={16} />
+            New Broker
+          </button>
+        </div>
 
         {/* Alert Cards */}
         <div className="grid gap-4 md:grid-cols-3">
@@ -320,62 +389,122 @@ export function AdminBrokerManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {enterpriseBrokers.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-10 text-center text-body text-text-muted">
-                        No enterprise brokers to display.
-                      </td>
-                    </tr>
-                  ) : (
-                    enterpriseBrokers.map((broker) => (
-                      <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-badge font-bold text-text-primary">
-                              {broker.avatar}
-                            </div>
-                            <div>
-                              <p className="text-body font-semibold text-text-primary">{broker.name}</p>
-                              <p className="text-label text-text-muted">{broker.role}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <span className="rounded-pill bg-teal-50 px-2.5 py-1 text-badge font-bold text-teal-700">
-                            {broker.commission}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-body text-text-primary">{broker.property}</td>
-                        <td className="px-4 py-4 text-center text-body text-text-primary">{broker.valuation}</td>
-                        <td className="px-4 py-4 text-center text-body font-semibold text-text-primary">
-                          {broker.status}
-                        </td>
-                        <td className="px-2 py-4 text-center">
-                          <ActionMenu
-                            ariaLabel={`Actions for ${broker.name}`}
-                            items={[
-                              { label: 'View deal', icon: Eye, onClick: () => toast.info('Deal opened', `Showing details for ${broker.property}.`) },
-                              { label: 'Send message', icon: Mail, onClick: () => toast.success('Message sent', `Notified ${broker.name}.`) },
-                              {
-                                label: 'Remove from deal',
-                                icon: Trash2,
-                                variant: 'danger',
-                                onClick: () => confirm({
-                                  title: 'Remove from deal?',
-                                  description: `${broker.name} will be unassigned from ${broker.property}.`,
-                                  confirmLabel: 'Remove',
-                                  variant: 'danger',
-                                  onConfirm: () => {
-                                    removeEnterpriseBroker(broker.id)
-                                    toast.success('Broker removed from deal')
-                                  },
-                                }),
-                              },
-                            ]}
-                          />
+                  {enterpriseTab === 'Enterprise' ? (
+                    enterpriseBrokers.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-10 text-center text-body text-text-muted">
+                          No enterprise brokers to display.
                         </td>
                       </tr>
-                    ))
+                    ) : (
+                      enterpriseBrokers.map((broker) => (
+                        <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-badge font-bold text-text-primary">
+                                {broker.avatar}
+                              </div>
+                              <div>
+                                <p className="text-body font-semibold text-text-primary">{broker.name}</p>
+                                <p className="text-label text-text-muted">{broker.role}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className="rounded-pill bg-teal-50 px-2.5 py-1 text-badge font-bold text-teal-700">
+                              {broker.commission}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-body text-text-primary">{broker.property}</td>
+                          <td className="px-4 py-4 text-center text-body text-text-primary">{broker.valuation}</td>
+                          <td className="px-4 py-4 text-center text-body font-semibold text-text-primary">
+                            {broker.status}
+                          </td>
+                          <td className="px-2 py-4 text-center">
+                            <ActionMenu
+                              ariaLabel={`Actions for ${broker.name}`}
+                              items={[
+                                { label: 'View deal', icon: Eye, onClick: () => toast.info('Deal opened', `Showing details for ${broker.property}.`) },
+                                { label: 'Send message', icon: Mail, onClick: () => toast.success('Message sent', `Notified ${broker.name}.`) },
+                                {
+                                  label: 'Remove from deal',
+                                  icon: Trash2,
+                                  variant: 'danger',
+                                  onClick: () => confirm({
+                                    title: 'Remove from deal?',
+                                    description: `${broker.name} will be unassigned from ${broker.property}.`,
+                                    confirmLabel: 'Remove',
+                                    variant: 'danger',
+                                    onConfirm: () => {
+                                      removeEnterpriseBroker(broker.id)
+                                      toast.success('Broker removed from deal')
+                                    },
+                                  }),
+                                },
+                              ]}
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    )
+                  ) : (
+                    nonEnterpriseBrokers.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-10 text-center text-body text-text-muted">
+                          No non-enterprise broker assignments yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      nonEnterpriseBrokers.map((broker) => (
+                        <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-badge font-bold text-text-primary">
+                                {broker.avatar}
+                              </div>
+                              <div>
+                                <p className="text-body font-semibold text-text-primary">{broker.name}</p>
+                                <p className="text-label text-text-muted">{broker.role}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            <span className="rounded-pill bg-teal-50 px-2.5 py-1 text-badge font-bold text-teal-700">
+                              {broker.commission}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-body text-text-primary">{broker.property}</td>
+                          <td className="px-4 py-4 text-center text-body text-text-primary">{broker.valuation}</td>
+                          <td className="px-4 py-4 text-center text-body font-semibold text-text-primary">
+                            {broker.status}
+                          </td>
+                          <td className="px-2 py-4 text-center">
+                            <ActionMenu
+                              ariaLabel={`Actions for ${broker.name}`}
+                              items={[
+                                { label: 'View details', icon: Eye, onClick: () => toast.info('Assignment details', `${broker.name} assigned to ${broker.property}.`) },
+                                { label: 'Send message', icon: Mail, onClick: () => toast.success('Message sent', `Notified ${broker.name}.`) },
+                                {
+                                  label: 'Remove assignment',
+                                  icon: Trash2,
+                                  variant: 'danger',
+                                  onClick: () => confirm({
+                                    title: 'Remove broker assignment?',
+                                    description: `${broker.name} will be unassigned from ${broker.property}.`,
+                                    confirmLabel: 'Remove',
+                                    variant: 'danger',
+                                    onConfirm: () => {
+                                      removeBrokerAssignment(broker.propertyId, broker.brokerId)
+                                      toast.success('Broker assignment removed')
+                                    },
+                                  }),
+                                },
+                              ]}
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    )
                   )}
                 </tbody>
               </table>

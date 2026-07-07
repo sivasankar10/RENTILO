@@ -9,6 +9,10 @@ import { confirm } from '../components/ConfirmDialog'
 import { toast } from '../components/Toast'
 import { exportToCsv } from '../utils/exportCsv'
 import { AdminNewListingModal } from '../components/AdminNewListingModal'
+import { useOnboardingStore } from '@shared/store/onboardingStore'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
+
+type OccupancyStatus = 'Occupied' | 'Pending' | null
 
 type ListingTab = 'Enterprise' | 'Non-Enterprise'
 type SortKey = 'latest' | 'highest-rent' | 'lowest-rent' | 'updated'
@@ -18,6 +22,11 @@ const statusColors: Record<ListingStatus, string> = {
   Paused: 'bg-amber-50 text-amber-700',
   Flagged: 'bg-status-error-bg text-status-error-text',
   Removed: 'bg-slate-100 text-slate-600',
+}
+
+const occupancyColors: Record<string, string> = {
+  Occupied: 'bg-primary-100 text-primary',
+  Pending: 'bg-amber-50 text-amber-700',
 }
 
 function parseRent(rent: string): number {
@@ -31,6 +40,24 @@ export function AdminListingManagement() {
   const setListingStatus = useAdminStore((s) => s.setListingStatus)
   const removeListing = useAdminStore((s) => s.removeListing)
   const addListing = useAdminStore((s) => s.addListing)
+  const onboardingRecords = useOnboardingStore((s) => s.records)
+  const prototypeProperties = usePrototypeStore((s) => s.properties)
+
+  // Helper: check if a listing's property has an onboarded tenant
+  const getOccupancyStatus = (listing: AdminListing): OccupancyStatus => {
+    if (listing.segment === 'enterprise') return null
+    // Try to match by property title
+    const matchedProperty = prototypeProperties.find(
+      (p) => listing.propertyTitle?.toLowerCase().includes(p.title.toLowerCase()) ||
+        p.title.toLowerCase().includes((listing.propertyTitle ?? '').toLowerCase())
+    )
+    if (!matchedProperty) return null
+    const record = onboardingRecords.find(
+      (r) => r.ownerPropertyId === matchedProperty.id && ['active', 'payment_completed'].includes(r.status)
+    )
+    if (!record) return null
+    return record.status === 'active' ? 'Occupied' : 'Pending'
+  }
 
   const [activeTab, setActiveTab] = useState<ListingTab>('Enterprise')
   const [statusFilter, setStatusFilter] = useState<ListingStatus | 'All Statuses'>('All Statuses')
@@ -268,9 +295,21 @@ export function AdminListingManagement() {
                       <td className="px-4 py-4 text-body text-text-primary">{listing.location}</td>
                       <td className="px-4 py-4 text-body font-semibold text-text-primary">{listing.rent}</td>
                       <td className="px-4 py-4 text-center">
-                        <span className={cn('inline-block rounded-pill px-3 py-1 text-badge font-bold', statusColors[listing.status])}>
-                          {listing.status}
-                        </span>
+                        {(() => {
+                          const occupancy = getOccupancyStatus(listing)
+                          if (occupancy) {
+                            return (
+                              <span className={cn('inline-block rounded-pill px-3 py-1 text-badge font-bold', occupancyColors[occupancy])}>
+                                {occupancy}
+                              </span>
+                            )
+                          }
+                          return (
+                            <span className={cn('inline-block rounded-pill px-3 py-1 text-badge font-bold', statusColors[listing.status])}>
+                              {listing.status}
+                            </span>
+                          )
+                        })()}
                       </td>
                       <td className="px-4 py-4 text-label text-text-muted">{listing.postedDate}</td>
                       <td className="px-4 py-4 text-label text-text-muted">{listing.updated}</td>

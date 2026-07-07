@@ -17,6 +17,7 @@ export type PrototypeAccountName =
   | 'Broker2'
   | 'Admin1'
   | 'TenantOwner'
+  | (string & {})
 
 export interface PrototypeUser {
   id: string

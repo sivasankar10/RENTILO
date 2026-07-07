@@ -16,6 +16,7 @@ import type {
   PrototypePayment,
   PrototypeProperty,
   PrototypeStateData,
+  PrototypeUser,
   RentalApplication,
   ScheduledVisit,
 } from '@shared/types/prototype'
@@ -58,6 +59,7 @@ type PrototypeState = PrototypeStateData & {
   setPaymentStatus: (paymentId: string, status: PrototypePayment['status']) => void
   toggleUserStatus: (userId: string) => void
   removeUser: (userId: string) => void
+  addUser: (user: PrototypeUser) => void
   addBroadcast: (audience: string, title: string, body: string) => void
 }
 
@@ -987,6 +989,10 @@ export const usePrototypeStore = create<PrototypeState>()(
               : assignment,
           ),
         })),
+
+      addUser: (user) =>
+        set((state) => ({ users: [...state.users, user] })),
+
       addBroadcast: (audience, title, body) => {
         const timestamp = nowIso()
         const notification: PrototypeNotification = {
