@@ -9,9 +9,9 @@ import {
   Phone,
   Calendar,
   CalendarDays,
+  CheckCircle,
   TrendingUp,
   Download,
-  FileText,
   Pencil,
   Plus,
   Save,
@@ -159,12 +159,13 @@ type Activity = {
   title: string
   time: string
   description: string
-  attachment?: string
+  done?: boolean
   dotActive?: boolean
 }
 
 interface ActivityItemProps extends Activity {
   onEdit: (activity: Activity) => void
+  onMarkDone: (activityId: number) => void
 }
 
 function ActivityItem({
@@ -172,42 +173,50 @@ function ActivityItem({
   title,
   time,
   description,
-  attachment,
+  done,
   dotActive,
   onEdit,
+  onMarkDone,
 }: ActivityItemProps) {
   return (
-    <div className="relative pl-6 pb-5 last:pb-0">
+    <div className={`relative pl-6 pb-5 last:pb-0 ${done ? 'opacity-50' : ''}`}>
       {/* vertical line */}
       <span className="absolute left-[6px] top-5 bottom-0 w-px bg-outline" />
       {/* dot */}
       <span
         className={`absolute left-0 top-1.5 w-3 h-3 rounded-full border-2 ${
-          dotActive ? 'border-[#0f172a] bg-[#0f172a]' : 'border-outline bg-white'
+          done ? 'border-green-500 bg-green-500' : dotActive ? 'border-[#0f172a] bg-[#0f172a]' : 'border-outline bg-white'
         }`}
       />
       <div className="flex items-start gap-2 mb-0.5">
-        <span className="text-[13px] font-semibold text-[#0f172a]">{title}</span>
+        <span className={`text-[13px] font-semibold ${done ? 'line-through text-text-muted' : 'text-[#0f172a]'}`}>{title}</span>
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <span className="text-[10px] text-text-muted">{time}</span>
-          <button
-            type="button"
-            onClick={() => onEdit({ id, title, time, description, attachment, dotActive })}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:bg-hover-light hover:text-primary"
-            title={`Edit ${title}`}
-            aria-label={`Edit ${title}`}
-          >
-            <Pencil size={13} />
-          </button>
+          {!done && (
+            <>
+              <button
+                type="button"
+                onClick={() => onEdit({ id, title, time, description, done, dotActive })}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:bg-hover-light hover:text-primary"
+                title={`Edit ${title}`}
+                aria-label={`Edit ${title}`}
+              >
+                <Pencil size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={() => onMarkDone(id)}
+                className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[10px] font-bold text-green-700 bg-green-50 hover:bg-green-100"
+                title="Mark as done"
+              >
+                <CheckCircle size={12} />
+                Done
+              </button>
+            </>
+          )}
         </div>
       </div>
       <p className="text-label text-text-muted leading-relaxed">{description}</p>
-      {attachment && (
-        <div className="mt-2 flex items-center gap-2 border border-outline rounded-lg px-3 py-2 bg-canvas w-fit">
-          <FileText size={14} className="text-red-500" />
-          <span className="text-label text-[#0f172a] font-medium">{attachment}</span>
-        </div>
-      )}
     </div>
   )
 }
@@ -219,44 +228,24 @@ const last30DayMetrics = [
   { label: 'Closed Deals', value: '3', detail: 'Rs. 45,000 commission' },
 ]
 
-const initialActivities: Activity[] = [
-  {
-    id: 1,
-    title: 'Property assigned',
-    time: '2h ago',
-    description: 'Robert King finalized papers for Unit 14B.',
-    attachment: 'Lease_King_14B.pdf',
-    dotActive: true,
-  },
-  {
-    id: 2,
-    title: 'Lead assigned',
-    time: '5h ago',
-    description: 'Julianna Smith inquired about Penthouse A.',
-  },
-  {
-    id: 3,
-    title: 'Tenant property tour',
-    time: 'Yesterday',
-    description: 'Plumbing issue reported in Loft C.',
-  },
-  {
-    id: 4,
-    title: 'Status',
-    time: 'Oct 12',
-    description: '3 prospects visited the Business Center.',
-  },
-]
-
 const ACTIVITY_STORAGE_KEY = 'rentilo-broker-dashboard-activities'
 
 function loadActivities() {
   try {
     const savedActivities = sessionStorage.getItem(ACTIVITY_STORAGE_KEY)
-    return savedActivities ? (JSON.parse(savedActivities) as Activity[]) : initialActivities
+    return savedActivities ? (JSON.parse(savedActivities) as Activity[]) : []
   } catch {
-    return initialActivities
+    return []
   }
+}
+
+function simpleHash(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i)
+    hash |= 0
+  }
+  return Math.abs(hash)
 }
 
 const last30DayProperties = [
@@ -450,7 +439,6 @@ function ActivityEditorModal({
   const [title, setTitle] = useState(activity?.title ?? '')
   const [time, setTime] = useState(activity?.time ?? 'Just now')
   const [description, setDescription] = useState(activity?.description ?? '')
-  const [attachment, setAttachment] = useState(activity?.attachment ?? '')
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -459,7 +447,6 @@ function ActivityEditorModal({
       title: title.trim(),
       time: time.trim(),
       description: description.trim(),
-      attachment: attachment.trim() || undefined,
       dotActive: activity?.dotActive ?? true,
     })
   }
@@ -525,17 +512,6 @@ function ActivityEditorModal({
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Add the activity details"
               className="w-full resize-none rounded-lg border border-outline px-3.5 py-3 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-          </label>
-          <label className="block sm:col-span-2">
-            <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">
-              Attachment Name (Optional)
-            </span>
-            <input
-              value={attachment}
-              onChange={(event) => setAttachment(event.target.value)}
-              placeholder="e.g. Lease_Agreement.pdf"
-              className="h-11 w-full rounded-lg border border-outline px-3.5 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </label>
         </div>
@@ -716,9 +692,9 @@ export function BrokerDashboard() {
   const { assignedProperties, leads, commissions, users, properties } = useBrokerPrototype()
   const successfulCommission = commissions.filter((item) => item.status === 'Successful').reduce((sum, item) => sum + item.amount, 0)
 
-  // Dynamic interested tenants from leads (applications with status interest_shown)
+  // Dynamic interested tenants from leads (applications that are still active leads)
   const interestedTenants = useMemo(() => leads
-    .filter((app) => app.status === 'interest_shown')
+    .filter((app) => !['active', 'rejected', 'payment_completed'].includes(app.status))
     .map((app) => {
       const tenant = users.find((u) => u.id === app.tenantId)
       const property = properties.find((p) => p.id === app.propertyId)
@@ -746,15 +722,77 @@ export function BrokerDashboard() {
         status: app.status === 'visit_confirmed' ? 'Confirmed' : 'Pending',
       }
     }), [leads, users])
-  const [activities, setActivities] = useState<Activity[]>(loadActivities)
+  const [manualActivities, setManualActivities] = useState<Activity[]>(loadActivities)
+  const [doneActivityIds, setDoneActivityIds] = useState<Set<number>>(() => {
+    try {
+      const saved = sessionStorage.getItem('rentilo-broker-done-activities')
+      return saved ? new Set(JSON.parse(saved) as number[]) : new Set()
+    } catch { return new Set() }
+  })
   const [activityEditorOpen, setActivityEditorOpen] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
   const [exportStatus, setExportStatus] = useState('')
 
+  // Generate dynamic activities from assignments and leads
+  const dynamicActivities = useMemo<Activity[]>(() => {
+    const items: Activity[] = []
+
+    // Property assignments
+    assignedProperties.forEach((prop) => {
+      items.push({
+        id: simpleHash(`assign-${prop.id}`),
+        title: 'Property assigned',
+        time: 'Recent',
+        description: `${prop.name} has been assigned to you for tenant matching.`,
+        dotActive: true,
+      })
+    })
+
+    // Interested tenants (leads)
+    leads.forEach((lead) => {
+      const tenant = users.find((u) => u.id === lead.tenantId)
+      const property = properties.find((p) => p.id === lead.propertyId)
+      const tenantName = tenant ? `${tenant.firstName} ${tenant.lastName}` : 'A tenant'
+      items.push({
+        id: simpleHash(`lead-${lead.id}`),
+        title: 'New tenant interested',
+        time: new Date(lead.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        description: `${tenantName} showed interest in ${property?.title ?? 'a property'}.`,
+        dotActive: lead.status === 'interest_shown',
+      })
+
+      // Visit scheduled
+      if (lead.scheduledVisit && ['visit_scheduled', 'visit_confirmed'].includes(lead.status)) {
+        items.push({
+          id: simpleHash(`visit-${lead.id}`),
+          title: 'Visit scheduled',
+          time: lead.scheduledVisit.date,
+          description: `${tenantName} scheduled a visit for ${property?.title ?? 'a property'} at ${lead.scheduledVisit.time}.`,
+          dotActive: true,
+        })
+      }
+    })
+
+    return items
+  }, [assignedProperties, leads, users, properties])
+
+  // Merge dynamic + manual, apply done state, sort: non-done first, done at bottom
+  const activities = useMemo(() => {
+    const all = [...dynamicActivities, ...manualActivities].map((activity) => ({
+      ...activity,
+      done: activity.done || doneActivityIds.has(activity.id),
+    }))
+    return all.sort((a, b) => {
+      if (a.done && !b.done) return 1
+      if (!a.done && b.done) return -1
+      return 0
+    })
+  }, [dynamicActivities, manualActivities, doneActivityIds])
+
   useEffect(() => {
-    sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(activities))
-  }, [activities])
+    sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(manualActivities))
+  }, [manualActivities])
 
   const openLeadChat = (conversationId: string) => {
     navigate(`${ROUTES.BROKER.MESSAGES}?conversation=${encodeURIComponent(conversationId)}`)
@@ -771,7 +809,7 @@ export function BrokerDashboard() {
   }
 
   const saveActivity = (activity: Activity) => {
-    setActivities((currentActivities) => {
+    setManualActivities((currentActivities) => {
       const exists = currentActivities.some((item) => item.id === activity.id)
       return exists
         ? currentActivities.map((item) => (item.id === activity.id ? activity : item))
@@ -781,8 +819,23 @@ export function BrokerDashboard() {
     setSelectedActivity(null)
   }
 
+  const markActivityDone = (activityId: number) => {
+    setDoneActivityIds((current) => {
+      const updated = new Set(current)
+      updated.add(activityId)
+      sessionStorage.setItem('rentilo-broker-done-activities', JSON.stringify([...updated]))
+      return updated
+    })
+    // Also mark manual activities
+    setManualActivities((currentActivities) =>
+      currentActivities.map((activity) =>
+        activity.id === activityId ? { ...activity, done: true } : activity,
+      ),
+    )
+  }
+
   const deleteActivity = (activityId: number) => {
-    setActivities((currentActivities) =>
+    setManualActivities((currentActivities) =>
       currentActivities.filter((activity) => activity.id !== activityId),
     )
     setActivityEditorOpen(false)
@@ -906,7 +959,7 @@ export function BrokerDashboard() {
           </div>
           {activities.length > 0 ? (
             activities.map((activity) => (
-              <ActivityItem key={activity.id} {...activity} onEdit={openActivityEditor} />
+              <ActivityItem key={activity.id} {...activity} onEdit={openActivityEditor} onMarkDone={markActivityDone} />
             ))
           ) : (
             <div className="rounded-lg border border-dashed border-outline px-4 py-6 text-center">

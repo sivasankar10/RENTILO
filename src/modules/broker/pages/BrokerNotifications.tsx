@@ -25,9 +25,11 @@ export function BrokerNotifications() {
   )
   const unreadCount = items.filter((item) => item.unread).length
 
-  const openAction = (action?: string) => {
-    if (action === 'view_assignment') navigate(ROUTES.BROKER.ASSIGNED_PROPERTIES)
-    else if (action === 'view_lead') navigate(ROUTES.BROKER.CLIENTS)
+  const openAction = (action?: string, relatedId?: string) => {
+    if (action === 'view_assignment') {
+      // relatedId holds the property id → open its detail page (e.g. /broker/portfolio/property-multi-1)
+      navigate(relatedId ? ROUTES.BROKER.PROPERTY(relatedId) : ROUTES.BROKER.ASSIGNED_PROPERTIES)
+    } else if (action === 'view_lead') navigate(ROUTES.BROKER.CLIENTS)
     else if (action === 'view_commission') navigate(ROUTES.BROKER.COMMISSION)
     else navigate(ROUTES.BROKER.LISTINGS)
   }
@@ -86,7 +88,7 @@ export function BrokerNotifications() {
                   type="button"
                   onClick={() => {
                     markNotificationRead(notification.id)
-                    openAction(notification.action)
+                    openAction(notification.action, notification.relatedId)
                   }}
                   className="min-w-0 flex-1 text-left"
                 >

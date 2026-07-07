@@ -12,7 +12,6 @@ import {
   Lock,
   LogOut,
   Mail,
-  MessageSquare,
   Moon,
   Phone,
   Save,
@@ -336,8 +335,6 @@ export function NotificationsSection() {
   const [pushPayments, setPushPayments] = useState(true)
   const [emailMaintenance, setEmailMaintenance] = useState(false)
   const [pushMaintenance, setPushMaintenance] = useState(true)
-  const [weeklyDigest, setWeeklyDigest] = useState(true)
-  const [marketAlerts, setMarketAlerts] = useState(true)
   const [saved, setSaved] = useState(false)
 
   return (
@@ -405,27 +402,6 @@ export function NotificationsSection() {
           label="Push maintenance alerts"
           checked={pushMaintenance}
           onChange={setPushMaintenance}
-        />
-      </SectionCard>
-
-      <SectionCard
-        title="Digest & Market"
-        subtitle="Weekly summaries and market intelligence"
-        icon={<MessageSquare size={16} />}
-      >
-        <ToggleRow
-          id="notif-digest"
-          label="Weekly performance digest"
-          description="Summary of your listings, leads, and commissions every Monday"
-          checked={weeklyDigest}
-          onChange={setWeeklyDigest}
-        />
-        <ToggleRow
-          id="notif-market"
-          label="Market trend alerts"
-          description="Notifications when market conditions shift in your area"
-          checked={marketAlerts}
-          onChange={setMarketAlerts}
         />
       </SectionCard>
 
@@ -586,9 +562,6 @@ export function SecuritySection() {
 export function PreferencesSection() {
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light')
   const [compactView, setCompactView] = useState(false)
-  const [autoAssign, setAutoAssign] = useState(true)
-  const [whatsapp, setWhatsapp] = useState(true)
-  const [currency, setCurrency] = useState('USD ($)')
   const [saved, setSaved] = useState(false)
 
   return (
@@ -630,44 +603,6 @@ export function PreferencesSection() {
             checked={compactView}
             onChange={setCompactView}
           />
-        </div>
-      </SectionCard>
-
-      {/* Lead Preferences */}
-      <SectionCard
-        title="Lead & Workflow"
-        subtitle="Control how leads and tasks are managed"
-        icon={<Zap size={16} />}
-      >
-        <ToggleRow
-          id="pref-auto-assign"
-          label="Auto-assign hot leads"
-          description="Automatically receive hot leads based on your specialisation"
-          checked={autoAssign}
-          onChange={setAutoAssign}
-        />
-        <ToggleRow
-          id="pref-whatsapp"
-          label="WhatsApp lead updates"
-          description="Get lead messages forwarded to your WhatsApp number"
-          checked={whatsapp}
-          onChange={setWhatsapp}
-        />
-
-        <div className="mt-4 pt-4 border-t border-outline">
-          <label htmlFor="pref-currency" className={labelCls}>
-            Display Currency
-          </label>
-          <select
-            id="pref-currency"
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className={inputCls}
-          >
-            {['USD ($)', 'GBP (£)', 'EUR (€)', 'AED (د.إ)', 'INR (₹)'].map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
         </div>
       </SectionCard>
 

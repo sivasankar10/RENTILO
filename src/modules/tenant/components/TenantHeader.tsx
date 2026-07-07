@@ -2,7 +2,9 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
+import { useOnboardingStore } from '@shared/store/onboardingStore'
 import { useTenantMarketplace } from '../hooks/useTenantMarketplace'
+import { useTenantId } from '../hooks/useTenantId'
 import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
 import { MaterialIcon } from './MaterialIcon'
 import { isProfileSectionPath, TenantProfileMenu } from './TenantProfileMenu'
@@ -14,6 +16,17 @@ export function TenantHeader() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { savedIds } = useTenantMarketplace()
+  const tenantId = useTenantId()
+  const hasUnreadNotifications = useOnboardingStore((state) =>
+    state.notifications.some(
+      (notification) =>
+        notification.audience === 'tenant' &&
+        notification.unread &&
+        state.records.some(
+          (record) => record.id === notification.onboardingId && record.tenant.id === tenantId,
+        ),
+    ),
+  )
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
 
   const profileActive = isProfileSectionPath(pathname)
@@ -49,12 +62,15 @@ export function TenantHeader() {
           </button>
           <button
             type="button"
-            className="flex items-center justify-center p-1 border-0 bg-transparent text-brand cursor-pointer hover:opacity-70 active:scale-95 transition-all"
+            className="relative flex items-center justify-center p-1 border-0 bg-transparent text-brand cursor-pointer hover:opacity-70 active:scale-95 transition-all"
             aria-label="Notifications"
             aria-current={notificationsActive ? 'page' : undefined}
             onClick={() => navigate(ROUTES.TENANT.NOTIFICATIONS)}
           >
             <MaterialIcon name="notifications" filled={notificationsActive} />
+            {hasUnreadNotifications && (
+              <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-brand-favorite ring-2 ring-brand-surface" />
+            )}
           </button>
           <button
             type="button"

@@ -13,9 +13,13 @@ import {
   Phone,
   Search,
   UserPlus,
+  Sparkles,
+  Bed,
+  Bath,
+  Ruler,
+  CheckCircle,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
-import { ManagementTiersModal } from '../components/ManagementTiersModal'
 import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 
 type LeadStatus = 'New' | 'Contacted' | 'Visit Scheduled'
@@ -172,7 +176,7 @@ function Pagination({
 
 export function BrokerClients() {
   const navigate = useNavigate()
-  const { leads: applications, users, properties, chats } = useBrokerPrototype()
+  const { leads: applications, users, properties, chats, suggestedBundles, pendingAssignments, requestAccess } = useBrokerPrototype()
   const allLeads = useMemo<Lead[]>(() => applications.map((application) => {
     const tenant = users.find((user) => user.id === application.tenantId)
     const property = properties.find((item) => item.id === application.propertyId)
@@ -200,12 +204,21 @@ export function BrokerClients() {
     }
   }), [applications, chats, properties, users])
   const [page, setPage] = useState(1)
-  const [plansModalOpen, setPlansModalOpen] = useState(false)
+  const [requestedIds, setRequestedIds] = useState<string[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All')
   const [receivedFilter, setReceivedFilter] = useState<ReceivedFilter>('Last 30 Days')
   const [openActionId, setOpenActionId] = useState<string | null>(null)
   const [actionStatus, setActionStatus] = useState('')
+  const [leadFormOpen, setLeadFormOpen] = useState(false)
+  const [leadFormData, setLeadFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    property: '',
+    note: '',
+    status: 'New',
+  })
 
   const filteredLeads = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase()
@@ -254,6 +267,15 @@ export function BrokerClients() {
   const callLead = (lead: Lead) => {
     setActionStatus(`Calling ${lead.name} for ${lead.interestedProperty}.`)
     setOpenActionId(null)
+  }
+
+  const submitAddLead = () => {
+    if (!leadFormData.name.trim() || !leadFormData.phone.trim()) return
+    // Add lead as a manual entry to the allLeads array display
+    // In a real app this would call an API; here we just show confirmation
+    setActionStatus(`Lead "${leadFormData.name}" added successfully.`)
+    setLeadFormData({ name: '', email: '', phone: '', property: '', note: '', status: 'New' })
+    setLeadFormOpen(false)
   }
 
   const exportLeads = () => {
@@ -379,6 +401,14 @@ export function BrokerClients() {
               >
                 <Download size={14} />
                 Export
+              </button>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0f172a] text-white text-[13px] font-bold hover:bg-navy/80 transition-colors"
+                onClick={() => setLeadFormOpen(true)}
+              >
+                <UserPlus size={14} />
+                Add Lead
               </button>
             </div>
           </div>
@@ -538,58 +568,129 @@ export function BrokerClients() {
         </div>
       </div>
 
-      {/* ── In-demand properties CTA section ── */}
+      {/* ── Add Lead Modal ── */}
+      {leadFormOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-[#0f172a]/60 px-4 py-6 backdrop-blur-sm">
+          <section className="w-full max-w-lg rounded-2xl bg-white shadow-card">
+            <div className="flex items-start justify-between gap-4 border-b border-outline px-6 py-5">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-primary">New Lead</p>
+                <h2 className="mt-1 text-[22px] font-extrabold text-[#0f172a]">Add New Lead</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLeadFormOpen(false)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline bg-white text-text-muted hover:bg-hover-light hover:text-[#0f172a]"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid gap-4 p-6 sm:grid-cols-2">
+              <label className="sm:col-span-2">
+                <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">Lead Name *</span>
+                <input value={leadFormData.name} onChange={(e) => setLeadFormData((d) => ({ ...d, name: e.target.value }))} placeholder="Tenant name" className="h-11 w-full rounded-xl border border-outline bg-white px-4 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              </label>
+              <label>
+                <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">Email</span>
+                <input type="email" value={leadFormData.email} onChange={(e) => setLeadFormData((d) => ({ ...d, email: e.target.value }))} placeholder="lead@example.com" className="h-11 w-full rounded-xl border border-outline bg-white px-4 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              </label>
+              <label>
+                <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">Phone *</span>
+                <input value={leadFormData.phone} onChange={(e) => setLeadFormData((d) => ({ ...d, phone: e.target.value }))} placeholder="+91 90000 00000" className="h-11 w-full rounded-xl border border-outline bg-white px-4 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              </label>
+              <label className="sm:col-span-2">
+                <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">Property</span>
+                <input value={leadFormData.property} onChange={(e) => setLeadFormData((d) => ({ ...d, property: e.target.value }))} placeholder="Property name" className="h-11 w-full rounded-xl border border-outline bg-white px-4 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              </label>
+              <label className="sm:col-span-2">
+                <span className="mb-2 block text-[12px] font-bold uppercase tracking-wider text-text-muted">Notes</span>
+                <textarea value={leadFormData.note} onChange={(e) => setLeadFormData((d) => ({ ...d, note: e.target.value }))} rows={3} placeholder="Budget, preference, lease terms..." className="w-full resize-none rounded-xl border border-outline bg-white px-4 py-3 text-[14px] text-[#0f172a] outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              </label>
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t border-outline px-6 py-4">
+              <button type="button" onClick={() => setLeadFormOpen(false)} className="h-10 rounded-lg border border-outline bg-white px-4 text-[13px] font-bold text-text-muted hover:bg-hover-light">Cancel</button>
+              <button type="button" onClick={submitAddLead} disabled={!leadFormData.name.trim() || !leadFormData.phone.trim()} className="inline-flex h-10 items-center gap-2 rounded-lg bg-[#0f172a] px-4 text-[13px] font-bold text-white hover:bg-navy/90 disabled:opacity-50 disabled:cursor-not-allowed">
+                <UserPlus size={15} />
+                Add Lead
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {/* ── In-Demand Properties ── */}
       <div className="space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-[18px] font-bold text-[#0f172a]">In-Demand Properties</h2>
-          <button
-            type="button"
-            className="text-label font-semibold text-text-muted hover:text-primary transition-colors inline-flex items-center gap-1"
-            onClick={() => navigate(ROUTES.BROKER.LISTINGS)}
-          >
-            View All Listings <ChevronRight size={14} />
-          </button>
+          <div>
+            <h2 className="text-[18px] font-bold text-[#0f172a]">In-Demand Properties</h2>
+            <p className="mt-1 text-[13px] text-text-muted">Promoted listings available for broker assignment. Request access to start matching tenants.</p>
+          </div>
+          {suggestedBundles.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-700">
+              <Sparkles size={12} />
+              {suggestedBundles.length} available
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center justify-center gap-6">
-          {/* Left blurred placeholder */}
-          <div className="w-[240px] h-[150px] rounded-2xl bg-white border border-outline shadow-ambient blur-[2px] opacity-50 pointer-events-none">
-            <div className="p-6">
-              <div className="h-4 bg-hover-light rounded w-3/4" />
-              <div className="mt-3 h-3 bg-hover-light rounded w-2/3" />
-              <div className="mt-8 h-8 bg-hover-light rounded w-full" />
-            </div>
+        {suggestedBundles.length > 0 ? (
+          <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+            {suggestedBundles.map(({ property }) => {
+              const pendingPropertyIds = pendingAssignments.map((a) => a.propertyId).filter((id): id is string => Boolean(id))
+              const isRequested = pendingPropertyIds.includes(property.id) || requestedIds.includes(property.id)
+              return (
+                <div key={property.id} className="min-w-[280px] max-w-[300px] shrink-0 rounded-xl border border-outline bg-white shadow-ambient overflow-hidden">
+                  <div className="relative h-32">
+                    <img src={property.image} alt={property.title} className="h-full w-full object-cover" />
+                    <span className="absolute top-3 left-3 rounded-full bg-amber-500/90 px-2.5 py-1 text-[10px] font-bold uppercase text-white backdrop-blur-sm">
+                      In Demand
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-[14px] font-bold text-[#0f172a] truncate">{property.title}</h3>
+                    <p className="mt-1 text-[12px] text-text-muted flex items-center gap-1">
+                      <MapPin size={11} />
+                      {property.neighborhood}, {property.city}
+                    </p>
+                    <div className="mt-2 flex items-center gap-3 text-[11px] text-text-muted">
+                      <span className="flex items-center gap-1"><Bed size={12} />{property.beds}</span>
+                      <span className="flex items-center gap-1"><Bath size={12} />{property.baths}</span>
+                      <span className="flex items-center gap-1"><Ruler size={12} />{property.sqft}</span>
+                    </div>
+                    <p className="mt-2 text-[14px] font-bold text-[#0f172a]">{property.price}<span className="text-[11px] font-normal text-text-muted">{property.pricePeriod}</span></p>
+                    <button
+                      type="button"
+                      disabled={isRequested}
+                      onClick={() => {
+                        if (!isRequested) {
+                          requestAccess(property.id)
+                          setRequestedIds((current) => [...current, property.id])
+                        }
+                      }}
+                      className={`mt-3 w-full rounded-lg px-4 py-2.5 text-[12px] font-bold transition-colors ${
+                        isRequested
+                          ? 'bg-green-50 text-green-700 cursor-default'
+                          : 'bg-[#0f172a] text-white hover:bg-navy/80'
+                      }`}
+                    >
+                      {isRequested ? (
+                        <span className="inline-flex items-center gap-1.5"><CheckCircle size={13} /> Requested</span>
+                      ) : (
+                        'Request Access'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
-
-          {/* Middle CTA */}
-          <div className="w-[380px] rounded-2xl bg-white border border-outline shadow-ambient p-10 text-center">
-            <p className="text-[12px] font-extrabold uppercase tracking-wider text-[#0f172a] leading-tight">
-              Explore the plans to view in demanded properties
-            </p>
-            <button
-              type="button"
-              className="mt-6 inline-flex items-center justify-center gap-2 bg-[#0f172a] text-white text-label font-bold rounded-lg px-6 py-3 hover:bg-navy/90 transition-colors"
-              onClick={() => setPlansModalOpen(true)}
-            >
-              View Plans
-            </button>
+        ) : (
+          <div className="rounded-xl border border-dashed border-outline bg-white p-8 text-center">
+            <Sparkles size={24} className="mx-auto text-text-muted opacity-50" />
+            <p className="mt-2 text-[13px] font-semibold text-text-muted">No in-demand properties available right now.</p>
           </div>
-
-          {/* Right blurred placeholder */}
-          <div className="w-[240px] h-[150px] rounded-2xl bg-white border border-outline shadow-ambient blur-[2px] opacity-50 pointer-events-none">
-            <div className="p-6">
-              <div className="h-4 bg-hover-light rounded w-3/5" />
-              <div className="mt-3 h-3 bg-hover-light rounded w-2/3" />
-              <div className="mt-8 h-8 bg-hover-light rounded w-full" />
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-
-      <ManagementTiersModal
-        isOpen={plansModalOpen}
-        onClose={() => setPlansModalOpen(false)}
-      />
     </div>
   )
 }

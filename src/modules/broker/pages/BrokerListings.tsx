@@ -5,15 +5,12 @@ import {
   Bed,
   Bath,
   Square,
-  Star,
-  TrendingUp,
   Sparkles,
   Search,
   Eye,
   CheckCircle2,
   Clock,
   XCircle,
-  ChevronRight,
   Zap,
   MoreVertical,
   X,
@@ -42,22 +39,6 @@ interface ActiveListing {
   views: number
   leads: number
   daysListed: number
-}
-
-interface SuggestedProperty {
-  id: string
-  image: string
-  name: string
-  location: string
-  type: string
-  price: string
-  beds: number
-  baths: number
-  sqft: string
-  matchScore: number
-  tags: string[]
-  trending?: boolean
-  propertyId: string
 }
 
 type RemovalRequest = {
@@ -226,191 +207,8 @@ function ActiveListingRow({
 }
 
 /* ─────────────────────────────────────────────
-   Suggested property card
-───────────────────────────────────────────── */
-function RequestListingCard({
-  prop,
-  requested,
-  onToggleRequest,
-  onViewProperty,
-}: {
-  prop: SuggestedProperty
-  requested: boolean
-  onToggleRequest: () => void
-  onViewProperty: () => void
-}) {
-  return (
-    <div className="bg-white border border-outline rounded-xl overflow-hidden shadow-ambient hover:shadow-card-hover transition-all duration-200 group">
-      {/* Image - Clickable */}
-      <div 
-        role="button"
-        tabIndex={0}
-        onClick={onViewProperty}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onViewProperty()
-          }
-        }}
-        className="relative h-44 overflow-hidden cursor-pointer"
-      >
-        <img
-          src={prop.image}
-          alt={prop.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        {/* Overlay badges */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5">
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/90 text-[#0f172a] backdrop-blur-sm">
-            {prop.type}
-          </span>
-          {prop.trending && (
-            <span className="flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white">
-              <TrendingUp size={9} /> Trending
-            </span>
-          )}
-        </div>
-        {/* Match score pill */}
-        <div className="absolute top-3 right-3">
-          <div className="flex items-center gap-1 bg-[#0f172a]/90 backdrop-blur-sm text-white px-2 py-1 rounded-full text-[10px] font-bold">
-            <Star size={9} fill="currentColor" className="text-amber-300" />
-            {prop.matchScore}% match
-          </div>
-        </div>
-      </div>
-
-      {/* Body - Clickable */}
-      <div 
-        role="button"
-        tabIndex={0}
-        onClick={onViewProperty}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            onViewProperty()
-          }
-        }}
-        className="p-4 cursor-pointer"
-      >
-        <h3 className="text-[15px] font-bold text-[#0f172a]">{prop.name}</h3>
-        <div className="flex items-center gap-1 mt-0.5 text-[12px] text-text-muted">
-          <MapPin size={11} />
-          <span>{prop.location}</span>
-        </div>
-
-        {/* Specs */}
-        <div className="flex items-center gap-3 mt-2.5 text-[12px] text-text-muted">
-          {prop.beds > 0 && (
-            <span className="flex items-center gap-1">
-              <Bed size={11} /> {prop.beds}
-            </span>
-          )}
-          <span className="flex items-center gap-1">
-            <Bath size={11} /> {prop.baths}
-          </span>
-          <span className="flex items-center gap-1">
-            <Square size={11} /> {prop.sqft}
-          </span>
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1.5 mt-2.5">
-          {prop.tags.map((tag) => (
-            <span
-              key={tag}
-              className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Price + CTA */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-outline">
-          <span className="text-[15px] font-extrabold text-[#0f172a]">{prop.price}</span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onToggleRequest()
-            }}
-            className={cn(
-              'flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-bold transition-colors',
-              requested
-                ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                : 'bg-[#0f172a] text-white hover:bg-navy/80',
-            )}
-          >
-            {requested ? 'Cancel Request' : 'Request'} <ChevronRight size={11} />
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ─────────────────────────────────────────────
    Main page
 ───────────────────────────────────────────── */
-function RequestNewListingModal({
-  properties,
-  requestedIds,
-  onToggleRequest,
-  onClose,
-  onViewProperty,
-}: {
-  properties: SuggestedProperty[]
-  requestedIds: string[]
-  onToggleRequest: (propertyId: string) => void
-  onClose: () => void
-  onViewProperty: (propertyId: string) => void
-}) {
-  return (
-    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-[#0f172a]/60 px-4 py-6 backdrop-blur-sm">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="request-listing-title"
-        className="w-full max-w-6xl rounded-2xl bg-canvas shadow-card"
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-outline bg-white px-6 py-5">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-primary">
-              Available Properties
-            </p>
-            <h2 id="request-listing-title" className="mt-1 text-[24px] font-extrabold text-[#0f172a]">
-              Request New Listing
-            </h2>
-            <p className="mt-1 text-[13px] leading-relaxed text-text-muted">
-              Click on any property to view details. Pick properties you want to request for listing access.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline bg-white text-text-muted hover:bg-hover-light hover:text-[#0f172a]"
-            aria-label="Close request listing popup"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="grid max-h-[70vh] gap-4 overflow-y-auto p-6 md:grid-cols-2 xl:grid-cols-3">
-          {properties.map((property) => (
-            <RequestListingCard
-              key={property.id}
-              prop={property}
-              requested={requestedIds.includes(property.id)}
-              onToggleRequest={() => onToggleRequest(property.id)}
-              onViewProperty={() => onViewProperty(property.propertyId)}
-            />
-          ))}
-        </div>
-      </section>
-    </div>
-  )
-}
-
 function RemovalReasonModal({
   listing,
   reason,
@@ -495,11 +293,8 @@ export function BrokerListings() {
   const navigate = useNavigate()
   const {
     assignedBundles,
-    suggestedBundles,
     leads,
     requests,
-    pendingAssignments,
-    requestAccess,
     requestRemoval,
   } = useBrokerPrototype()
   const activeListings: ActiveListing[] = assignedBundles.map(({ listing, property }) => ({
@@ -518,28 +313,8 @@ export function BrokerListings() {
     leads: leads.filter((lead) => lead.listingId === listing.id).length,
     daysListed: Math.max(1, Math.round((Date.now() - new Date(listing.createdAt).getTime()) / 86400000)),
   }))
-  const suggestedProperties: SuggestedProperty[] = suggestedBundles.map(({ property }) => ({
-    id: property.id,
-    propertyId: property.id,
-    image: property.image,
-    name: property.title,
-    location: `${property.neighborhood}, ${property.city}`,
-    type: property.propertyType,
-    price: property.price,
-    beds: property.beds,
-    baths: property.baths,
-    sqft: property.sqft,
-    matchScore: 90,
-    tags: ['Available', 'Owner listed'],
-    trending: property.views > 100,
-  }))
-  // Property IDs with a pending Admin-review request (broker_listing_access)
-  const requestedPropertyIds = pendingAssignments
-    .map((a) => a.propertyId)
-    .filter((id): id is string => Boolean(id))
   const [search, setSearch] = useState('')
   const [filterTab, setFilterTab] = useState<FilterTab>('all')
-  const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [openActionId, setOpenActionId] = useState<string | null>(null)
   const [removalTarget, setRemovalTarget] = useState<ActiveListing | null>(null)
   const [removalReason, setRemovalReason] = useState('')
@@ -564,10 +339,6 @@ export function BrokerListings() {
     const matchesTab = filterTab === 'all' || effectiveStatus === filterTab
     return matchesSearch && matchesTab
   })
-
-  const toggleListingRequest = (propertyId: string) => {
-    if (!requestedPropertyIds.includes(propertyId)) requestAccess(propertyId)
-  }
 
   const openRemovalModal = (listing: ActiveListing) => {
     setRemovalTarget(listing)
@@ -603,11 +374,11 @@ export function BrokerListings() {
         </div>
         <button
           type="button"
-          onClick={() => setRequestModalOpen(true)}
+          onClick={() => navigate(ROUTES.BROKER.PORTFOLIO)}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0f172a] text-white text-[13px] font-bold hover:bg-navy/80 transition-colors shadow-ambient"
         >
           <Sparkles size={14} />
-          Request New Listing
+          Browse In Demand
         </button>
       </div>
 
@@ -697,19 +468,6 @@ export function BrokerListings() {
           </div>
         )}
       </section>
-
-      {requestModalOpen && (
-        <RequestNewListingModal
-          properties={suggestedProperties}
-          requestedIds={requestedPropertyIds}
-          onToggleRequest={toggleListingRequest}
-          onClose={() => setRequestModalOpen(false)}
-          onViewProperty={(propertyId) => {
-            setRequestModalOpen(false)
-            navigate(ROUTES.BROKER.PROPERTY(propertyId))
-          }}
-        />
-      )}
 
       {removalTarget && (
         <RemovalReasonModal

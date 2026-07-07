@@ -19,6 +19,7 @@ import { useMediaQuery } from '@shared/hooks/useMediaQuery'
 import { useAuth } from '@shared/hooks/useAuth'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
+import { useBrokerPrototype } from '@modules/broker/hooks/useBrokerPrototype'
 import { BROKER_ASSIGNED_PROPERTIES } from '@modules/broker/constants/assignedProperties'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
 
@@ -112,6 +113,8 @@ export function BrokerDashboardLayout() {
   const isMobile = useMediaQuery('(max-width: 1024px)')
   const navigate = useNavigate()
   const { logout } = useAuth()
+  const { notifications } = useBrokerPrototype()
+  const hasUnreadNotifications = notifications.some((notification) => notification.unread)
   const { pathname } = useLocation()
   const isMessagesPage = pathname.startsWith(ROUTES.BROKER.MESSAGES)
   const messagesActive = isMessagesPage
@@ -288,7 +291,9 @@ export function BrokerDashboardLayout() {
               aria-label="Notifications"
             >
               <Bell size={20} strokeWidth={1.75} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
+              {hasUnreadNotifications && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
+              )}
             </button>
             <button
               type="button"
