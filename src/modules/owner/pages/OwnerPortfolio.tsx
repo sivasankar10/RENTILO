@@ -78,7 +78,7 @@ export function OwnerPortfolio() {
   const [brokerSearch, setBrokerSearch] = useState('')
   const [rejectedBrokerIds, setRejectedBrokerIds] = useState<string[]>([])
   const brokerIntegrationEnabled = useOwnerStore((state) => state.brokerIntegrationEnabled)
-  const assignedBrokerId = useOwnerStore((state) => state.assignedBrokerId)
+  const brokerEnabledOwnerId = useOwnerStore((state) => state.brokerEnabledOwnerId)
   const assignBrokerToProperty = useOwnerStore((state) => state.assignBrokerToProperty)
   const removeBrokerFromProperty = useOwnerStore((state) => state.removeBrokerFromProperty)
   const assignSharedBroker = usePrototypeStore((state) => state.assignBroker)
@@ -86,6 +86,16 @@ export function OwnerPortfolio() {
   const isBrokerReleasedForProperty = useOwnerStore((state) => state.isBrokerReleasedForProperty)
   const prototypeUsers = usePrototypeStore((state) => state.users)
   const prototypeLeads = usePrototypeStore((state) => state.applications)
+  const prototypeBrokerAssignments = usePrototypeStore((state) => state.brokerAssignments)
+
+  // Derive the assigned broker for THIS property from the prototype store (not the global ownerStore scalar)
+  const propertyBrokerAssignment = useMemo(
+    () => prototypeBrokerAssignments.find(
+      (a) => a.propertyId === currentPropertyId && a.ownerId === ownerId && a.status === 'Active',
+    ),
+    [prototypeBrokerAssignments, currentPropertyId, ownerId],
+  )
+  const assignedBrokerId = propertyBrokerAssignment?.brokerId ?? null
 
   // Build dynamic broker candidates from prototype store
   const prototypeBrokers = useMemo(
@@ -136,7 +146,7 @@ export function OwnerPortfolio() {
   const propertyOccupied = Boolean(activeLease)
   const brokerReleased = isBrokerReleasedForProperty(currentPropertyId)
   const brokerPanelVisible =
-    (brokerIntegrationEnabled || Boolean(assignedBrokerId)) && !brokerReleased && !leaseWithPayment
+    ((brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId) || Boolean(assignedBrokerId)) && !brokerReleased && !leaseWithPayment
 
   const assignedBroker =
     brokerCandidates.find((broker) => broker.id === assignedBrokerId) ?? null
