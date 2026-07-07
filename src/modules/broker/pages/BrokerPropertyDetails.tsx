@@ -835,7 +835,7 @@ function BrokerPropertyDetailsContent({ property }: { property: BrokerAssignedPr
               Contact Owner
             </button>
             <button 
-              onClick={() => navigate(ROUTES.OWNER.PORTFOLIO)}
+              onClick={() => navigate(ROUTES.BROKER.OWNER_PORTFOLIO(property.ownerId))}
               className="mt-4 h-12 w-full rounded-lg border border-outline bg-white text-[14px] font-semibold text-[#111] hover:bg-hover-light transition-colors"
             >
               View Owner Portfolio

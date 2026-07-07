@@ -58,6 +58,7 @@ export interface BrokerAssignedProperty {
   beds: number
   baths: number
   sqft: string
+  ownerId: string
   ownerName: string
   ownerInitials: string
   ownerBg: string
@@ -96,6 +97,7 @@ export const BROKER_ASSIGNED_PROPERTIES: BrokerAssignedProperty[] = [
     beds: 3,
     baths: 3,
     sqft: '2,250',
+    ownerId: 'mock-owner-julian-vane',
     ownerName: 'Julian Vane',
     ownerInitials: 'JV',
     ownerBg: '#dbeafe',
@@ -175,6 +177,7 @@ export const BROKER_ASSIGNED_PROPERTIES: BrokerAssignedProperty[] = [
     beds: 2,
     baths: 2.5,
     sqft: '1,850',
+    ownerId: 'mock-owner-sarah-jenkins',
     ownerName: 'Sarah Jenkins',
     ownerInitials: 'SJ',
     ownerBg: '#fce7f3',
@@ -252,6 +255,7 @@ export const BROKER_ASSIGNED_PROPERTIES: BrokerAssignedProperty[] = [
     beds: 2,
     baths: 2,
     sqft: '1,120',
+    ownerId: 'mock-owner-james-harrington',
     ownerName: 'James Harrington',
     ownerInitials: 'JH',
     ownerBg: '#dbeafe',
@@ -332,6 +336,7 @@ export const BROKER_ASSIGNED_PROPERTIES: BrokerAssignedProperty[] = [
     beds: 3,
     baths: 2.5,
     sqft: '1,540',
+    ownerId: 'mock-owner-elena-rossi',
     ownerName: 'Elena Rossi',
     ownerInitials: 'ER',
     ownerBg: '#fce7f3',
@@ -412,6 +417,7 @@ export const BROKER_ASSIGNED_PROPERTIES: BrokerAssignedProperty[] = [
     beds: 4,
     baths: 3.5,
     sqft: '2,460',
+    ownerId: 'mock-owner-arthur-sterling',
     ownerName: 'Arthur Sterling',
     ownerInitials: 'AS',
     ownerBg: '#d1fae5',

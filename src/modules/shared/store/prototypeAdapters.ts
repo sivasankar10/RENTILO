@@ -113,6 +113,7 @@ export function toBrokerAssignedProperty(bundle: PrototypeListingBundle): Broker
     beds: property.beds,
     baths: property.baths,
     sqft: property.sqft,
+    ownerId: owner.id,
     ownerName,
     ownerInitials: initials(owner),
     ownerBg: '#dbeafe',

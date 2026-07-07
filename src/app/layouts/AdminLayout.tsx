@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bell,
   CircleHelp,
+  ClipboardCheck,
   CreditCard,
   FileText,
   LayoutGrid,
@@ -48,6 +49,7 @@ const mainNavItems: AdminNavItem[] = [
   { label: 'User Management', href: ROUTES.ADMIN.USER_MANAGEMENT, icon: Users },
   { label: 'Finance & Payments', href: ROUTES.ADMIN.FINANCE_PAYMENTS, icon: CreditCard },
   { label: 'Platform Configuration', href: ROUTES.ADMIN.PLATFORM_CONFIGURATION, icon: Settings },
+  { label: 'Approval Requests', href: ROUTES.ADMIN.APPROVAL_REQUESTS, icon: ClipboardCheck },
   { label: 'Assignment Management', href: ROUTES.ADMIN.ASSIGNMENT_MANAGEMENT, icon: LayoutGrid },
 ]
 

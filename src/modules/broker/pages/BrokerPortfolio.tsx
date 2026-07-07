@@ -1,8 +1,6 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, TrendingUp, CheckCircle2, BadgeCheck, ChevronRight, Medal, Trophy } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
-import { BrokerPropertyIntel } from '../components/BrokerPropertyIntel'
 import { type BrokerAssignedProperty } from '../constants/assignedProperties'
 import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 import brokerProfileImg from '@/assets/images/broker_profile.png'
@@ -60,29 +58,21 @@ function StatCard({ label, value, icon, badge, dark }: StatCardProps) {
 ───────────────────────────────────────────── */
 interface PropertyCardProps {
   property: BrokerAssignedProperty
-  active: boolean
-  onSelect: () => void
+  onOpen: () => void
 }
 
-function PropertyCard({ property, active, onSelect }: PropertyCardProps) {
+function PropertyCard({ property, onOpen }: PropertyCardProps) {
   return (
     <button
       type="button"
-      onClick={onSelect}
-      className={`block w-full overflow-hidden rounded-xl border bg-white text-left shadow-ambient transition-shadow duration-200 hover:shadow-card-hover focus:outline-none focus:ring-2 focus:ring-primary ${
-        active ? 'border-primary ring-2 ring-primary/15' : 'border-outline'
-      }`}
+      onClick={onOpen}
+      className="block w-full overflow-hidden rounded-xl border border-outline bg-white text-left shadow-ambient transition-shadow duration-200 hover:shadow-card-hover focus:outline-none focus:ring-2 focus:ring-primary"
     >
       <div className="relative">
         <img src={property.image} alt={property.name} className="w-full h-44 object-cover" />
         <span className="absolute top-3 left-3 px-2 py-0.5 rounded text-[10px] font-bold bg-white/90 text-[#0f172a] backdrop-blur-sm">
           {property.type}
         </span>
-        {active && (
-          <span className="absolute right-3 top-3 rounded-full bg-[#0f172a] px-2.5 py-1 text-[10px] font-bold text-white">
-            Selected
-          </span>
-        )}
       </div>
       <div className="p-4">
         <h3 className="text-[16px] font-bold text-[#0f172a]">{property.name}</h3>
@@ -90,18 +80,23 @@ function PropertyCard({ property, active, onSelect }: PropertyCardProps) {
           <MapPin size={11} />
           <span>{property.location}</span>
         </div>
-        <div className="flex items-center gap-3 mt-3">
-          <span className="text-[15px] font-bold text-[#0f172a]">{property.value}</span>
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-              property.leased ? 'text-status-success-text bg-status-success-bg' : 'text-status-warning-text bg-status-warning-bg'
-            }`}
-            style={{
-              color: property.leasePercent >= 95 ? '#15803d' : '#b45309',
-              background: property.leasePercent >= 95 ? '#f0fdf4' : '#fffbeb',
-            }}
-          >
-            {property.leasePercent}% LEASED
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-3">
+            <span className="text-[15px] font-bold text-[#0f172a]">{property.value}</span>
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                property.leased ? 'text-status-success-text bg-status-success-bg' : 'text-status-warning-text bg-status-warning-bg'
+              }`}
+              style={{
+                color: property.leasePercent >= 95 ? '#15803d' : '#b45309',
+                background: property.leasePercent >= 95 ? '#f0fdf4' : '#fffbeb',
+              }}
+            >
+              {property.leasePercent}% LEASED
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-0.5 text-[12px] font-semibold text-primary">
+            View <ChevronRight size={13} />
           </span>
         </div>
       </div>
@@ -115,12 +110,8 @@ function PropertyCard({ property, active, onSelect }: PropertyCardProps) {
 export function BrokerPortfolio() {
   const navigate = useNavigate()
   const { assignedProperties: portfolioProperties } = useBrokerPrototype()
-  const [selectedPropertyId, setSelectedPropertyId] = useState('')
-  const selectedProperty =
-    portfolioProperties.find((property) => property.id === selectedPropertyId) ??
-    portfolioProperties[0]
 
-  if (!selectedProperty) {
+  if (portfolioProperties.length === 0) {
     return (
       <div className="rounded-card border border-outline bg-white p-10 text-center">
         <h1 className="text-heading-2 font-bold text-text-primary">Portfolio awaiting assignment</h1>
@@ -338,28 +329,9 @@ export function BrokerPortfolio() {
             <PropertyCard
               key={property.id}
               property={property}
-              active={selectedProperty.id === property.id}
-              onSelect={() => setSelectedPropertyId(property.id)}
+              onOpen={() => navigate(ROUTES.BROKER.PROPERTY(property.id))}
             />
           ))}
-        </div>
-
-        <div className="mt-5 flex justify-end">
-          <button
-            type="button"
-            onClick={() => navigate(ROUTES.BROKER.PROPERTY(selectedProperty.id))}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#0f172a] px-4 py-2 text-[13px] font-bold text-white hover:bg-navy/80"
-          >
-            Open Full Property Page
-            <ChevronRight size={15} />
-          </button>
-        </div>
-
-        <div className="mt-6">
-          <BrokerPropertyIntel
-            property={selectedProperty}
-            heading={`${selectedProperty.name} Details`}
-          />
         </div>
       </div>
 

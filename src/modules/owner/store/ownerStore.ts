@@ -131,6 +131,7 @@ interface OwnerState {
   savedPropertyEditIds: string[]
   kycStatus: OwnerKycStatus
   brokerIntegrationEnabled: boolean
+  brokerEnabledOwnerId: string | null
   assignedBrokerId: string | null
   brokerReleasedPropertyIds: string[]
   setSelectedProperty: (id: string | null) => void
@@ -172,7 +173,7 @@ interface OwnerState {
   ) => void
   savePropertyEditDraft: (propertyId: string) => void
   setKycStatus: (status: OwnerKycStatus) => void
-  enableBrokerIntegration: () => void
+  enableBrokerIntegration: (ownerId: string) => void
   assignBrokerToProperty: (brokerId: string) => void
   removeBrokerFromProperty: () => void
   releaseBrokerForProperty: (propertyId: string) => void
@@ -341,6 +342,7 @@ export const useOwnerStore = create<OwnerState>()(
       savedPropertyEditIds: [],
       kycStatus: 'Not Started',
       brokerIntegrationEnabled: false,
+      brokerEnabledOwnerId: null,
       assignedBrokerId: null,
       brokerReleasedPropertyIds: [],
       setSelectedProperty: (id) => set({ selectedPropertyId: id }),
@@ -447,7 +449,7 @@ export const useOwnerStore = create<OwnerState>()(
           }
         }),
       setKycStatus: (status) => set({ kycStatus: status }),
-      enableBrokerIntegration: () => set({ brokerIntegrationEnabled: true }),
+      enableBrokerIntegration: (ownerId) => set({ brokerIntegrationEnabled: true, brokerEnabledOwnerId: ownerId }),
       assignBrokerToProperty: (brokerId) => set({ assignedBrokerId: brokerId, brokerIntegrationEnabled: true }),
       removeBrokerFromProperty: () => set({ assignedBrokerId: null }),
       releaseBrokerForProperty: (propertyId) =>
