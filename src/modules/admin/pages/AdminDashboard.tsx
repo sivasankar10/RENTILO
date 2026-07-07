@@ -135,7 +135,9 @@ function BrokerRow({
           {broker.initials}
         </div>
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-body font-medium text-text-primary truncate">{broker.name}</span>
+          <span className="min-w-0 truncate text-body font-medium text-text-primary" title={broker.name}>
+            {broker.name}
+          </span>
           {/* Slide-in action buttons */}
           <div
             className={cn(
