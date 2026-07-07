@@ -317,20 +317,16 @@ export function BrokerPortfolio() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-[18px] font-bold text-[#0f172a]">Assigned Properties</h2>
-          <button
-            onClick={() => navigate(ROUTES.BROKER.ASSIGNED_PROPERTIES)}
-            className="inline-flex items-center gap-1 text-[13px] font-semibold text-primary hover:underline"
-          >
-            View All <ChevronRight size={14} />
-          </button>
+          <span className="text-[13px] font-semibold text-text-muted">{portfolioProperties.length} properties</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
           {portfolioProperties.map((property) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-              onOpen={() => navigate(ROUTES.BROKER.PROPERTY(property.id))}
-            />
+            <div key={property.id} className="min-w-[300px] max-w-[340px] shrink-0">
+              <PropertyCard
+                property={property}
+                onOpen={() => navigate(ROUTES.BROKER.PROPERTY(property.id))}
+              />
+            </div>
           ))}
         </div>
       </div>

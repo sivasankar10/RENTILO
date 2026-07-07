@@ -13,6 +13,7 @@ import {
 import { ROUTES } from '@shared/constants/routes'
 import { Toast, ToastContainer } from '@shared/ui/Toast'
 import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
 import { KycVerificationModal } from '@modules/tenant/components/KycVerificationModal'
 import { useOwnerStore } from '../store/ownerStore'
@@ -36,6 +37,13 @@ export function OwnerPlansRules() {
   const brokerIntegrationEnabled = useOwnerStore((state) => state.brokerIntegrationEnabled)
   const brokerEnabledOwnerId = useOwnerStore((state) => state.brokerEnabledOwnerId)
   const enableBrokerIntegration = useOwnerStore((state) => state.enableBrokerIntegration)
+  const brokerAssignments = usePrototypeStore((state) => state.brokerAssignments)
+
+  // Toggle is ON if owner manually enabled it OR a broker is already assigned to any of their properties
+  const hasBrokerAssigned = brokerAssignments.some(
+    (a) => a.ownerId === ownerId && a.status === 'Active',
+  )
+  const isBrokerToggleOn = (brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId) || hasBrokerAssigned
   const [notifications, setNotifications] = useState<
     { id: number; message: string; description?: string }[]
   >([])
@@ -53,7 +61,7 @@ export function OwnerPlansRules() {
   }
 
   const handleBrokerToggle = () => {
-    if (brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId) {
+    if (isBrokerToggleOn) {
       return
     }
 
@@ -175,11 +183,11 @@ export function OwnerPlansRules() {
                     type="button"
                     onClick={handleBrokerToggle}
                     className={
-                      brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId
+                      isBrokerToggleOn
                         ? 'flex h-6 w-11 cursor-default items-center justify-end rounded-pill bg-primary p-1'
                         : 'flex h-6 w-11 items-center justify-start rounded-pill bg-primary-100 p-1'
                     }
-                    aria-pressed={brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId}
+                    aria-pressed={isBrokerToggleOn}
                   >
                     <span className="h-4 w-4 rounded-full bg-white shadow-sm" />
                   </button>
