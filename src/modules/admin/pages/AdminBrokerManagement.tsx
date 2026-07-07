@@ -50,7 +50,12 @@ export function AdminBrokerManagement() {
     const filtered = brokers.filter((broker) => {
       if (activeTab === 'Active' && broker.status !== 'ACTIVE') return false
       if (activeTab === 'Banned' && broker.status !== 'BANNED') return false
-      if (query && !broker.name.toLowerCase().includes(query)) return false
+      if (
+        query &&
+        !broker.name.toLowerCase().includes(query) &&
+        !broker.brokerId.toLowerCase().includes(query)
+      )
+        return false
       return true
     })
 
@@ -63,7 +68,7 @@ export function AdminBrokerManagement() {
   }
 
   const handleViewDetails = (broker: AdminBroker) => {
-    toast.info(`Viewing ${broker.name}`, `Broker ID ${broker.brokerId}`)
+    navigate(ROUTES.ADMIN.BROKER_PROFILE(broker.id))
   }
 
   const handleSendMessage = (broker: AdminBroker) => {
@@ -172,7 +177,7 @@ export function AdminBrokerManagement() {
                 />
                 <input
                   type="text"
-                  placeholder="Search brokers..."
+                  placeholder="Search by name or broker ID..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value)

@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router-dom'
 import { AdminDashboard } from '../pages/AdminDashboard'
 import { AdminBrokerManagement } from '../pages/AdminBrokerManagement'
+import { AdminBrokerProfile } from '../pages/AdminBrokerProfile'
 import { AdminListingManagement } from '../pages/AdminListingManagement'
 import { AdminEnterprisePropertyDetail } from '../pages/AdminEnterprisePropertyDetail'
 import { AdminNonEnterprisePropertyDetail } from '../pages/AdminNonEnterprisePropertyDetail'
@@ -18,6 +19,7 @@ export const adminRoutes: RouteObject[] = [
   { index: true, element: <AdminDashboard /> },
   { path: 'dashboard', element: <AdminDashboard /> },
   { path: 'broker-management', element: <AdminBrokerManagement /> },
+  { path: 'broker-management/:brokerId', element: <AdminBrokerProfile /> },
   { path: 'listing-management', element: <AdminListingManagement /> },
   { path: 'listing-management/enterprise/:propertyId', element: <AdminEnterprisePropertyDetail /> },
   { path: 'listing-management/non-enterprise/:propertyId', element: <AdminNonEnterprisePropertyDetail /> },
