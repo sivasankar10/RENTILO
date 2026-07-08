@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Filter } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore, type ApprovalRequest } from '../store/adminStore'
@@ -23,6 +24,7 @@ function getTierColor(tier: string) {
 }
 
 export function AdminApprovalRequests() {
+  const navigate = useNavigate()
   const listingApprovals = useAdminStore((state) => state.listingApprovals)
   const promotedApprovals = useAdminStore((state) => state.promotedApprovals)
   const decideListingApproval = useAdminStore((state) => state.decideListingApproval)
@@ -135,7 +137,14 @@ export function AdminApprovalRequests() {
                 <article key={request.id} className="flex flex-col gap-4 px-6 py-5 md:flex-row md:items-center md:justify-between">
                   <div>
                     <p className="text-body font-bold text-text-primary">
-                      {request.type === 'broker_listing_access' ? 'Listing access' : 'Listing removal'} - {property?.title ?? request.listingId}
+                      {request.type === 'broker_listing_access' ? 'Listing access' : 'Listing removal'} -{' '}
+                      <button
+                        type="button"
+                        onClick={() => property && navigate(`/admin/property/${property.id}`)}
+                        className="text-primary hover:underline"
+                      >
+                        {property?.title ?? request.listingId}
+                      </button>
                     </p>
                     <p className="mt-1 text-label text-text-muted">
                       {broker?.accountName ?? request.requesterId}{request.reason ? ` - ${request.reason}` : ''}

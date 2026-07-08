@@ -487,8 +487,8 @@ export function AdminBrokerManagement() {
                             <ActionMenu
                               ariaLabel={`Actions for ${broker.name}`}
                               items={[
-                                { label: 'View details', icon: Eye, onClick: () => toast.info('Assignment details', `${broker.name} assigned to ${broker.property}.`) },
-                                { label: 'Send message', icon: Mail, onClick: () => toast.success('Message sent', `Notified ${broker.name}.`) },
+                                { label: 'View details', icon: Eye, onClick: () => navigate(`/admin/broker-management/deal/${broker.id}`) },
+                                { label: 'Send message', icon: Mail, onClick: () => navigate(`${ROUTES.ADMIN.MESSAGES}?user=${encodeURIComponent(broker.brokerId)}`) },
                                 {
                                   label: 'Remove assignment',
                                   icon: Trash2,
