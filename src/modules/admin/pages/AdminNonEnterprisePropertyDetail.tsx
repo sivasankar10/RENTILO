@@ -13,8 +13,10 @@ import {
   IndianRupee,
   Lock,
   MapPin,
+  MessageSquare,
   Navigation,
   Pencil,
+  Phone,
   Save,
   Share2,
   ShieldCheck,
@@ -413,6 +415,9 @@ export function AdminNonEnterprisePropertyDetail() {
                 <SnapshotRow label="Updated" value={listing.updated} />
               </div>
             </div>
+
+            {/* Owner Details Card - visible on all pages */}
+            <OwnerDetailCard ownerName={form.owner} propertyTitle={form.propertyTitle} />
           </div>
 
           <div className="space-y-6">
@@ -783,6 +788,64 @@ function PropertyOverviewCard({ listingForm }: { listingForm: ListingForm }) {
         )}
       </div>
     </article>
+  )
+}
+
+function OwnerDetailCard({ ownerName, propertyTitle }: { ownerName: string; propertyTitle: string }) {
+  const navigate = useNavigate()
+  const protoProperties = usePrototypeStore((s) => s.properties)
+  const protoUsers = usePrototypeStore((s) => s.users)
+
+  const matchedProperty = protoProperties.find(
+    (p) => p.title.toLowerCase().includes(propertyTitle.toLowerCase()) ||
+      propertyTitle.toLowerCase().includes(p.title.toLowerCase())
+  )
+  const owner = matchedProperty
+    ? protoUsers.find((u) => u.id === matchedProperty.ownerId)
+    : null
+
+  const displayName = owner ? `${owner.firstName} ${owner.lastName}` : ownerName
+  const initials = displayName.split(' ').map((w) => w[0] ?? '').join('').slice(0, 2)
+
+  return (
+    <div className="rounded-card border border-outline bg-white p-5 shadow-sm">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Property Owner</p>
+      <div className="mt-3 flex items-center gap-3">
+        {owner?.avatar ? (
+          <img src={owner.avatar} alt={displayName} className="h-10 w-10 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">{initials}</div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-body font-bold text-text-primary truncate">{displayName}</p>
+          <p className="text-label text-text-muted truncate">{owner?.email ?? `${ownerName.toLowerCase().replace(' ', '.')}@rentilo.test`}</p>
+        </div>
+      </div>
+      <div className="mt-3 space-y-1.5">
+        <p className="text-label text-text-muted flex items-center gap-2">
+          <Phone size={13} className="shrink-0" />
+          {owner?.phone ?? '—'}
+        </p>
+      </div>
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          onClick={() => navigate(`${ROUTES.ADMIN.MESSAGES}?user=${encodeURIComponent(owner?.id ?? ownerName)}`)}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-button border border-outline bg-white px-3 py-2 text-label font-semibold text-text-primary hover:bg-hover-light transition-colors"
+        >
+          <MessageSquare size={14} />
+          Chat
+        </button>
+        <button
+          type="button"
+          onClick={() => toast.info('Calling', `Initiating call to ${owner?.phone ?? 'owner'}`)}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-button bg-navy px-3 py-2 text-label font-semibold text-white hover:bg-slate-800 transition-colors"
+        >
+          <Phone size={14} />
+          Call
+        </button>
+      </div>
+    </div>
   )
 }
 

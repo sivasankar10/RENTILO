@@ -77,7 +77,7 @@ export function AdminUserManagement() {
   }
 
   const handleViewProfile = (user: AdminUser) => {
-    toast.info(`Viewing ${user.name}`, `Role: ${user.role} • Status: ${user.status}`)
+    navigate(`${ROUTES.ADMIN.USER_MANAGEMENT}/${user.id}`)
   }
 
   const handleOpenChat = (user: AdminUser) => {

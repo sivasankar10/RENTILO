@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AlertTriangle, Building2, CheckCircle2, Download, Eye, Home, Plus, Search, Trash2, TrendingUp, UserCheck, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAdminStore, type AdminBroker } from '../store/adminStore'
@@ -117,6 +117,7 @@ function createInitialStandardRows(property: StandardProperty): StandardAssignme
 }
 
 export function AdminAssignmentManagement() {
+  const navigate = useNavigate()
   const brokers = useAdminStore((state) => state.brokers)
   const properties = usePrototypeStore((state) => state.properties)
   const users = usePrototypeStore((state) => state.users)
@@ -466,7 +467,7 @@ export function AdminAssignmentManagement() {
                           className="h-11 w-14 rounded-button object-cover"
                         />
                         <div>
-                          <p className="text-body font-semibold text-text-primary">{property.name}</p>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); navigate(`/admin/property/${property.id}`) }} className="text-body font-semibold text-primary hover:underline text-left">{property.name}</button>
                           <p className="text-label text-text-muted">{property.type}</p>
                         </div>
                       </div>
