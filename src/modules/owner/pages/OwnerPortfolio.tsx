@@ -77,12 +77,27 @@ export function OwnerPortfolio() {
   const [brokerPickerOpen, setBrokerPickerOpen] = useState(false)
   const [brokerSearch, setBrokerSearch] = useState('')
   const [rejectedBrokerIds, setRejectedBrokerIds] = useState<string[]>([])
-  const brokerIntegrationEnabled = useOwnerStore((state) => state.brokerIntegrationEnabled)
-  const brokerEnabledOwnerId = useOwnerStore((state) => state.brokerEnabledOwnerId)
+  const [showBrokerPanel, setShowBrokerPanel] = useState(false)
+  const [assignDropdownOpen, setAssignDropdownOpen] = useState(false)
+  const [commissionModalOpen, setCommissionModalOpen] = useState(false)
+  const [commissionInput, setCommissionInput] = useState('30')
+  const [commissionNote, setCommissionNote] = useState('')
+  const [counterInput, setCounterInput] = useState('')
+  const [counterNote, setCounterNote] = useState('')
   const assignBrokerToProperty = useOwnerStore((state) => state.assignBrokerToProperty)
   const removeBrokerFromProperty = useOwnerStore((state) => state.removeBrokerFromProperty)
   const assignSharedBroker = usePrototypeStore((state) => state.assignBroker)
   const removeSharedBroker = usePrototypeStore((state) => state.removeBrokerAssignment)
+  const createNegotiation = usePrototypeStore((state) => state.createCommissionNegotiation)
+  const counterOffer = usePrototypeStore((state) => state.counterCommissionOffer)
+  const acceptOffer = usePrototypeStore((state) => state.acceptCommissionOffer)
+  const commissionNegotiations = usePrototypeStore((state) => state.commissionNegotiations)
+
+  // Active negotiation for this property
+  const activeNegotiation = useMemo(
+    () => commissionNegotiations.find((n) => n.propertyId === currentPropertyId && n.ownerId === ownerId && n.status !== 'rejected'),
+    [commissionNegotiations, currentPropertyId, ownerId],
+  )
   const isBrokerReleasedForProperty = useOwnerStore((state) => state.isBrokerReleasedForProperty)
   const prototypeUsers = usePrototypeStore((state) => state.users)
   const prototypeLeads = usePrototypeStore((state) => state.applications)
@@ -146,7 +161,7 @@ export function OwnerPortfolio() {
   const propertyOccupied = Boolean(activeLease)
   const brokerReleased = isBrokerReleasedForProperty(currentPropertyId)
   const brokerPanelVisible =
-    ((brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId) || Boolean(assignedBrokerId)) && !brokerReleased && !leaseWithPayment
+    (showBrokerPanel || Boolean(assignedBrokerId)) && !brokerReleased && !leaseWithPayment
 
   const assignedBroker =
     brokerCandidates.find((broker) => broker.id === assignedBrokerId) ?? null
@@ -339,8 +354,132 @@ export function OwnerPortfolio() {
                 </button>
               </div>
               )}
+
+              {/* Assign Broker button (when panel not visible and no lease) */}
+              {!brokerPanelVisible && !leaseWithPayment && !brokerReleased && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={(event) => { event.stopPropagation(); setAssignDropdownOpen(!assignDropdownOpen) }}
+                    className="w-full rounded-button bg-navy px-4 py-3 text-body font-semibold text-white transition-all duration-200 hover:bg-slate-800 hover:shadow-md"
+                  >
+                    Opt for Broker
+                  </button>
+                  {assignDropdownOpen && (
+                    <div className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-xl border border-outline bg-white shadow-modal">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setShowBrokerPanel(true)
+                          setAssignDropdownOpen(false)
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-body font-semibold text-text-primary hover:bg-hover-light transition-colors"
+                      >
+                        <Sparkles size={16} className="text-primary" />
+                        Auto Assign
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          if (activeNegotiation) {
+                            // Already has an active negotiation — don't create a new one
+                            setAssignDropdownOpen(false)
+                          } else {
+                            setCommissionModalOpen(true)
+                            setAssignDropdownOpen(false)
+                          }
+                        }}
+                        className="flex w-full items-center gap-3 border-t border-outline px-4 py-3 text-left text-body font-semibold text-text-primary hover:bg-hover-light transition-colors"
+                      >
+                        <Search size={16} className="text-text-muted" />
+                        Custom Assignment
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </article>
+
+          {/* Commission Negotiation Status Card */}
+          {activeNegotiation && activeNegotiation.status !== 'accepted' && (
+            <article className="rounded-card border border-outline bg-white p-6 shadow-surface">
+              <div className="flex items-center justify-between">
+                <h3 className="text-body font-bold text-text-primary">Broker Commission Negotiation</h3>
+                <span className={`rounded-pill px-2.5 py-1 text-badge font-bold ${
+                  activeNegotiation.status === 'owner_offered' || activeNegotiation.status === 'owner_countered' ? 'bg-amber-50 text-amber-700' : 'bg-primary-100 text-primary'
+                }`}>
+                  {activeNegotiation.status === 'admin_countered' ? 'Admin Countered' : 'Awaiting Admin'}
+                </span>
+              </div>
+              <div className="mt-4 space-y-3">
+                {activeNegotiation.rounds.map((round, i) => (
+                  <div key={i} className={`rounded-lg p-3 ${round.by === 'owner' ? 'bg-canvas-alt' : 'bg-primary-50'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-label font-bold text-text-primary">{round.by === 'owner' ? 'Your Offer' : 'Admin Counter'}</span>
+                      <span className="text-body font-bold text-primary">{round.commission}%</span>
+                    </div>
+                    {round.note && <p className="mt-1 text-label text-text-muted">"{round.note}"</p>}
+                  </div>
+                ))}
+              </div>
+              {activeNegotiation.status === 'admin_countered' && (
+                <div className="mt-4 space-y-3">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => acceptOffer(activeNegotiation.id)}
+                      className="flex-1 rounded-button bg-primary px-4 py-2.5 text-body font-semibold text-white hover:bg-primary-700"
+                    >
+                      Accept {activeNegotiation.rounds[activeNegotiation.rounds.length - 1].commission}%
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={counterInput}
+                      onChange={(e) => setCounterInput(e.target.value)}
+                      placeholder="Your %"
+                      className="w-20 rounded-button border border-outline px-3 py-2 text-body text-text-primary focus:border-primary focus:outline-none"
+                    />
+                    <input
+                      value={counterNote}
+                      onChange={(e) => setCounterNote(e.target.value)}
+                      placeholder="Optional note..."
+                      className="flex-1 rounded-button border border-outline px-3 py-2 text-body text-text-primary focus:border-primary focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (counterInput) {
+                          counterOffer(activeNegotiation.id, 'owner', counterInput, counterNote)
+                          setCounterInput('')
+                          setCounterNote('')
+                        }
+                      }}
+                      className="rounded-button bg-navy px-4 py-2.5 text-body font-semibold text-white hover:bg-slate-800"
+                    >
+                      Counter
+                    </button>
+                  </div>
+                </div>
+              )}
+            </article>
+          )}
+
+          {activeNegotiation?.status === 'accepted' && (
+            <article className="rounded-card border border-primary-100 bg-primary-50/50 p-6 shadow-surface">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={18} className="text-primary" />
+                <h3 className="text-body font-bold text-primary">Commission Agreed — {activeNegotiation.acceptedCommission}%</h3>
+              </div>
+              <p className="mt-2 text-label text-text-muted">Admin will assign a broker for your property at the agreed commission rate.</p>
+            </article>
+          )}
 
           <article className="rounded-card bg-[#1f4b6d] p-8 text-white shadow-surface">
             <h2 className="text-heading-2 font-bold leading-tight">
@@ -457,13 +596,17 @@ export function OwnerPortfolio() {
             )}
 
             {assignedBroker ? (
-              <button
-                type="button"
-                onClick={removeAssignedBroker}
-                className="mt-6 w-full rounded-button bg-red-700 px-4 py-4 text-body font-semibold text-white transition-colors duration-200 hover:bg-red-800"
-              >
-                Remove Broker
-              </button>
+              activeNegotiation?.status === 'accepted' ? (
+                <p className="mt-6 text-center text-label text-text-muted">Broker assigned via custom assignment. Contact admin to make changes.</p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={removeAssignedBroker}
+                  className="mt-6 w-full rounded-button bg-red-700 px-4 py-4 text-body font-semibold text-white transition-colors duration-200 hover:bg-red-800"
+                >
+                  Remove Broker
+                </button>
+              )
             ) : suggestedBroker ? (
               <div className="mt-6 space-y-0">
                 <button
@@ -526,6 +669,58 @@ export function OwnerPortfolio() {
         </aside>
         )}
       </div>
+
+      {/* Commission Input Modal */}
+      {commissionModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-modal">
+            <h2 className="text-heading-3 font-bold text-text-primary">Custom Broker Assignment</h2>
+            <p className="mt-2 text-body text-text-muted">Submit your expected commission percentage. Admin will review and negotiate.</p>
+            <div className="mt-6 space-y-4">
+              <label className="block">
+                <span className="text-filter-label uppercase tracking-wider text-text-muted">Commission % you expect to pay</span>
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={commissionInput}
+                    onChange={(e) => setCommissionInput(e.target.value)}
+                    className="h-11 w-full rounded-button border border-outline px-4 text-body font-bold text-text-primary focus:border-primary focus:outline-none"
+                  />
+                  <span className="text-body font-bold text-text-muted">%</span>
+                </div>
+              </label>
+              <label className="block">
+                <span className="text-filter-label uppercase tracking-wider text-text-muted">Note (optional)</span>
+                <textarea
+                  value={commissionNote}
+                  onChange={(e) => setCommissionNote(e.target.value)}
+                  rows={3}
+                  placeholder="E.g. Looking for experienced broker in this area..."
+                  className="mt-1 w-full resize-none rounded-button border border-outline px-4 py-3 text-body text-text-primary focus:border-primary focus:outline-none"
+                />
+              </label>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button type="button" onClick={() => setCommissionModalOpen(false)} className="flex-1 rounded-button border border-outline bg-white px-4 py-3 text-body font-semibold text-text-primary hover:bg-hover-light">Cancel</button>
+              <button
+                type="button"
+                disabled={!commissionInput}
+                onClick={() => {
+                  createNegotiation(ownerId, currentPropertyId, commissionInput, commissionNote)
+                  setCommissionModalOpen(false)
+                  setCommissionInput('30')
+                  setCommissionNote('')
+                }}
+                className="flex-1 rounded-button bg-navy px-4 py-3 text-body font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                Submit Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {brokerPickerOpen && (
         <div

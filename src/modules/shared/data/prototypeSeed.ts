@@ -488,6 +488,7 @@ export const initialPrototypeState: PrototypeStateData = {
   maintenanceTickets: [],
   notifications: prototypeNotifications,
   adminRequests: prototypeAdminRequests,
+  commissionNegotiations: [],
 }
 
 
