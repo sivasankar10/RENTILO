@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   MapPin,
@@ -17,6 +17,8 @@ import {
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
+import { useAuth } from '@shared/hooks/useAuth'
 import { useBrokerPrototype } from '../hooks/useBrokerPrototype'
 
 /* ─────────────────────────────────────────────
@@ -291,12 +293,31 @@ type FilterTab = 'all' | 'active' | 'pending' | 'closed'
 
 export function BrokerListings() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const brokerId = user?.id ?? ''
+  const commissionNegotiations = usePrototypeStore((s) => s.commissionNegotiations)
+  const prototypeProperties = usePrototypeStore((s) => s.properties)
+  const prototypeUsers = usePrototypeStore((s) => s.users)
+  const decideBrokerOffer = usePrototypeStore((s) => s.decideBrokerOffer)
   const {
     assignedBundles,
     leads,
     requests,
     requestRemoval,
   } = useBrokerPrototype()
+
+  // Pending offers for this broker
+  const pendingOffers = useMemo(() =>
+    commissionNegotiations
+      .filter((n) => n.brokerOffers.some((o) => o.brokerId === brokerId && o.status === 'pending'))
+      .map((n) => {
+        const property = prototypeProperties.find((p) => p.id === n.propertyId)
+        const owner = prototypeUsers.find((u) => u.id === n.ownerId)
+        const offer = n.brokerOffers.find((o) => o.brokerId === brokerId && o.status === 'pending')!
+        return { negotiation: n, property, owner, offer }
+      }),
+    [commissionNegotiations, brokerId, prototypeProperties, prototypeUsers],
+  )
   const activeListings: ActiveListing[] = assignedBundles.map(({ listing, property }) => ({
     id: listing.id,
     propertyId: property.id,
@@ -381,6 +402,55 @@ export function BrokerListings() {
           Browse In Demand
         </button>
       </div>
+
+      {/* ── Pending Offers ── */}
+      {pendingOffers.length > 0 && (
+        <div className="rounded-card border border-amber-200 bg-amber-50/50 shadow-surface overflow-hidden">
+          <div className="border-b border-amber-200 px-6 py-4">
+            <h2 className="text-body-lg font-bold text-text-primary">Commission Offers</h2>
+            <p className="mt-0.5 text-label text-text-muted">{pendingOffers.length} pending assignment offer{pendingOffers.length > 1 ? 's' : ''}</p>
+          </div>
+          <div className="divide-y divide-amber-200">
+            {pendingOffers.map(({ negotiation, property, owner, offer }) => {
+              const ownerName = owner ? `${owner.firstName} ${owner.lastName}` : 'Unknown Owner'
+              return (
+                <div key={negotiation.id} className="px-6 py-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      {property && <img src={property.image} alt="" className="h-14 w-20 rounded-lg object-cover shrink-0" />}
+                      <div className="min-w-0">
+                        <p className="text-body font-bold text-text-primary truncate">{property?.title ?? 'Unknown Property'}</p>
+                        <p className="mt-0.5 text-label text-text-muted flex items-center gap-1"><MapPin size={11} />{property ? `${property.neighborhood}, ${property.city}` : '—'}</p>
+                        <p className="mt-1 text-label text-text-muted">Owner: {ownerName} · Rent: {property?.price ?? '—'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-center px-4">
+                        <p className="text-heading-3 font-bold text-primary">{offer.commission}%</p>
+                        <p className="text-[10px] text-text-muted">Commission</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => decideBrokerOffer(negotiation.id, brokerId, 'accepted')}
+                        className="rounded-button bg-primary px-4 py-2.5 text-label font-bold text-white hover:bg-primary-700"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => decideBrokerOffer(negotiation.id, brokerId, 'rejected')}
+                        className="rounded-button border border-status-error px-4 py-2.5 text-label font-bold text-status-error hover:bg-red-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Stats strip ── */}
       <div className="grid grid-cols-3 gap-3">
