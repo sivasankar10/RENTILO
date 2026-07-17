@@ -60,6 +60,8 @@ export interface PrototypeProperty {
   visitWeekday: string
   visitStartTime: string
   visitEndTime: string
+  preferredVisitSlots: { day: string; startTime: string; endTime: string }[]
+  visitSchedulingEnabled: boolean
   leaseDuration: number
   noticePeriod: string
   image: string
@@ -368,6 +370,7 @@ export interface OwnerPropertyInput {
   visitWeekday?: string
   visitStartTime?: string
   visitEndTime?: string
+  preferredVisitSlots?: { day: string; startTime: string; endTime: string }[]
   leaseDuration?: number
   noticePeriod?: string
   photos?: string[]

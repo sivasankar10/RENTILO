@@ -78,6 +78,15 @@ export function PropertyDetailsPage() {
   const sharedKycVerified = usePrototypeStore((state) => state.users.find((item) => item.id === user?.id)?.kycStatus === 'Verified')
   const kycVerified = localKycVerified || sharedKycVerified
   const setKycVerified = useTenantKycStore((state) => state.setVerified)
+  const prototypeProperties = usePrototypeStore((state) => state.properties)
+  const preferredSlots = useMemo(() => {
+    const protoProp = prototypeProperties.find((p) => p.title === property?.title)
+    return protoProp?.preferredVisitSlots
+  }, [prototypeProperties, property?.title])
+  const visitSchedulingEnabled = useMemo(() => {
+    const protoProp = prototypeProperties.find((p) => p.title === property?.title)
+    return protoProp?.visitSchedulingEnabled ?? true
+  }, [prototypeProperties, property?.title])
 
   const onboardingRecord = property
     ? onboardingRecords.find(
@@ -359,7 +368,7 @@ export function PropertyDetailsPage() {
                   ))}
                 </div>
 
-                {!visitAlreadyScheduled && (
+                {!visitAlreadyScheduled && visitSchedulingEnabled && (
                   <button
                     type="button"
                     className={cn(tenantStyles.primaryBtn, 'mb-3')}
@@ -367,6 +376,13 @@ export function PropertyDetailsPage() {
                   >
                     Schedule Visit
                   </button>
+                )}
+
+                {!visitAlreadyScheduled && !visitSchedulingEnabled && (
+                  <div className="mb-3 rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-center">
+                    <p className="text-[13px] font-semibold text-amber-800">Property visits are temporarily closed</p>
+                    <p className="mt-1 text-[11px] text-amber-700">The owner has paused visit scheduling. Contact the owner for availability.</p>
+                  </div>
                 )}
 
                 <button
@@ -472,6 +488,7 @@ export function PropertyDetailsPage() {
         isOpen={showCalendarModal}
         onClose={() => setShowCalendarModal(false)}
         onConfirmed={handleCalendarConfirmed}
+        preferredSlots={preferredSlots}
       />
     </div>
   )

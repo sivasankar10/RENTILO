@@ -571,9 +571,17 @@ export function Step4Media({ formData, update }: StepProps) {
 
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 5: Pricing & Lease â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { onComplete: () => void; goPrev: () => void }) {
+  const [extraSlots, setExtraSlots] = useState<{ day: string; startTime: string; endTime: string }[]>(
+    () => formData.preferredVisitSlots.length > 1 ? formData.preferredVisitSlots.slice(1) : []
+  )
   const utilities = formData.utilities
   const toggleUtility = (key: keyof typeof utilities) => {
     update('utilities', { ...utilities, [key]: !utilities[key] })
+  }
+
+  // Sync all slots (primary + extra) to formData whenever they change
+  const syncSlots = (primary: { day: string; startTime: string; endTime: string }, extras: { day: string; startTime: string; endTime: string }[]) => {
+    update('preferredVisitSlots', [primary, ...extras])
   }
 
   const annualRevenue = useMemo(() => parseFloat(formData.baseRent || '0') * 12, [formData.baseRent])
@@ -696,24 +704,99 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
               <label className="text-label font-medium text-text-muted">Available From</label>
               <input type="text" value={formData.availableFrom} onChange={(e) => update('availableFrom', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
             </div>
+
+            {/* Preferred Visit Slots */}
             <div>
-              <label className="text-label font-medium text-text-muted">Visit Weekday</label>
-              <select value={formData.visitWeekday} onChange={(e) => update('visitWeekday', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-3 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
-                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
-                  <option key={day}>{day}</option>
+              <div className="flex items-center justify-between">
+                <label className="text-label font-medium text-text-muted">Preferred Visit Timings</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newSlots = [...extraSlots, { day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' }]
+                    setExtraSlots(newSlots)
+                    syncSlots({ day: formData.visitWeekday, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, newSlots)
+                  }}
+                  className="text-label font-bold text-primary hover:underline"
+                >
+                  + Add Slot
+                </button>
+              </div>
+              <div className="mt-3 space-y-3">
+                {/* Primary slot */}
+                <div className="rounded-lg border border-outline bg-white p-3">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Day</label>
+                      <select value={formData.visitWeekday} onChange={(e) => { update('visitWeekday', e.target.value); syncSlots({ day: e.target.value, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, extraSlots) }} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none">
+                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                          <option key={day}>{day}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Start Time</label>
+                      <input type="text" value={formData.visitStartTime} onChange={(e) => { update('visitStartTime', e.target.value); syncSlots({ day: formData.visitWeekday, startTime: e.target.value, endTime: formData.visitEndTime }, extraSlots) }} placeholder="10:00 AM" className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">End Time</label>
+                      <input type="text" value={formData.visitEndTime} onChange={(e) => { update('visitEndTime', e.target.value); syncSlots({ day: formData.visitWeekday, startTime: formData.visitStartTime, endTime: e.target.value }, extraSlots) }} placeholder="1:00 PM" className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional slots */}
+                {extraSlots.map((slot, index) => (
+                  <div key={index} className="rounded-lg border border-outline bg-white p-3">
+                    <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Day</label>
+                        <select value={slot.day} onChange={(e) => { const updated = extraSlots.map((s, i) => i === index ? { ...s, day: e.target.value } : s); setExtraSlots(updated); syncSlots({ day: formData.visitWeekday, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, updated) }} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none">
+                          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                            <option key={day}>{day}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Start</label>
+                        <input type="text" value={slot.startTime} onChange={(e) => { const updated = extraSlots.map((s, i) => i === index ? { ...s, startTime: e.target.value } : s); setExtraSlots(updated); syncSlots({ day: formData.visitWeekday, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, updated) }} placeholder="10:00 AM" className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">End</label>
+                        <input type="text" value={slot.endTime} onChange={(e) => { const updated = extraSlots.map((s, i) => i === index ? { ...s, endTime: e.target.value } : s); setExtraSlots(updated); syncSlots({ day: formData.visitWeekday, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, updated) }} placeholder="1:00 PM" className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none" />
+                      </div>
+                      <div className="flex items-end">
+                        <button type="button" onClick={() => { const updated = extraSlots.filter((_, i) => i !== index); setExtraSlots(updated); syncSlots({ day: formData.visitWeekday, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, updated) }} className="h-10 px-3 rounded-input text-red-500 hover:bg-red-50 text-label font-bold">Remove</button>
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </select>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-label font-medium text-text-muted">Visit Starts</label>
-                <input type="text" value={formData.visitStartTime} onChange={(e) => update('visitStartTime', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
               </div>
-              <div>
-                <label className="text-label font-medium text-text-muted">Visit Ends</label>
-                <input type="text" value={formData.visitEndTime} onChange={(e) => update('visitEndTime', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+              <p className="mt-2 text-[11px] text-text-muted">These timings will be shown to tenants when they schedule a property visit.</p>
+            </div>
+
+            {/* Schedule On/Off Toggle */}
+            <div className="rounded-lg border border-outline bg-white p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-label font-bold text-text-primary">Visit Scheduling</p>
+                  <p className="mt-0.5 text-[11px] text-text-muted">
+                    {formData.visitSchedulingEnabled ? 'Tenants can schedule visits for this property' : 'Visit scheduling is turned off — tenants cannot book visits'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => update('visitSchedulingEnabled', !formData.visitSchedulingEnabled)}
+                  className={formData.visitSchedulingEnabled
+                    ? 'flex h-6 w-11 items-center justify-end rounded-pill bg-primary p-1'
+                    : 'flex h-6 w-11 items-center justify-start rounded-pill bg-slate-300 p-1'
+                  }
+                  aria-pressed={formData.visitSchedulingEnabled}
+                >
+                  <span className="h-4 w-4 rounded-full bg-white shadow-sm" />
+                </button>
               </div>
             </div>
+
             <div>
               <label className="text-label font-medium text-text-muted">Notice Period (Days)</label>
               <div className="mt-1.5 grid grid-cols-[96px_auto] items-center gap-2">

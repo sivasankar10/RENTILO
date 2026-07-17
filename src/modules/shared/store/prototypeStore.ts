@@ -171,6 +171,10 @@ function createPropertyFromForm(ownerId: string, formData: OwnerPropertyInput): 
     visitWeekday: formData.visitWeekday?.trim() || 'Saturday',
     visitStartTime: formData.visitStartTime?.trim() || '10:00 AM',
     visitEndTime: formData.visitEndTime?.trim() || '1:00 PM',
+    preferredVisitSlots: formData.preferredVisitSlots && formData.preferredVisitSlots.length > 0
+      ? formData.preferredVisitSlots
+      : [{ day: formData.visitWeekday?.trim() || 'Saturday', startTime: formData.visitStartTime?.trim() || '10:00 AM', endTime: formData.visitEndTime?.trim() || '1:00 PM' }],
+    visitSchedulingEnabled: true,
     leaseDuration: formData.leaseDuration ?? 12,
     noticePeriod: formData.noticePeriod?.trim() || '30',
     image: photos[0]!,
