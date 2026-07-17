@@ -73,6 +73,8 @@ export interface OwnerRegisterPropertyFormData {
   visitWeekday: string
   visitStartTime: string
   visitEndTime: string
+  preferredVisitSlots: { day: string; startTime: string; endTime: string }[]
+  visitSchedulingEnabled: boolean
   leaseDuration: number
   noticePeriod: string
   utilities: {
@@ -227,6 +229,8 @@ const initialRegisterPropertyDraft: OwnerRegisterPropertyFormData = {
   visitWeekday: 'Saturday',
   visitStartTime: '10:00 AM',
   visitEndTime: '1:00 PM',
+  preferredVisitSlots: [{ day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' }],
+  visitSchedulingEnabled: true,
   leaseDuration: 12,
   noticePeriod: '30',
   utilities: { electricity: true, water: true, internet: false, gas: false },
@@ -282,6 +286,11 @@ const seededPropertyEditDrafts: Record<string, OwnerRegisterPropertyFormData> = 
     visitWeekday: 'Saturday',
     visitStartTime: '10:00 AM',
     visitEndTime: '1:00 PM',
+    preferredVisitSlots: [
+      { day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' },
+      { day: 'Wednesday', startTime: '11:00 AM', endTime: '1:00 PM' },
+    ],
+    visitSchedulingEnabled: true,
     leaseDuration: 12,
     noticePeriod: '30',
     utilities: { electricity: false, water: true, internet: true, gas: false },
@@ -299,6 +308,7 @@ const cloneRegisterPropertyData = (
   customTags: [...data.customTags],
   photos: [...data.photos],
   utilities: { ...data.utilities },
+  preferredVisitSlots: data.preferredVisitSlots ? data.preferredVisitSlots.map((s) => ({ ...s })) : [{ day: data.visitWeekday, startTime: data.visitStartTime, endTime: data.visitEndTime }],
 })
 
 const getSeededEditDraft = (propertyId: string): OwnerRegisterPropertyFormData =>

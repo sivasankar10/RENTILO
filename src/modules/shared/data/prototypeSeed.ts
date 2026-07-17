@@ -22,6 +22,7 @@ export const PROTOTYPE_USER_IDS = {
   broker2: 'user-broker-2',
   admin1: 'user-admin-1',
   tenantOwner: 'user-tenant-owner',
+  enterprise1: 'user-enterprise-1',
 } as const
 
 export const PROTOTYPE_PROPERTY_IDS = {
@@ -103,6 +104,30 @@ const nearby = {
   },
 }
 
+const visitSlotOptions = [
+  { day: 'Monday', startTime: '10:00 AM', endTime: '12:00 PM' },
+  { day: 'Tuesday', startTime: '2:00 PM', endTime: '5:00 PM' },
+  { day: 'Wednesday', startTime: '11:00 AM', endTime: '1:00 PM' },
+  { day: 'Thursday', startTime: '3:00 PM', endTime: '6:00 PM' },
+  { day: 'Friday', startTime: '10:00 AM', endTime: '1:00 PM' },
+  { day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' },
+  { day: 'Saturday', startTime: '3:00 PM', endTime: '5:00 PM' },
+  { day: 'Sunday', startTime: '11:00 AM', endTime: '2:00 PM' },
+]
+
+function generateVisitSlots(title: string): { day: string; startTime: string; endTime: string }[] {
+  // Use title hash to pick 2-3 slots deterministically
+  let hash = 0
+  for (let i = 0; i < title.length; i++) hash = ((hash << 5) - hash) + title.charCodeAt(i)
+  hash = Math.abs(hash)
+  const count = 2 + (hash % 2) // 2 or 3 slots
+  const slots: { day: string; startTime: string; endTime: string }[] = []
+  for (let i = 0; i < count; i++) {
+    slots.push(visitSlotOptions[(hash + i * 3) % visitSlotOptions.length])
+  }
+  return slots
+}
+
 function createProperty(input: {
   id: string
   ownerId: string
@@ -155,6 +180,8 @@ function createProperty(input: {
     visitWeekday: 'Saturday',
     visitStartTime: '10:00 AM',
     visitEndTime: '1:00 PM',
+    preferredVisitSlots: generateVisitSlots(input.title),
+    visitSchedulingEnabled: true,
     leaseDuration: 12,
     noticePeriod: '30',
     image: input.image,
@@ -307,6 +334,16 @@ export const prototypeUsers: PrototypeUser[] = [
     roles: ['tenant', 'owner'],
     primaryRole: 'tenant',
     avatar: avatars.tenant1,
+  }),
+  createUser({
+    id: PROTOTYPE_USER_IDS.enterprise1,
+    accountName: 'EnterpriseAccount',
+    phone: '9000005001',
+    firstName: 'Enterprise',
+    lastName: 'Account',
+    roles: ['enterprise'],
+    primaryRole: 'enterprise',
+    avatar: avatars.owner,
   }),
 ]
 

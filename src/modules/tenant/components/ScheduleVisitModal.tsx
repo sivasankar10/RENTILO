@@ -6,6 +6,7 @@ interface ScheduleVisitModalProps {
   isOpen: boolean
   onClose: () => void
   onConfirmed: (date: string, time: string) => void
+  preferredSlots?: { day: string; startTime: string; endTime: string }[]
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -30,9 +31,17 @@ function formatDisplayDate(year: number, month: number, day: number) {
   return `${day} ${MONTHS[month].slice(0, 3)} ${year}`
 }
 
+function timeToMinutes(time: string): number {
+  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (!match) return 0
+  let hours = Number(match[1]) % 12
+  if (match[3].toUpperCase() === 'PM') hours += 12
+  return hours * 60 + Number(match[2])
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ScheduleVisitModal({ propertyTitle, isOpen, onClose, onConfirmed }: ScheduleVisitModalProps) {
+export function ScheduleVisitModal({ propertyTitle, isOpen, onClose, onConfirmed, preferredSlots }: ScheduleVisitModalProps) {
   const today = new Date()
   const [viewYear,  setViewYear]  = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
@@ -192,19 +201,45 @@ export function ScheduleVisitModal({ propertyTitle, isOpen, onClose, onConfirmed
               Available Time Slots
               {selDay && <span className="normal-case font-normal ml-1 text-[#94a3b8]">— {formatDisplayDate(viewYear, viewMonth, selDay)}</span>}
             </p>
+            {preferredSlots && preferredSlots.length > 0 && (
+              <p className="text-[11px] text-text-muted mb-2">
+                Owner preferred: {preferredSlots.map((s) => `${s.day} ${s.startTime}–${s.endTime}`).join(' · ')}
+              </p>
+            )}
             <div className="grid grid-cols-4 gap-2">
-              {TIME_SLOTS.map(slot => (
-                <button key={slot} type="button"
-                  onClick={() => { setSelTime(slot); setError('') }}
-                  className={cn(
-                    'py-2 rounded-xl text-[12px] font-semibold border-2 transition-all duration-150 cursor-pointer',
-                    selTime === slot
-                      ? 'border-[#0F172A] bg-[#0F172A] text-white'
-                      : 'border-[#e2e8f0] bg-[#f8fafc] text-[#475569] hover:border-[#94a3b8]'
-                  )}>
-                  {slot}
-                </button>
-              ))}
+              {(() => {
+                // Filter time slots by preferred day if available
+                const selectedDate = selDay ? new Date(viewYear, viewMonth, selDay) : null
+                const fullDayName = selectedDate ? ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][selectedDate.getDay()] : null
+
+                let availableSlots = TIME_SLOTS
+                if (preferredSlots && preferredSlots.length > 0 && fullDayName) {
+                  const matchingSlots = preferredSlots.filter((s) => s.day === fullDayName)
+                  if (matchingSlots.length > 0) {
+                    availableSlots = TIME_SLOTS.filter((slot) =>
+                      matchingSlots.some((ms) => {
+                        const slotMins = timeToMinutes(slot)
+                        return slotMins >= timeToMinutes(ms.startTime) && slotMins < timeToMinutes(ms.endTime)
+                      })
+                    )
+                  }
+                }
+
+                return availableSlots.length > 0 ? availableSlots.map(slot => (
+                  <button key={slot} type="button"
+                    onClick={() => { setSelTime(slot); setError('') }}
+                    className={cn(
+                      'py-2 rounded-xl text-[12px] font-semibold border-2 transition-all duration-150 cursor-pointer',
+                      selTime === slot
+                        ? 'border-[#0F172A] bg-[#0F172A] text-white'
+                        : 'border-[#e2e8f0] bg-[#f8fafc] text-[#475569] hover:border-[#94a3b8]'
+                    )}>
+                    {slot}
+                  </button>
+                )) : (
+                  <p className="col-span-4 text-center text-[12px] text-text-muted py-4">No slots available for this day. Try a preferred day.</p>
+                )
+              })()}
             </div>
           </div>
 
