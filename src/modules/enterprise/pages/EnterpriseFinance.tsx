@@ -1,4 +1,5 @@
 import { Download, TrendingUp } from 'lucide-react'
+import { useEnterpriseContext } from '../hooks/useEnterpriseContext'
 
 const priceComparison = [
   { name: 'The Obsidian Towers', yourRent: '$5,800', marketAvg: '$5,450', variance: '+8.4%', positive: true },
@@ -7,6 +8,10 @@ const priceComparison = [
 ]
 
 export function EnterpriseFinance() {
+  const { currentBlockId, enterpriseBlocks } = useEnterpriseContext()
+  const currentBlock = enterpriseBlocks.find((b) => b.id === currentBlockId)
+  const blockData = currentBlock?.enterpriseBlock
+  void blockData // context available for dynamic finance data
   return (
     <div className="space-y-6 pb-10">
       {/* Header */}

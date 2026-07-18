@@ -76,6 +76,13 @@ export interface PrototypeProperty {
   views: number
   shortlists: number
   contacts: number
+  // Enterprise block structure (only for enterprise properties)
+  enterpriseBlock?: {
+    blockName: string
+    floors: number
+    unitsPerFloor: number
+    units: { unitId: string; floor: number; unitNumber: string; status: 'Vacant' | 'Occupied' | 'Maintenance'; tenantName?: string }[]
+  }
   createdAt: string
   updatedAt: string
 }

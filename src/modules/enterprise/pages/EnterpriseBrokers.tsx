@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Filter, Download } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
+import { useEnterpriseContext } from '../hooks/useEnterpriseContext'
 
 type BrokerFilter = 'All Brokers' | 'Active' | 'On Leave'
 
@@ -17,6 +19,33 @@ const assignmentMapping = [
 ]
 
 export function EnterpriseBrokers() {
+  const { currentBlockId, enterpriseBlocks } = useEnterpriseContext()
+  const currentBlock = enterpriseBlocks.find((b) => b.id === currentBlockId)
+  const blockData = currentBlock?.enterpriseBlock
+  const brokerAssignments = usePrototypeStore((s) => s.brokerAssignments)
+  const users = usePrototypeStore((s) => s.users)
+
+  // Brokers assigned to the current block
+  const blockAssignments = brokerAssignments.filter((a) => a.propertyId === currentBlockId && a.status === 'Active')
+
+  // Brokers assigned to the current block (for future dynamic use)
+  const blockBrokersForTable = blockAssignments.map((a) => {
+    const broker = users.find((u) => u.id === a.brokerId)
+    return {
+      id: a.id,
+      name: broker ? `${broker.firstName} ${broker.lastName}` : 'Unknown',
+      role: 'Assigned Broker',
+      location: currentBlock?.neighborhood ?? 'Unknown',
+      avatar: broker ? `${broker.firstName[0]}${broker.lastName[0]}` : '??',
+      assigned: 1,
+      status: 'ONLINE' as const,
+      lastContact: 'Active assignment',
+      lastDetail: `Assigned to Block ${blockData?.blockName ?? ''}`,
+    }
+  })
+
+  // Use dynamic data if available, otherwise show static demo
+  const brokersToShow = blockBrokersForTable.length > 0 ? blockBrokersForTable : allBrokers
   const [brokerFilter, setBrokerFilter] = useState<BrokerFilter>('All Brokers')
   const [mappingFilter, setMappingFilter] = useState<BrokerFilter>('All Brokers')
   const [brokerPage, setBrokerPage] = useState(1)
@@ -83,7 +112,7 @@ export function EnterpriseBrokers() {
             </tr>
           </thead>
           <tbody>
-            {allBrokers.map((broker) => (
+            {brokersToShow.map((broker) => (
               <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">

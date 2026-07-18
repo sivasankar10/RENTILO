@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Download, Filter, Plus, UserPlus } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
+import { useEnterpriseContext } from '../hooks/useEnterpriseContext'
 
 interface TenantEntry {
   id: number
@@ -12,14 +13,25 @@ interface TenantEntry {
   flat: string
 }
 
-const initialTenants: TenantEntry[] = [
-  { id: 1, name: 'Alexander Thorne', email: 'alex@gmail.com', phone: '+864534513546', block: 'A', floor: '1', flat: '101' },
-  { id: 2, name: 'Elena Rodriguez', email: 'elena@gmail.com', phone: '+864534513546', block: 'B', floor: '5', flat: '501,505' },
-  { id: 3, name: 'Marcus Vance', email: 'marcus@gmail.com', phone: '+864534513546', block: 'C', floor: '7', flat: '707,711,713' },
-]
-
 export function EnterpriseTenants() {
-  const [tenants, setTenants] = useState<TenantEntry[]>(initialTenants)
+  const { currentBlockId, enterpriseBlocks } = useEnterpriseContext()
+  const currentBlock = enterpriseBlocks.find((b) => b.id === currentBlockId)
+  const blockData = currentBlock?.enterpriseBlock
+
+  // Derive tenants from occupied units in the current block
+  const blockTenants: TenantEntry[] = (blockData?.units ?? [])
+    .filter((u) => u.status === 'Occupied' && u.tenantName)
+    .map((u, i) => ({
+      id: i + 1,
+      name: u.tenantName!,
+      email: `${u.tenantName!.toLowerCase().replace(/\s/g, '.')}@tenant.com`,
+      phone: `+91 9000${String(i + 1).padStart(6, '0')}`,
+      block: blockData?.blockName ?? '',
+      floor: String(u.floor),
+      flat: u.unitNumber,
+    }))
+
+  const [tenants, setTenants] = useState<TenantEntry[]>(blockTenants)
   const [showAddForm, setShowAddForm] = useState(false)
   const [page, setPage] = useState(1)
   const [toast, setToast] = useState('')

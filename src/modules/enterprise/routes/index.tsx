@@ -2,6 +2,7 @@ import type { RouteObject } from 'react-router-dom'
 import { EnterpriseDashboard } from '../pages/EnterpriseDashboard'
 import { EnterprisePortfolio } from '../pages/EnterprisePortfolio'
 import { EnterpriseRegisterProperty } from '../pages/EnterpriseRegisterProperty'
+import { EnterpriseAddUnit } from '../pages/EnterpriseAddUnit'
 import { EnterprisePropertyDetail } from '../pages/EnterprisePropertyDetail'
 import { EnterpriseBrokers } from '../pages/EnterpriseBrokers'
 import { EnterpriseTenants } from '../pages/EnterpriseTenants'
@@ -16,6 +17,7 @@ export const enterpriseRoutes: RouteObject[] = [
   { path: 'dashboard', element: <EnterpriseDashboard /> },
   { path: 'portfolio', element: <EnterprisePortfolio /> },
   { path: 'portfolio/register', element: <EnterpriseRegisterProperty /> },
+  { path: 'portfolio/add-unit', element: <EnterpriseAddUnit /> },
   { path: 'portfolio/:propertyId', element: <EnterprisePropertyDetail /> },
   { path: 'brokers', element: <EnterpriseBrokers /> },
   { path: 'tenants', element: <EnterpriseTenants /> },

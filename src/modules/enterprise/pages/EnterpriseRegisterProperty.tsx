@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Building2, Check, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 
 type StepNumber = 1 | 2 | 3 | 4 | 5
 
@@ -26,6 +28,8 @@ const statusOptions = ['Available for Rent', 'Under Construction', 'Pre-leasing'
 
 export function EnterpriseRegisterProperty() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const createOwnerProperty = usePrototypeStore((s) => s.createOwnerProperty)
   const [currentStep, setCurrentStep] = useState<StepNumber>(1)
   const [propertyName, setPropertyName] = useState('')
   const [propertyType, setPropertyType] = useState('')
@@ -59,7 +63,107 @@ export function EnterpriseRegisterProperty() {
   }
 
   const handleSubmit = () => {
-    setSupportStatus('Listing submitted successfully.')
+    const ownerId = user?.id ?? ''
+    if (blocks.length === 0) {
+      // Create a single property without block structure
+      createOwnerProperty(ownerId, {
+        propertyName: propertyName || 'Enterprise Property',
+        propertyType: propertyType || 'Commercial Complex',
+        description,
+      })
+    } else {
+      // Create one property per block
+      blocks.forEach((block) => {
+        const units: { unitId: string; floor: number; unitNumber: string; status: 'Vacant' | 'Occupied' | 'Maintenance'; tenantName?: string }[] = []
+        for (let floor = 1; floor <= block.floors; floor++) {
+          for (let unit = 1; unit <= block.unitsPerFloor; unit++) {
+            units.push({
+              unitId: `unit-${block.name}-${floor}-${unit}-${Date.now()}`,
+              floor,
+              unitNumber: `${floor}0${unit}`,
+              status: 'Vacant',
+            })
+          }
+        }
+
+        // Use the low-level store setter to add the property with enterprise block data
+        const timestamp = new Date().toISOString()
+        const propertyId = `property-enterprise-${block.name.toLowerCase().replace(/\s/g, '-')}-${Date.now()}`
+        const property = {
+          id: propertyId,
+          ownerId,
+          title: `${propertyName || 'Enterprise Property'} - ${block.name}`,
+          propertyType: propertyType || 'Commercial Complex',
+          description: description || `${block.name} of ${propertyName}. ${block.floors} floors, ${block.unitsPerFloor} units per floor.`,
+          address: `${propertyName}, ${block.name}`,
+          unit: block.name,
+          postalCode: '560001',
+          city: 'Bangalore',
+          neighborhood: 'Central',
+          price: 'Rs. 45,000',
+          pricePeriod: '/ mo',
+          deposit: 'Rs. 90,000',
+          beds: 2,
+          baths: 2,
+          sqft: '1,200',
+          availableFrom: '2026-07-15',
+          visitWeekday: 'Saturday',
+          visitStartTime: '10:00 AM',
+          visitEndTime: '1:00 PM',
+          preferredVisitSlots: [{ day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' }],
+          visitSchedulingEnabled: true,
+          leaseDuration: 12,
+          noticePeriod: '30',
+          image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+          gallery: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'],
+          highlights: [
+            { label: 'Floors', value: String(block.floors) },
+            { label: 'Units/Floor', value: String(block.unitsPerFloor) },
+            { label: 'Total Units', value: String(block.floors * block.unitsPerFloor) },
+          ],
+          overviewSpecs: [
+            { label: 'Block', value: block.name },
+            { label: 'Total Units', value: String(block.floors * block.unitsPerFloor) },
+          ],
+          overview: [`${block.name} enterprise block with ${block.floors * block.unitsPerFloor} units.`],
+          amenities: [{ icon: 'security', label: '24/7 Security' }],
+          rules: [{ rule: 'Enterprise lease terms', category: 'Lease' }],
+          nearby: { essentials: [], utility: [], transit: { busStations: [], airport: [], trainStations: [] } },
+          noBrokerServices: false,
+          views: 0,
+          shortlists: 0,
+          contacts: 0,
+          enterpriseBlock: {
+            blockName: block.name.replace('Block ', ''),
+            floors: block.floors,
+            unitsPerFloor: block.unitsPerFloor,
+            units,
+          },
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        }
+
+        // Add to prototype store
+        usePrototypeStore.setState((state) => ({
+          properties: [...state.properties, property],
+          listings: [...state.listings, {
+            id: `listing-${propertyId}`,
+            propertyId,
+            ownerId,
+            segment: 'enterprise' as const,
+            status: 'Active' as const,
+            postedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+            updated: 'Just now',
+            badge: null,
+            brokerEnabled: true,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          }],
+        }))
+      })
+    }
+
+    setSupportStatus('Listing submitted successfully. Blocks created.')
     setTimeout(() => navigate(ROUTES.ENTERPRISE.PORTFOLIO), 1000)
   }
 

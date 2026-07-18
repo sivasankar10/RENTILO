@@ -31,6 +31,9 @@ export const PROTOTYPE_PROPERTY_IDS = {
   owner1: 'property-owner-1',
   owner2: 'property-owner-2',
   tenantOwner1: 'property-tenant-owner-1',
+  enterpriseBlockA: 'property-enterprise-block-a',
+  enterpriseBlockB: 'property-enterprise-block-b',
+  enterpriseBlockC: 'property-enterprise-block-c',
 } as const
 
 export const PROTOTYPE_LISTING_IDS = {
@@ -427,11 +430,119 @@ export const prototypeProperties: PrototypeProperty[] = [
   }),
 ]
 
+// ── Enterprise Block Properties ──
+function createEnterpriseBlockProperty(blockName: string, id: string, floors: number, unitsPerFloor: number) {
+  const units: { unitId: string; floor: number; unitNumber: string; status: 'Vacant' | 'Occupied' | 'Maintenance'; tenantName?: string }[] = []
+  const tenantNames = ['Rajesh Malhotra', 'Sarah Jenkins', 'TechSprint Solutions', 'Priya Gopal', 'Arjun Menon', 'Nisha Varma', 'David Chen', 'Elena Kostic']
+  let tenantIdx = 0
+  for (let floor = 1; floor <= floors; floor++) {
+    for (let unit = 1; unit <= unitsPerFloor; unit++) {
+      const unitNumber = `${floor}0${unit}`
+      const isOccupied = Math.random() > 0.35
+      units.push({
+        unitId: `${id}-${floor}-${unit}`,
+        floor,
+        unitNumber,
+        status: isOccupied ? 'Occupied' : Math.random() > 0.8 ? 'Maintenance' : 'Vacant',
+        tenantName: isOccupied ? tenantNames[tenantIdx++ % tenantNames.length] : undefined,
+      })
+    }
+  }
+  const totalUnits = floors * unitsPerFloor
+  const occupiedCount = units.filter((u) => u.status === 'Occupied').length
+  const rentPerUnit = blockName === 'A' ? 45000 : blockName === 'B' ? 38000 : 52000
+
+  const property: import('@shared/types/prototype').PrototypeProperty = {
+    id,
+    ownerId: PROTOTYPE_USER_IDS.enterprise1,
+    title: `Meridian Heights - Block ${blockName}`,
+    propertyType: 'Commercial Complex',
+    description: `Block ${blockName} of The Meridian Heights enterprise complex. ${floors} floors, ${unitsPerFloor} units per floor. ${occupiedCount}/${totalUnits} units occupied.`,
+    address: `The Meridian Heights, Block ${blockName}, Upper East Side`,
+    unit: `Block ${blockName}`,
+    postalCode: '10021',
+    city: 'New York',
+    neighborhood: 'Upper East Side',
+    price: `Rs. ${(rentPerUnit).toLocaleString('en-IN')}`,
+    pricePeriod: '/ mo',
+    deposit: `Rs. ${(rentPerUnit * 2).toLocaleString('en-IN')}`,
+    beds: 2,
+    baths: 2,
+    sqft: '1,200',
+    availableFrom: '2026-07-01',
+    visitWeekday: 'Saturday',
+    visitStartTime: '10:00 AM',
+    visitEndTime: '1:00 PM',
+    preferredVisitSlots: [
+      { day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' },
+      { day: 'Wednesday', startTime: '2:00 PM', endTime: '5:00 PM' },
+    ],
+    visitSchedulingEnabled: true,
+    leaseDuration: 12,
+    noticePeriod: '30',
+    image: blockName === 'A'
+      ? 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'
+      : blockName === 'B'
+        ? 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80'
+        : 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80',
+    gallery: [
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
+    ],
+    highlights: [
+      { label: 'No. of Floors', value: String(floors) },
+      { label: 'Units/Floor', value: String(unitsPerFloor) },
+      { label: 'Occupancy', value: `${Math.round((occupiedCount / totalUnits) * 100)}%` },
+      { label: 'Property Type', value: 'Enterprise Complex' },
+    ],
+    overviewSpecs: [
+      { label: 'Total Units', value: String(totalUnits) },
+      { label: 'Occupied', value: String(occupiedCount) },
+      { label: 'Vacant', value: String(totalUnits - occupiedCount) },
+      { label: 'Block', value: blockName },
+    ],
+    overview: [`Block ${blockName} enterprise property with ${totalUnits} units.`],
+    amenities: [
+      { icon: 'security', label: '24/7 Security' },
+      { icon: 'local_parking', label: 'Covered Parking' },
+      { icon: 'fitness_center', label: 'Gym' },
+    ],
+    rules: [
+      { rule: 'Enterprise lease terms apply', category: 'Lease' },
+    ],
+    nearby,
+    noBrokerServices: false,
+    views: 0,
+    shortlists: 0,
+    contacts: 0,
+    enterpriseBlock: {
+      blockName,
+      floors,
+      unitsPerFloor,
+      units,
+    },
+    createdAt: seedNow,
+    updatedAt: seedNow,
+  }
+  return property
+}
+
+// Add enterprise properties to the main array
+prototypeProperties.push(
+  createEnterpriseBlockProperty('A', PROTOTYPE_PROPERTY_IDS.enterpriseBlockA, 6, 4),
+  createEnterpriseBlockProperty('B', PROTOTYPE_PROPERTY_IDS.enterpriseBlockB, 8, 6),
+  createEnterpriseBlockProperty('C', PROTOTYPE_PROPERTY_IDS.enterpriseBlockC, 4, 3),
+)
+
 export const prototypeListings: PrototypeListing[] = [
   createListing(PROTOTYPE_LISTING_IDS.multi1, PROTOTYPE_PROPERTY_IDS.multi1, PROTOTYPE_USER_IDS.multiPropertyOwner, 'Recommended'),
   createListing(PROTOTYPE_LISTING_IDS.owner1, PROTOTYPE_PROPERTY_IDS.owner1, PROTOTYPE_USER_IDS.owner1),
   createListing(PROTOTYPE_LISTING_IDS.owner2, PROTOTYPE_PROPERTY_IDS.owner2, PROTOTYPE_USER_IDS.owner2),
   createListing(PROTOTYPE_LISTING_IDS.tenantOwner1, PROTOTYPE_PROPERTY_IDS.tenantOwner1, PROTOTYPE_USER_IDS.tenantOwner),
+  // Enterprise listings
+  createListing('listing-enterprise-a', PROTOTYPE_PROPERTY_IDS.enterpriseBlockA, PROTOTYPE_USER_IDS.enterprise1),
+  createListing('listing-enterprise-b', PROTOTYPE_PROPERTY_IDS.enterpriseBlockB, PROTOTYPE_USER_IDS.enterprise1),
+  createListing('listing-enterprise-c', PROTOTYPE_PROPERTY_IDS.enterpriseBlockC, PROTOTYPE_USER_IDS.enterprise1),
 ]
 
 export const prototypeBrokerAssignments: BrokerAssignment[] = [

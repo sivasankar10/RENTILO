@@ -2,7 +2,9 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Bell, Briefcase, CreditCard, Heart, LayoutGrid, LogOut, MessageSquare, Settings, UserCheck, Users } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { useAuth } from '@shared/hooks/useAuth'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { cn } from '@shared/utils/cn'
+import { useState, useMemo } from 'react'
 
 const sidebarItems = [
   { label: 'Dashboard', href: ROUTES.ENTERPRISE.DASHBOARD, icon: LayoutGrid },
@@ -16,6 +18,17 @@ const sidebarItems = [
 export function EnterpriseLayout() {
   const navigate = useNavigate()
   const { user, logout } = useAuth()
+  const allProperties = usePrototypeStore((s) => s.properties)
+
+  // Enterprise blocks (properties owned by this enterprise user)
+  const enterpriseBlocks = useMemo(
+    () => allProperties.filter((p) => p.ownerId === user?.id && p.enterpriseBlock),
+    [allProperties, user?.id],
+  )
+  const [selectedBlockId, setSelectedBlockId] = useState('')
+  const currentBlockId = enterpriseBlocks.some((b) => b.id === selectedBlockId)
+    ? selectedBlockId
+    : enterpriseBlocks[0]?.id ?? ''
 
   const handleLogout = () => {
     logout()
@@ -45,7 +58,23 @@ export function EnterpriseLayout() {
 
       {/* Sidebar */}
       <aside className="fixed top-14 left-0 bottom-0 w-[180px] border-r border-outline bg-white flex flex-col z-30">
-        <nav className="flex-1 px-3 py-6 space-y-1">
+        {/* Block Switcher */}
+        {enterpriseBlocks.length > 0 && (
+          <div className="px-3 pt-4 pb-2 border-b border-outline">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-text-muted px-1 mb-2">Active Block</p>
+            <select
+              value={currentBlockId}
+              onChange={(e) => setSelectedBlockId(e.target.value)}
+              className="w-full rounded-lg border border-outline bg-white px-3 py-2 text-[12px] font-bold text-[#0f172a] outline-none focus:border-primary"
+            >
+              {enterpriseBlocks.map((block) => (
+                <option key={block.id} value={block.id}>{block.enterpriseBlock?.blockName ? `Block ${block.enterpriseBlock.blockName}` : block.title}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <nav className="flex-1 px-3 py-4 space-y-1">
           {sidebarItems.map((item) => {
             const Icon = item.icon
             return (
@@ -83,7 +112,7 @@ export function EnterpriseLayout() {
       {/* Main Content */}
       <main className="pt-14 pl-[180px]">
         <div className="p-6">
-          <Outlet />
+          <Outlet context={{ currentBlockId, enterpriseBlocks }} />
         </div>
       </main>
     </div>
