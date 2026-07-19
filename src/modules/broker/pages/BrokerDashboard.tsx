@@ -161,6 +161,8 @@ type Activity = {
   description: string
   done?: boolean
   dotActive?: boolean
+  propertyId?: string
+  propertyName?: string
 }
 
 interface ActivityItemProps extends Activity {
@@ -731,6 +733,7 @@ export function BrokerDashboard() {
   })
   const [activityEditorOpen, setActivityEditorOpen] = useState(false)
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null)
+  const [addActivityForPropertyId, setAddActivityForPropertyId] = useState<string | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
   const [exportStatus, setExportStatus] = useState('')
 
@@ -746,6 +749,8 @@ export function BrokerDashboard() {
         time: 'Recent',
         description: `${prop.name} has been assigned to you for tenant matching.`,
         dotActive: true,
+        propertyId: prop.id,
+        propertyName: prop.name,
       })
     })
 
@@ -760,6 +765,8 @@ export function BrokerDashboard() {
         time: new Date(lead.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
         description: `${tenantName} showed interest in ${property?.title ?? 'a property'}.`,
         dotActive: lead.status === 'interest_shown',
+        propertyId: lead.propertyId,
+        propertyName: property?.title,
       })
 
       // Visit scheduled
@@ -770,6 +777,8 @@ export function BrokerDashboard() {
           time: lead.scheduledVisit.date,
           description: `${tenantName} scheduled a visit for ${property?.title ?? 'a property'} at ${lead.scheduledVisit.time}.`,
           dotActive: true,
+          propertyId: lead.propertyId,
+          propertyName: property?.title,
         })
       }
     })
@@ -790,6 +799,46 @@ export function BrokerDashboard() {
     })
   }, [dynamicActivities, manualActivities, doneActivityIds])
 
+  // Group activities by property
+  const groupedActivities = useMemo(() => {
+    const groups: { propertyId: string; propertyName: string; activities: Activity[] }[] = []
+    const propertyMap = new Map<string, Activity[]>()
+    const unassigned: Activity[] = []
+
+    activities.forEach((activity) => {
+      if (activity.propertyId) {
+        const existing = propertyMap.get(activity.propertyId) ?? []
+        existing.push(activity)
+        propertyMap.set(activity.propertyId, existing)
+      } else {
+        unassigned.push(activity)
+      }
+    })
+
+    // Add assigned properties first (even if they have no activities yet)
+    assignedProperties.forEach((prop) => {
+      groups.push({
+        propertyId: prop.id,
+        propertyName: prop.name,
+        activities: propertyMap.get(prop.id) ?? [],
+      })
+      propertyMap.delete(prop.id)
+    })
+
+    // Add any remaining property groups
+    propertyMap.forEach((acts, propId) => {
+      const name = acts[0]?.propertyName ?? propId
+      groups.push({ propertyId: propId, propertyName: name, activities: acts })
+    })
+
+    // Add unassigned activities as a general group
+    if (unassigned.length > 0) {
+      groups.push({ propertyId: '__general__', propertyName: 'General', activities: unassigned })
+    }
+
+    return groups
+  }, [activities, assignedProperties])
+
   useEffect(() => {
     sessionStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(manualActivities))
   }, [manualActivities])
@@ -808,15 +857,26 @@ export function BrokerDashboard() {
     setActivityEditorOpen(true)
   }
 
+  const openActivityEditorForProperty = (propertyId: string) => {
+    setAddActivityForPropertyId(propertyId)
+    setSelectedActivity(null)
+    setActivityEditorOpen(true)
+  }
+
   const saveActivity = (activity: Activity) => {
+    // Attach propertyId if adding for a specific property
+    const activityWithProperty = addActivityForPropertyId && !activity.propertyId
+      ? { ...activity, propertyId: addActivityForPropertyId, propertyName: assignedProperties.find((p) => p.id === addActivityForPropertyId)?.name }
+      : activity
     setManualActivities((currentActivities) => {
-      const exists = currentActivities.some((item) => item.id === activity.id)
+      const exists = currentActivities.some((item) => item.id === activityWithProperty.id)
       return exists
-        ? currentActivities.map((item) => (item.id === activity.id ? activity : item))
-        : [activity, ...currentActivities]
+        ? currentActivities.map((item) => (item.id === activityWithProperty.id ? activityWithProperty : item))
+        : [activityWithProperty, ...currentActivities]
     })
     setActivityEditorOpen(false)
     setSelectedActivity(null)
+    setAddActivityForPropertyId(null)
   }
 
   const markActivityDone = (activityId: number) => {
@@ -943,24 +1003,36 @@ export function BrokerDashboard() {
           )}
         </div>
 
-        {/* Activity Timeline */}
+        {/* Activity Timeline — Grouped by Property */}
         <div className="bg-white border border-outline rounded-xl p-5 shadow-ambient">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-[15px] font-bold text-[#0f172a]">Activity Timeline</h2>
-            <button
-              type="button"
-              onClick={() => openActivityEditor(null)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline text-text-muted hover:bg-hover-light hover:text-primary"
-              title="Add activity"
-              aria-label="Add activity"
-            >
-              <Plus size={15} />
-            </button>
           </div>
-          {activities.length > 0 ? (
-            activities.map((activity) => (
-              <ActivityItem key={activity.id} {...activity} onEdit={openActivityEditor} onMarkDone={markActivityDone} />
-            ))
+          {groupedActivities.length > 0 ? (
+            <div className="space-y-5">
+              {groupedActivities.map((group) => (
+                <div key={group.propertyId}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[12px] font-bold uppercase tracking-wider text-text-muted">{group.propertyName}</p>
+                    <button
+                      type="button"
+                      onClick={() => openActivityEditorForProperty(group.propertyId)}
+                      className="inline-flex h-6 w-6 items-center justify-center rounded text-text-muted hover:bg-hover-light hover:text-primary"
+                      title={`Add activity for ${group.propertyName}`}
+                    >
+                      <Plus size={13} />
+                    </button>
+                  </div>
+                  {group.activities.length > 0 ? (
+                    group.activities.map((activity) => (
+                      <ActivityItem key={activity.id} {...activity} onEdit={openActivityEditor} onMarkDone={markActivityDone} />
+                    ))
+                  ) : (
+                    <p className="text-[11px] text-text-muted pl-6 py-1">No activities yet.</p>
+                  )}
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="rounded-lg border border-dashed border-outline px-4 py-6 text-center">
               <p className="text-[12px] font-medium text-text-muted">No activity recorded yet.</p>

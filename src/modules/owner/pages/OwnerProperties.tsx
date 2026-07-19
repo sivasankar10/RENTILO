@@ -57,6 +57,8 @@ export function OwnerProperties() {
     updateRegisterPropertyDraft('visitWeekday', targetProperty.visitWeekday)
     updateRegisterPropertyDraft('visitStartTime', targetProperty.visitStartTime)
     updateRegisterPropertyDraft('visitEndTime', targetProperty.visitEndTime)
+    updateRegisterPropertyDraft('preferredVisitSlots', targetProperty.preferredVisitSlots ?? [{ day: targetProperty.visitWeekday, startTime: targetProperty.visitStartTime, endTime: targetProperty.visitEndTime }])
+    updateRegisterPropertyDraft('visitSchedulingEnabled', targetProperty.visitSchedulingEnabled ?? true)
     updateRegisterPropertyDraft('leaseDuration', targetProperty.leaseDuration)
     updateRegisterPropertyDraft('noticePeriod', targetProperty.noticePeriod)
     updateRegisterPropertyDraft('photos', targetProperty.gallery)
@@ -83,6 +85,8 @@ export function OwnerProperties() {
       visitWeekday: formData.visitWeekday || undefined,
       visitStartTime: formData.visitStartTime || undefined,
       visitEndTime: formData.visitEndTime || undefined,
+      preferredVisitSlots: formData.preferredVisitSlots.length > 0 ? formData.preferredVisitSlots : undefined,
+      visitSchedulingEnabled: formData.visitSchedulingEnabled,
       leaseDuration: formData.leaseDuration,
       noticePeriod: formData.noticePeriod || undefined,
       image: gallery?.[0],

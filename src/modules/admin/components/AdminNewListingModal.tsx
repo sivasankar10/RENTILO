@@ -78,6 +78,8 @@ const initialFormData: OwnerRegisterPropertyFormData = {
   visitWeekday: 'Saturday',
   visitStartTime: '10:00 AM',
   visitEndTime: '1:00 PM',
+  preferredVisitSlots: [{ day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' }],
+  visitSchedulingEnabled: true,
   leaseDuration: 12,
   noticePeriod: '30',
   utilities: { electricity: false, water: false, internet: false, gas: false },

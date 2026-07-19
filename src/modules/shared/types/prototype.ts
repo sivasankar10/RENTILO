@@ -60,6 +60,8 @@ export interface PrototypeProperty {
   visitWeekday: string
   visitStartTime: string
   visitEndTime: string
+  preferredVisitSlots: { day: string; startTime: string; endTime: string }[]
+  visitSchedulingEnabled: boolean
   leaseDuration: number
   noticePeriod: string
   image: string
@@ -307,6 +309,36 @@ export interface AdminRequest {
   updatedAt: string
 }
 
+export type NegotiationStatus = 'owner_offered' | 'admin_countered' | 'owner_countered' | 'accepted' | 'broker_offered' | 'broker_rejected' | 'rejected'
+
+export interface NegotiationRound {
+  by: 'owner' | 'admin'
+  commission: string
+  note: string
+  at: string
+}
+
+export interface BrokerOffer {
+  brokerId: string
+  commission: string
+  status: 'pending' | 'accepted' | 'rejected'
+  offeredAt: string
+  decidedAt?: string
+}
+
+export interface BrokerCommissionNegotiation {
+  id: string
+  ownerId: string
+  propertyId: string
+  status: NegotiationStatus
+  rounds: NegotiationRound[]
+  brokerOffers: BrokerOffer[]
+  acceptedCommission?: string
+  assignedBrokerId?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface PrototypeStateData {
   users: PrototypeUser[]
   properties: PrototypeProperty[]
@@ -320,6 +352,7 @@ export interface PrototypeStateData {
   maintenanceTickets: MaintenanceTicket[]
   notifications: PrototypeNotification[]
   adminRequests: AdminRequest[]
+  commissionNegotiations: BrokerCommissionNegotiation[]
 }
 
 export interface OwnerPropertyInput {
@@ -337,6 +370,7 @@ export interface OwnerPropertyInput {
   visitWeekday?: string
   visitStartTime?: string
   visitEndTime?: string
+  preferredVisitSlots?: { day: string; startTime: string; endTime: string }[]
   leaseDuration?: number
   noticePeriod?: string
   photos?: string[]

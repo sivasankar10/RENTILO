@@ -20,6 +20,7 @@ import type {
   RentalApplication,
   ScheduledVisit,
 } from '@shared/types/prototype'
+import type { BrokerCommissionNegotiation, BrokerOffer, NegotiationRound } from '@shared/types/prototype'
 
 type PrototypeState = PrototypeStateData & {
   resetPrototypeSession: () => void
@@ -61,8 +62,14 @@ type PrototypeState = PrototypeStateData & {
   removeUser: (userId: string) => void
   addUser: (user: PrototypeUser) => void
   addBroadcast: (audience: string, title: string, body: string) => void
+  // Commission negotiation
+  createCommissionNegotiation: (ownerId: string, propertyId: string, commission: string, note: string) => string
+  counterCommissionOffer: (negotiationId: string, by: 'owner' | 'admin', commission: string, note: string) => void
+  acceptCommissionOffer: (negotiationId: string, brokerId?: string) => void
+  rejectCommissionNegotiation: (negotiationId: string) => void
+  sendBrokerOffer: (negotiationId: string, brokerId: string, commission: string) => void
+  decideBrokerOffer: (negotiationId: string, brokerId: string, decision: 'accepted' | 'rejected') => void
 }
-
 function cloneInitialState(): PrototypeStateData {
   return JSON.parse(JSON.stringify(initialPrototypeState)) as PrototypeStateData
 }
@@ -164,6 +171,10 @@ function createPropertyFromForm(ownerId: string, formData: OwnerPropertyInput): 
     visitWeekday: formData.visitWeekday?.trim() || 'Saturday',
     visitStartTime: formData.visitStartTime?.trim() || '10:00 AM',
     visitEndTime: formData.visitEndTime?.trim() || '1:00 PM',
+    preferredVisitSlots: formData.preferredVisitSlots && formData.preferredVisitSlots.length > 0
+      ? formData.preferredVisitSlots
+      : [{ day: formData.visitWeekday?.trim() || 'Saturday', startTime: formData.visitStartTime?.trim() || '10:00 AM', endTime: formData.visitEndTime?.trim() || '1:00 PM' }],
+    visitSchedulingEnabled: true,
     leaseDuration: formData.leaseDuration ?? 12,
     noticePeriod: formData.noticePeriod?.trim() || '30',
     image: photos[0]!,
@@ -1006,6 +1017,123 @@ export const usePrototypeStore = create<PrototypeState>()(
           createdAt: timestamp,
         }
         set((state) => ({ notifications: [notification, ...state.notifications] }))
+      },
+
+      // ── Commission Negotiation ──
+      createCommissionNegotiation: (ownerId, propertyId, commission, note) => {
+        // Prevent duplicates — only one active negotiation per property per owner
+        const existing = get().commissionNegotiations.find(
+          (n) => n.ownerId === ownerId && n.propertyId === propertyId && n.status !== 'rejected',
+        )
+        if (existing) return existing.id
+
+        const timestamp = nowIso()
+        const id = createId('negotiation')
+        const round: NegotiationRound = { by: 'owner', commission, note, at: timestamp }
+        const negotiation: BrokerCommissionNegotiation = {
+          id,
+          ownerId,
+          propertyId,
+          status: 'owner_offered',
+          rounds: [round],
+          brokerOffers: [],
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        }
+        set((state) => ({ commissionNegotiations: [negotiation, ...state.commissionNegotiations] }))
+        return id
+      },
+
+      counterCommissionOffer: (negotiationId, by, commission, note) => {
+        const timestamp = nowIso()
+        const round: NegotiationRound = { by, commission, note, at: timestamp }
+        set((state) => ({
+          commissionNegotiations: state.commissionNegotiations.map((n) =>
+            n.id === negotiationId
+              ? { ...n, status: by === 'admin' ? 'admin_countered' : 'owner_countered', rounds: [...n.rounds, round], updatedAt: timestamp }
+              : n,
+          ),
+        }))
+      },
+
+      acceptCommissionOffer: (negotiationId, brokerId) => {
+        const timestamp = nowIso()
+        set((state) => {
+          const negotiation = state.commissionNegotiations.find((n) => n.id === negotiationId)
+          const lastRound = negotiation?.rounds[negotiation.rounds.length - 1]
+          return {
+            commissionNegotiations: state.commissionNegotiations.map((n) =>
+              n.id === negotiationId
+                ? { ...n, status: 'accepted', acceptedCommission: lastRound?.commission, assignedBrokerId: brokerId, updatedAt: timestamp }
+                : n,
+            ),
+          }
+        })
+      },
+
+      rejectCommissionNegotiation: (negotiationId) => {
+        const timestamp = nowIso()
+        set((state) => ({
+          commissionNegotiations: state.commissionNegotiations.map((n) =>
+            n.id === negotiationId ? { ...n, status: 'rejected', updatedAt: timestamp } : n,
+          ),
+        }))
+      },
+
+      sendBrokerOffer: (negotiationId, brokerId, commission) => {
+        const timestamp = nowIso()
+        const offer: BrokerOffer = { brokerId, commission, status: 'pending', offeredAt: timestamp }
+        set((state) => ({
+          commissionNegotiations: state.commissionNegotiations.map((n) =>
+            n.id === negotiationId
+              ? { ...n, status: 'broker_offered', brokerOffers: [...n.brokerOffers, offer], updatedAt: timestamp }
+              : n,
+          ),
+        }))
+      },
+
+      decideBrokerOffer: (negotiationId, brokerId, decision) => {
+        const timestamp = nowIso()
+        set((state) => {
+          const negotiation = state.commissionNegotiations.find((n) => n.id === negotiationId)
+          if (!negotiation) return state
+          const updatedOffers = negotiation.brokerOffers.map((o) =>
+            o.brokerId === brokerId ? { ...o, status: decision, decidedAt: timestamp } : o,
+          )
+          const accepted = decision === 'accepted'
+          const lastRound = negotiation.rounds[negotiation.rounds.length - 1]
+          return {
+            commissionNegotiations: state.commissionNegotiations.map((n) =>
+              n.id === negotiationId
+                ? {
+                    ...n,
+                    brokerOffers: updatedOffers,
+                    status: accepted ? 'accepted' : 'broker_rejected',
+                    assignedBrokerId: accepted ? brokerId : n.assignedBrokerId,
+                    acceptedCommission: accepted ? lastRound?.commission : n.acceptedCommission,
+                    updatedAt: timestamp,
+                  }
+                : n,
+            ),
+            // If accepted, also create the actual broker assignment
+            ...(accepted ? {
+              brokerAssignments: [
+                {
+                  id: createId('assignment'),
+                  propertyId: negotiation.propertyId,
+                  listingId: state.listings.find((l) => l.propertyId === negotiation.propertyId)?.id ?? '',
+                  ownerId: negotiation.ownerId,
+                  brokerId,
+                  assignedBy: 'user-admin-1',
+                  status: 'Active' as const,
+                  createdAt: timestamp,
+                  updatedAt: timestamp,
+                },
+                ...state.brokerAssignments,
+              ],
+            } : {}),
+          }
+        })
       },
     }),
     {

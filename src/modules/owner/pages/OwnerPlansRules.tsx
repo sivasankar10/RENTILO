@@ -7,16 +7,12 @@ import {
   ChevronRight,
   FileBadge,
   FileText,
-  Link2,
   ShieldCheck,
 } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { Toast, ToastContainer } from '@shared/ui/Toast'
-import { useAuth } from '@shared/hooks/useAuth'
-import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { ListingPromotionPromoCard } from '../components/ListingPromotionPromoCard'
 import { KycVerificationModal } from '@modules/tenant/components/KycVerificationModal'
-import { useOwnerStore } from '../store/ownerStore'
 
 const tierFeatures = [
   'Up to 50 Properties',
@@ -27,23 +23,11 @@ const tierFeatures = [
 
 export function OwnerPlansRules() {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const ownerId = user?.id ?? ''
   const [showKycModal, setShowKycModal] = useState(false)
   const [kycStatus, setKycStatus] = useState('Not Started')
   const [isVerified, setIsVerified] = useState(false)
   const [verificationMessage, setVerificationMessage] = useState('')
   const [businessStatus, setBusinessStatus] = useState('Pending Upload')
-  const brokerIntegrationEnabled = useOwnerStore((state) => state.brokerIntegrationEnabled)
-  const brokerEnabledOwnerId = useOwnerStore((state) => state.brokerEnabledOwnerId)
-  const enableBrokerIntegration = useOwnerStore((state) => state.enableBrokerIntegration)
-  const brokerAssignments = usePrototypeStore((state) => state.brokerAssignments)
-
-  // Toggle is ON if owner manually enabled it OR a broker is already assigned to any of their properties
-  const hasBrokerAssigned = brokerAssignments.some(
-    (a) => a.ownerId === ownerId && a.status === 'Active',
-  )
-  const isBrokerToggleOn = (brokerIntegrationEnabled && brokerEnabledOwnerId === ownerId) || hasBrokerAssigned
   const [notifications, setNotifications] = useState<
     { id: number; message: string; description?: string }[]
   >([])
@@ -53,24 +37,6 @@ export function OwnerPlansRules() {
     setKycStatus('Verified')
     setVerificationMessage('Your identity has been verified successfully!')
     setShowKycModal(false)
-  }
-
-  const showNotification = (message: string, description?: string) => {
-    const id = Date.now() + Math.random()
-    setNotifications((current) => [...current, { id, message, description }])
-  }
-
-  const handleBrokerToggle = () => {
-    if (isBrokerToggleOn) {
-      return
-    }
-
-    enableBrokerIntegration(ownerId)
-    showNotification('Broker assignment enabled', 'You can now assign brokers from your Portfolio page.')
-
-    window.setTimeout(() => {
-      navigate(ROUTES.OWNER.PORTFOLIO)
-    }, 1200)
   }
 
   return (
@@ -166,38 +132,6 @@ export function OwnerPlansRules() {
               >
                 {isVerified ? 'Verified KYC' : 'Start Verification'}
               </button>
-            </article>
-
-            <article className="rounded-card border border-outline bg-white p-6 shadow-sm">
-              <h2 className="text-heading-2 font-bold text-text-primary">Broker Integration</h2>
-
-              <div className="mt-6 rounded-button border border-primary-100 bg-primary-50 p-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-button bg-white text-primary">
-                    <Link2 size={18} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-label font-bold text-text-primary">Assign Brokers</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleBrokerToggle}
-                    className={
-                      isBrokerToggleOn
-                        ? 'flex h-6 w-11 cursor-default items-center justify-end rounded-pill bg-primary p-1'
-                        : 'flex h-6 w-11 items-center justify-start rounded-pill bg-primary-100 p-1'
-                    }
-                    aria-pressed={isBrokerToggleOn}
-                  >
-                    <span className="h-4 w-4 rounded-full bg-white shadow-sm" />
-                  </button>
-                </div>
-              </div>
-
-              <p className="mt-5 text-label leading-5 text-text-muted">
-                When enabled, broker recommendations and assignment tools are available in your
-                portfolio for the current session.
-              </p>
             </article>
 
             <ListingPromotionPromoCard compact />
