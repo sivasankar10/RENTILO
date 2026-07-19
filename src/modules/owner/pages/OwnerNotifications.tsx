@@ -18,7 +18,7 @@ export function OwnerNotifications() {
     state.notifications.filter(
       (n) =>
         n.userId === ownerId ||
-        (n.role === 'owner' && !n.userId), // broadcast to all owners
+        ((n.role === 'owner' || n.role === 'all') && !n.userId), // broadcast to owners or everyone
     ),
   )
   const markProtoRead = usePrototypeStore((state) => state.markNotificationRead)

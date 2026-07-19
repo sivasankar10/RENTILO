@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { useOnboardingStore } from '@shared/store/onboardingStore'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { useTenantMarketplace } from '../hooks/useTenantMarketplace'
 import { useTenantId } from '../hooks/useTenantId'
 import { RoleModeSwitcher } from '@shared/components/RoleModeSwitcher'
@@ -17,7 +18,7 @@ export function TenantHeader() {
   const { pathname } = useLocation()
   const { savedIds } = useTenantMarketplace()
   const tenantId = useTenantId()
-  const hasUnreadNotifications = useOnboardingStore((state) =>
+  const hasUnreadOnboarding = useOnboardingStore((state) =>
     state.notifications.some(
       (notification) =>
         notification.audience === 'tenant' &&
@@ -27,6 +28,16 @@ export function TenantHeader() {
         ),
     ),
   )
+  // Admin broadcasts targeted at tenants or everyone.
+  const hasUnreadBroadcast = usePrototypeStore((state) =>
+    state.notifications.some(
+      (notification) =>
+        notification.unread &&
+        (notification.userId === tenantId ||
+          ((notification.role === 'tenant' || notification.role === 'all') && !notification.userId)),
+    ),
+  )
+  const hasUnreadNotifications = hasUnreadOnboarding || hasUnreadBroadcast
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
 
   const profileActive = isProfileSectionPath(pathname)
