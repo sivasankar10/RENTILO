@@ -150,6 +150,24 @@ function createPropertyFromForm(ownerId: string, formData: OwnerPropertyInput): 
     : ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80']
   const id = createId('property-owner')
 
+  // Extract new spec fields with fallbacks
+  const bedrooms = formData.bedrooms ?? 2
+  const bathrooms = formData.bathrooms ?? 2
+  const sqft = formData.sqft || '1,200'
+  const furnishingStatus = formData.furnishingStatus || 'Semi-Furnished'
+  const facing = formData.facing || 'East'
+  const floor = formData.floor || '1'
+  const totalFloors = formData.totalFloors || '4'
+  const balcony = formData.balcony || 'Yes'
+  const ageOfBuilding = formData.ageOfBuilding || '3-5 Years'
+  const preferredTenant = formData.preferredTenant || 'Any'
+  const possession = formData.possession || 'Immediately'
+  const parkingType = formData.parkingType || (formData.buildingFeatures?.parking ? 'Bike and Car' : 'None')
+  const waterSupply = formData.waterSupply || 'Corporation'
+  const nonVegAllowed = formData.nonVegAllowed ?? true
+  const formNearby = formData.nearby as PrototypeProperty['nearby'] | undefined
+  const formRules = formData.rules as { rule: string; category: string }[] | undefined
+
   return {
     id,
     ownerId,
@@ -164,9 +182,9 @@ function createPropertyFromForm(ownerId: string, formData: OwnerPropertyInput): 
     price: priceDisplay,
     pricePeriod: '/ mo',
     deposit: depositDisplay,
-    beds: 2,
-    baths: 2,
-    sqft: '1,200',
+    beds: bedrooms,
+    baths: bathrooms,
+    sqft,
     availableFrom: formData.availableFrom?.trim() || timestamp.slice(0, 10),
     visitWeekday: formData.visitWeekday?.trim() || 'Saturday',
     visitStartTime: formData.visitStartTime?.trim() || '10:00 AM',
@@ -180,23 +198,23 @@ function createPropertyFromForm(ownerId: string, formData: OwnerPropertyInput): 
     image: photos[0]!,
     gallery: photos,
     highlights: [
-      { label: 'No. of Bedroom', value: '2 Bedroom' },
+      { label: 'No. of Bedroom', value: `${bedrooms} Bedroom` },
       { label: 'Property Type', value: propertyType },
-      { label: 'Preferred Tenant', value: 'Anyone' },
-      { label: 'Possession', value: 'Immediately' },
-      { label: 'Parking', value: formData.buildingFeatures?.parking ? 'Bike and Car' : 'Bike' },
-      { label: 'Age of Building', value: '3-5 Years' },
-      { label: 'Balcony', value: 'Yes' },
+      { label: 'Preferred Tenant', value: preferredTenant || 'Any' },
+      { label: 'Possession', value: possession },
+      { label: 'Parking', value: parkingType || 'None' },
+      { label: 'Age of Building', value: ageOfBuilding },
+      { label: 'Balcony', value: balcony },
       { label: 'Posted On', value: displayDate(timestamp) },
     ],
     overviewSpecs: [
-      { label: 'Furnishing Status', value: 'Semi' },
-      { label: 'Facing', value: 'East' },
-      { label: 'Water Supply', value: 'Corporation' },
-      { label: 'Floor', value: '1/4' },
-      { label: 'Bathroom', value: '2' },
+      { label: 'Furnishing Status', value: furnishingStatus },
+      { label: 'Facing', value: facing },
+      { label: 'Water Supply', value: waterSupply },
+      { label: 'Floor', value: `${floor}/${totalFloors}` },
+      { label: 'Bathroom', value: String(bathrooms) },
       { label: 'Pet Allowed', value: formData.petPolicy ? 'Yes' : 'No' },
-      { label: 'Non-Veg Allowed', value: 'Yes' },
+      { label: 'Non-Veg Allowed', value: nonVegAllowed ? 'Yes' : 'No' },
       { label: 'Gated Security', value: formData.buildingFeatures?.security ? 'Yes' : 'No' },
     ],
     overview: [
@@ -205,14 +223,16 @@ function createPropertyFromForm(ownerId: string, formData: OwnerPropertyInput): 
     ],
     amenities: [
       { icon: 'wifi', label: formData.amenities?.wifi ? 'High-Speed WiFi' : 'Internet Ready' },
-      { icon: 'local_parking', label: formData.buildingFeatures?.parking ? 'Secure Parking' : 'Street Parking' },
+      { icon: 'local_parking', label: parkingType || 'Street Parking' },
       { icon: 'security', label: formData.buildingFeatures?.security ? 'Gated Security' : 'Owner Managed' },
+      ...(formData.buildingFeatures?.gym ? [{ icon: 'fitness_center', label: 'Fitness Center' }] : []),
+      ...(formData.buildingFeatures?.pool ? [{ icon: 'pool', label: 'Swimming Pool' }] : []),
     ],
-    rules: [
+    rules: formRules && formRules.length > 0 ? formRules : [
       { rule: 'Monthly rent due by the 5th of each month', category: 'Payments' },
       { rule: 'Subletting requires owner approval', category: 'Lease' },
     ],
-    nearby: {
+    nearby: formNearby && (formNearby.essentials.length > 0 || formNearby.utility.length > 0 || formNearby.transit.busStations.length > 0) ? formNearby : {
       essentials: [{ name: 'Daily Needs Store', distance: '0.4 km', time: '5 mins' }],
       utility: [{ name: 'ATM', distance: '0.3 km', time: '4 mins' }],
       transit: { busStations: [{ name: 'Bus Stop', distance: '0.5 km', time: '6 mins' }], airport: [], trainStations: [] },

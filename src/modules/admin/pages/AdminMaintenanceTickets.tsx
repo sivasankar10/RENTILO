@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock,
   ClipboardList,
+  Crown,
   Home,
   MessageSquare,
   Phone,
@@ -25,6 +26,7 @@ import {
   type TicketPriority,
   type TicketStatus,
 } from '@modules/owner/store/maintenanceStore'
+import { useOwnerStore } from '@modules/owner/store/ownerStore'
 import { toast } from '../components/Toast'
 
 const ticketStatuses: TicketStatus[] = ['Open', 'In Progress', 'Resolved', 'Closed']
@@ -61,7 +63,40 @@ export function AdminMaintenanceTickets() {
   const updateTicket = useOwnerMaintenanceStore((state) => state.updateTicket)
   const { user } = useAuth()
   const sendMaintenanceMessage = usePrototypeStore((state) => state.sendMaintenanceMessage)
+  const ownerSubscriptionPlan = useOwnerStore((state) => state.subscriptionPlan)
 
+  // Determine premium owner IDs — in prototype, MultiPropertyOwner is the premium owner
+  const premiumOwnerIds = useMemo(() => {
+    const ids = new Set<string>()
+    // MultiPropertyOwner is the main premium demo account
+    ids.add('user-owner-multi')
+    // If any currently logged-in owner is premium, include them
+    if (ownerSubscriptionPlan === 'PREMIUM') {
+      const allProperties = usePrototypeStore.getState().properties
+      const ownerIds = new Set(allProperties.map((p) => p.ownerId))
+      ownerIds.forEach((id) => ids.add(id))
+    }
+    return ids
+  }, [ownerSubscriptionPlan])
+
+  // Separate tickets by premium vs regular
+  const premiumTickets = useMemo(() => {
+    const allProperties = usePrototypeStore.getState().properties
+    return tickets.filter((ticket) => {
+      const property = allProperties.find((p) => p.id === ticket.propertyId)
+      return property && premiumOwnerIds.has(property.ownerId)
+    })
+  }, [tickets, premiumOwnerIds])
+
+  const regularTickets = useMemo(() => {
+    const allProperties = usePrototypeStore.getState().properties
+    return tickets.filter((ticket) => {
+      const property = allProperties.find((p) => p.id === ticket.propertyId)
+      return !property || !premiumOwnerIds.has(property.ownerId)
+    })
+  }, [tickets, premiumOwnerIds])
+
+  const [activeTab, setActiveTab] = useState<'all' | 'premium' | 'regular'>('all')
   const [activeTicketId, setActiveTicketId] = useState('')
   const [search, setSearch] = useState('')
   const [propertyFilter, setPropertyFilter] = useState('All')
@@ -78,10 +113,17 @@ export function AdminMaintenanceTickets() {
     [tickets]
   )
 
+  // Base tickets for the active tab
+  const tabTickets = useMemo(() => {
+    if (activeTab === 'premium') return premiumTickets
+    if (activeTab === 'regular') return regularTickets
+    return tickets
+  }, [activeTab, premiumTickets, regularTickets, tickets])
+
   const filteredTickets = useMemo(() => {
     const query = search.trim().toLowerCase()
 
-    return tickets.filter((ticket) => {
+    return tabTickets.filter((ticket) => {
       const propertyName = getPropertyName(ticket).toLowerCase()
       const matchesProperty = propertyFilter === 'All' || ticket.propertyId === propertyFilter
       const matchesStatus = statusFilter === 'All' || ticket.status === statusFilter
@@ -100,7 +142,7 @@ export function AdminMaintenanceTickets() {
 
       return matchesProperty && matchesStatus && matchesPriority && matchesCategory && matchesSearch
     })
-  }, [categoryFilter, priorityFilter, propertyFilter, search, statusFilter, tickets])
+  }, [categoryFilter, priorityFilter, propertyFilter, search, statusFilter, tabTickets])
 
   useEffect(() => {
     if (!filteredTickets.some((ticket) => ticket.id === activeTicketId)) {
@@ -118,8 +160,9 @@ export function AdminMaintenanceTickets() {
       open: tickets.filter((ticket) => ticket.status === 'Open').length,
       urgent: tickets.filter((ticket) => ticket.priority === 'Urgent').length,
       resolved: tickets.filter((ticket) => ticket.status === 'Resolved' || ticket.status === 'Closed').length,
+      premium: premiumTickets.length,
     }),
-    [tickets]
+    [tickets, premiumTickets]
   )
 
   const handleSendMessage = (event: FormEvent<HTMLFormElement>) => {
@@ -165,12 +208,59 @@ export function AdminMaintenanceTickets() {
           </div>
         </div>
 
-        <section className="grid gap-4 md:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-5">
           <SummaryCard icon={ClipboardList} label="Total Tickets" value={summary.total} tone="primary" />
           <SummaryCard icon={Clock} label="Open" value={summary.open} tone="info" />
           <SummaryCard icon={ShieldAlert} label="Urgent" value={summary.urgent} tone="danger" />
           <SummaryCard icon={CheckCircle2} label="Resolved / Closed" value={summary.resolved} tone="success" />
+          <SummaryCard icon={Crown} label="Premium Owner" value={summary.premium} tone="premium" />
         </section>
+
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-1 rounded-card border border-outline bg-white p-1.5 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setActiveTab('all')}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-button px-5 py-2.5 text-body font-semibold transition-colors',
+              activeTab === 'all' ? 'bg-navy text-white' : 'text-text-muted hover:bg-hover-light hover:text-text-primary'
+            )}
+          >
+            <ClipboardList size={16} />
+            All Tickets
+            <span className={cn('ml-1 rounded-pill px-2 py-0.5 text-badge font-bold', activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-text-muted')}>
+              {tickets.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('premium')}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-button px-5 py-2.5 text-body font-semibold transition-colors',
+              activeTab === 'premium' ? 'bg-amber-600 text-white' : 'text-text-muted hover:bg-amber-50 hover:text-amber-700'
+            )}
+          >
+            <Crown size={16} />
+            Premium Owner Tickets
+            <span className={cn('ml-1 rounded-pill px-2 py-0.5 text-badge font-bold', activeTab === 'premium' ? 'bg-white/20 text-white' : 'bg-amber-50 text-amber-700')}>
+              {premiumTickets.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('regular')}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-button px-5 py-2.5 text-body font-semibold transition-colors',
+              activeTab === 'regular' ? 'bg-slate-600 text-white' : 'text-text-muted hover:bg-hover-light hover:text-text-primary'
+            )}
+          >
+            <UserRound size={16} />
+            Regular Owner Tickets
+            <span className={cn('ml-1 rounded-pill px-2 py-0.5 text-badge font-bold', activeTab === 'regular' ? 'bg-white/20 text-white' : 'bg-slate-100 text-text-muted')}>
+              {regularTickets.length}
+            </span>
+          </button>
+        </div>
 
         <section className="grid min-h-[680px] overflow-hidden rounded-card border border-outline bg-white shadow-surface xl:grid-cols-[390px_minmax(0,1fr)]">
           <aside className="flex min-h-0 flex-col border-b border-outline xl:border-b-0 xl:border-r">
@@ -230,17 +320,23 @@ export function AdminMaintenanceTickets() {
 
             <div className="min-h-0 flex-1 overflow-y-auto">
               {filteredTickets.length > 0 ? (
-                filteredTickets.map((ticket) => (
-                  <TicketListItem
-                    key={ticket.id}
-                    ticket={ticket}
-                    active={ticket.id === activeTicket?.id}
-                    onClick={() => {
-                      setActiveTicketId(ticket.id)
-                      setCallStatus('')
-                    }}
-                  />
-                ))
+                filteredTickets.map((ticket) => {
+                  const allProperties = usePrototypeStore.getState().properties
+                  const property = allProperties.find((p) => p.id === ticket.propertyId)
+                  const isPremiumOwnerTicket = property ? premiumOwnerIds.has(property.ownerId) : false
+                  return (
+                    <TicketListItem
+                      key={ticket.id}
+                      ticket={ticket}
+                      active={ticket.id === activeTicket?.id}
+                      isPremiumOwner={isPremiumOwnerTicket}
+                      onClick={() => {
+                        setActiveTicketId(ticket.id)
+                        setCallStatus('')
+                      }}
+                    />
+                  )
+                })
               ) : (
                 <div className="px-6 py-16 text-center">
                   <Wrench size={42} className="mx-auto text-text-muted" />
@@ -262,6 +358,15 @@ export function AdminMaintenanceTickets() {
                       </span>
                       <StatusBadge status={activeTicket.status} />
                       <PriorityBadge priority={activeTicket.priority} />
+                      {(() => {
+                        const allProps = usePrototypeStore.getState().properties
+                        const prop = allProps.find((p) => p.id === activeTicket.propertyId)
+                        return prop && premiumOwnerIds.has(prop.ownerId) ? (
+                          <span className="inline-flex items-center gap-1 rounded-pill bg-amber-50 border border-amber-200 px-2.5 py-1 text-badge font-bold text-amber-700">
+                            <Crown size={12} /> Premium Owner
+                          </span>
+                        ) : null
+                      })()}
                     </div>
                     <h2 className="mt-2 text-heading-2 font-bold text-text-primary">
                       {getPropertyName(activeTicket)}
@@ -493,10 +598,12 @@ function TicketListItem({
   ticket,
   active,
   onClick,
+  isPremiumOwner,
 }: {
   ticket: OwnerMaintenanceTicket
   active: boolean
   onClick: () => void
+  isPremiumOwner?: boolean
 }) {
   return (
     <button
@@ -511,7 +618,14 @@ function TicketListItem({
         <img src={ticket.tenantAvatar} alt={ticket.tenantName} className="h-11 w-11 rounded-full object-cover" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="truncate text-body font-bold text-text-primary">{getPropertyName(ticket)}</p>
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="truncate text-body font-bold text-text-primary">{getPropertyName(ticket)}</p>
+              {isPremiumOwner && (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-pill bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                  <Crown size={10} /> Premium
+                </span>
+              )}
+            </div>
             <span className="shrink-0 text-label font-semibold text-text-muted">{ticket.lastUpdated}</span>
           </div>
           <p className="mt-1 truncate text-label text-text-muted">
@@ -557,7 +671,7 @@ function SummaryCard({
   icon: LucideIcon
   label: string
   value: number
-  tone: 'primary' | 'info' | 'danger' | 'success'
+  tone: 'primary' | 'info' | 'danger' | 'success' | 'premium'
 }) {
   return (
     <div className="rounded-card border border-outline bg-white p-5 shadow-sm">
@@ -568,7 +682,8 @@ function SummaryCard({
             tone === 'primary' && 'bg-primary-100 text-primary',
             tone === 'info' && 'bg-blue-50 text-blue-700',
             tone === 'danger' && 'bg-red-50 text-red-700',
-            tone === 'success' && 'bg-green-50 text-green-700'
+            tone === 'success' && 'bg-green-50 text-green-700',
+            tone === 'premium' && 'bg-amber-50 text-amber-700'
           )}
         >
           <Icon size={18} />

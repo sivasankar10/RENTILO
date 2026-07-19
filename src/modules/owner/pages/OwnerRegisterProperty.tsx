@@ -15,9 +15,11 @@ import {
   Dumbbell,
   Image,
   Lock,
+  MapPin,
   Plus,
   ShieldCheck,
   Star,
+  Trash2,
   TrendingUp,
   Upload,
   Video,
@@ -74,7 +76,6 @@ export function OwnerRegisterProperty() {
     const result = createProperty(formData)
     submitRegisterProperty()
     resetRegisterPropertyDraft()
-    // Select the newly created property in the sidebar dropdown
     if (result?.propertyId) {
       useOwnerStore.getState().setSelectedProperty(result.propertyId)
     }
@@ -94,18 +95,10 @@ export function OwnerRegisterProperty() {
             Posting new properties is available only for Premium subscribers. Free plan owners can manage their single default listing.
           </p>
           <div className="mt-8 flex items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)}
-              className="rounded-button bg-primary px-6 py-3 text-body font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors"
-            >
+            <button type="button" onClick={() => navigate(ROUTES.OWNER.PREMIUM_PAYMENT)} className="rounded-button bg-primary px-6 py-3 text-body font-semibold text-white shadow-sm hover:bg-primary-700 transition-colors">
               Upgrade to Premium
             </button>
-            <button
-              type="button"
-              onClick={() => navigate(ROUTES.OWNER.DASHBOARD)}
-              className="rounded-button border border-outline bg-white px-6 py-3 text-body font-semibold text-text-primary shadow-sm hover:bg-hover-light transition-colors"
-            >
+            <button type="button" onClick={() => navigate(ROUTES.OWNER.DASHBOARD)} className="rounded-button border border-outline bg-white px-6 py-3 text-body font-semibold text-text-primary shadow-sm hover:bg-hover-light transition-colors">
               Back to Dashboard
             </button>
           </div>
@@ -121,35 +114,23 @@ export function OwnerRegisterProperty() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-label text-text-muted">
-              <button type="button" onClick={() => navigate(ROUTES.OWNER.PROPERTIES)} className="hover:text-primary transition-colors">
-                Properties
-              </button>
+              <button type="button" onClick={() => navigate(ROUTES.OWNER.PROPERTIES)} className="hover:text-primary transition-colors">Properties</button>
               {' > '}
               <span className="text-text-primary">Add New Listing</span>
             </p>
-            <h1 className="mt-2 text-heading-1 font-bold tracking-tight text-text-primary">
-              Register New Property
-            </h1>
+            <h1 className="mt-2 text-heading-1 font-bold tracking-tight text-text-primary">Register New Property</h1>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              className="rounded-button border border-outline bg-white px-5 py-2.5 text-body font-medium text-text-primary shadow-sm hover:bg-hover-light transition-colors"
-            >
+            <button type="button" onClick={handleSaveDraft} className="rounded-button border border-outline bg-white px-5 py-2.5 text-body font-medium text-text-primary shadow-sm hover:bg-hover-light transition-colors">
               Save as Draft
             </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="rounded-button bg-navy px-5 py-2.5 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
-            >
+            <button type="button" onClick={handleSubmit} className="rounded-button bg-navy px-5 py-2.5 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors">
               Submit Listing
             </button>
           </div>
         </div>
 
-        {/* Main layout: Step sidebar + Content */}
+        {/* Main layout */}
         <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
           {/* Step Sidebar */}
           <div className="space-y-6">
@@ -159,26 +140,11 @@ export function OwnerRegisterProperty() {
                   const isCompleted = step.number < currentStep
                   const isActive = step.number === currentStep
                   return (
-                    <button
-                      type="button"
-                      key={step.number}
-                      onClick={() => setCurrentStep(step.number)}
-                      className="flex w-full items-start gap-3 text-left"
-                    >
-                      <div
-                        className={cn(
-                          'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-badge font-bold',
-                          isCompleted ? 'bg-primary text-white' : isActive ? 'bg-navy text-white' : 'bg-slate-100 text-text-muted',
-                        )}
-                      >
+                    <button type="button" key={step.number} onClick={() => setCurrentStep(step.number)} className="flex w-full items-start gap-3 text-left">
+                      <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-badge font-bold', isCompleted ? 'bg-primary text-white' : isActive ? 'bg-navy text-white' : 'bg-slate-100 text-text-muted')}>
                         {isCompleted ? <Check size={14} /> : step.number}
                       </div>
-                      <span
-                        className={cn(
-                          'text-body pt-0.5',
-                          isActive ? 'font-bold text-text-primary' : isCompleted ? 'font-medium text-text-primary' : 'font-medium text-text-muted',
-                        )}
-                      >
+                      <span className={cn('text-body pt-0.5', isActive ? 'font-bold text-text-primary' : isCompleted ? 'font-medium text-text-primary' : 'font-medium text-text-muted')}>
                         {step.label}
                       </span>
                     </button>
@@ -186,15 +152,11 @@ export function OwnerRegisterProperty() {
                 })}
               </nav>
             </div>
-
-            {/* Need Assistance */}
             <div className="rounded-card bg-primary-100 p-5">
               <h3 className="text-body font-bold text-text-primary">Need Assistance?</h3>
-              <p className="mt-2 text-label leading-5 text-text-muted">
-                Our onboarding specialists are available 24x7 to help you optimize your listing.
-              </p>
+              <p className="mt-2 text-label leading-5 text-text-muted">Our onboarding specialists are available 24x7 to help you optimize your listing.</p>
               <button type="button" className="mt-4 inline-flex items-center gap-2 text-label font-bold text-navy hover:text-primary transition-colors">
-                ðŸ“ž Contact Support
+                Contact Support
               </button>
             </div>
           </div>
@@ -207,20 +169,14 @@ export function OwnerRegisterProperty() {
             {currentStep === 4 && <Step4Media formData={formData} update={update} />}
             {currentStep === 5 && <Step5Pricing formData={formData} update={update} onComplete={handleSubmit} goPrev={goPrev} />}
 
-            {/* Navigation */}
             {currentStep < 5 && (
               <div className="flex items-center justify-between pt-4">
                 {currentStep > 1 ? (
                   <button type="button" onClick={goPrev} className="inline-flex items-center gap-2 text-body font-medium text-text-muted hover:text-text-primary transition-colors">
-                    <ArrowLeft size={16} />
-                    Previous Step
+                    <ArrowLeft size={16} /> Previous Step
                   </button>
                 ) : <span />}
-                <button
-                  type="button"
-                  onClick={goNext}
-                  className="inline-flex items-center gap-2 rounded-button bg-navy px-6 py-3 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors"
-                >
+                <button type="button" onClick={goNext} className="inline-flex items-center gap-2 rounded-button bg-navy px-6 py-3 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors">
                   {currentStep === 1 && 'Continue to Location'}
                   {currentStep === 2 && 'Continue to Amenities'}
                   {currentStep === 3 && 'Continue to Media & Gallery'}
@@ -229,8 +185,6 @@ export function OwnerRegisterProperty() {
                 </button>
               </div>
             )}
-
-            {/* Bottom info cards */}
             <BottomInfoCards />
           </div>
         </div>
@@ -239,96 +193,205 @@ export function OwnerRegisterProperty() {
   )
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 1: Basic Information â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* --------- STEP 1: Basic Information --------- */
 export function Step1BasicInfo({ formData, update }: StepProps) {
   return (
-    <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
-      <div>
-        <h2 className="text-heading-3 font-bold text-text-primary">Basic Information</h2>
-        <p className="mt-1 text-label text-text-muted">Provide the primary details identifying this property.</p>
-      </div>
-
-      <div>
-        <label className="text-body font-medium text-text-primary">Property Name / Title</label>
-        <input
-          type="text"
-          placeholder="e.g., The Grand Palace"
-          value={formData.propertyName}
-          onChange={(e) => update('propertyName', e.target.value)}
-          className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
-        />
-        <p className="mt-1 text-label text-text-muted">A clear, descriptive title to attract potential tenants.</p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-6">
+      <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
         <div>
-          <label className="text-body font-medium text-text-primary">Property Type</label>
-          <select
-            value={formData.propertyType}
-            onChange={(e) => update('propertyType', e.target.value)}
-            className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
-          >
-            <option value="">Select Property Type</option>
-            <option>Apartment</option>
-            <option>Villa</option>
-            <option>Penthouse</option>
-            <option>Commercial Office</option>
-            <option>Studio</option>
-          </select>
+          <h2 className="text-heading-3 font-bold text-text-primary">Basic Information</h2>
+          <p className="mt-1 text-label text-text-muted">Provide the primary details identifying this property.</p>
         </div>
-        <div>
-          <label className="text-body font-medium text-text-primary">Year Built</label>
-          <input
-            type="text"
-            placeholder="YYYY"
-            value={formData.yearBuilt}
-            onChange={(e) => update('yearBuilt', e.target.value)}
-            className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
-          />
-        </div>
-      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="text-body font-medium text-text-primary">Internal Reference ID (Optional)</label>
-          <input
-            type="text"
-            placeholder="e.g., BLDG-A-101"
-            value={formData.referenceId}
-            onChange={(e) => update('referenceId', e.target.value)}
-            className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
-          />
+          <label className="text-body font-medium text-text-primary">Property Name / Title</label>
+          <input type="text" placeholder="e.g., The Grand Palace" value={formData.propertyName} onChange={(e) => update('propertyName', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          <p className="mt-1 text-label text-text-muted">A clear, descriptive title to attract potential tenants.</p>
         </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="text-body font-medium text-text-primary">Property Type</label>
+            <select value={formData.propertyType} onChange={(e) => update('propertyType', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option value="">Select Property Type</option>
+              <option>Apartment</option>
+              <option>Villa</option>
+              <option>Penthouse</option>
+              <option>Commercial Office</option>
+              <option>Studio</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Year Built</label>
+            <input type="text" placeholder="YYYY" value={formData.yearBuilt} onChange={(e) => update('yearBuilt', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="text-body font-medium text-text-primary">Internal Reference ID (Optional)</label>
+            <input type="text" placeholder="e.g., BLDG-A-101" value={formData.referenceId} onChange={(e) => update('referenceId', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Current Status</label>
+            <select value={formData.currentStatus} onChange={(e) => update('currentStatus', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option>Available for Rent</option>
+              <option>Under Renovation</option>
+              <option>Occupied</option>
+            </select>
+          </div>
+        </div>
+
         <div>
-          <label className="text-body font-medium text-text-primary">Current Status</label>
-          <select
-            value={formData.currentStatus}
-            onChange={(e) => update('currentStatus', e.target.value)}
-            className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
-          >
-            <option>Available for Rent</option>
-            <option>Under Renovation</option>
-            <option>Occupied</option>
-          </select>
+          <h3 className="text-heading-3 font-bold text-text-primary">Property Description</h3>
+          <textarea placeholder="Describe the property, highlighting key selling points..." value={formData.description} onChange={(e) => update('description', e.target.value.slice(0, 1000))} rows={4} className="mt-2 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none" />
+          <p className="mt-1 text-right text-label text-text-muted">{formData.description.length} / 1000 characters</p>
         </div>
       </div>
 
-      <div>
-        <h3 className="text-heading-3 font-bold text-text-primary">Property Description</h3>
-        <textarea
-          placeholder="Describe the property, highlighting key selling points..."
-          value={formData.description}
-          onChange={(e) => update('description', e.target.value.slice(0, 1000))}
-          rows={4}
-          className="mt-2 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
-        />
-        <p className="mt-1 text-right text-label text-text-muted">{formData.description.length} / 1000 characters</p>
+      {/* Property Specifications */}
+      <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
+        <div>
+          <h2 className="text-heading-3 font-bold text-text-primary">Property Specifications</h2>
+          <p className="mt-1 text-label text-text-muted">Details shown to tenants on the property listing page.</p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className="text-body font-medium text-text-primary">Bedrooms</label>
+            <select value={formData.bedrooms} onChange={(e) => update('bedrooms', parseInt(e.target.value))} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              {[1, 2, 3, 4, 5, 6].map((n) => (<option key={n} value={n}>{n} {n === 1 ? 'Bedroom' : 'Bedrooms'}</option>))}
+            </select>
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Bathrooms</label>
+            <select value={formData.bathrooms} onChange={(e) => update('bathrooms', parseInt(e.target.value))} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              {[1, 2, 3, 4, 5].map((n) => (<option key={n} value={n}>{n} {n === 1 ? 'Bathroom' : 'Bathrooms'}</option>))}
+            </select>
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Area (sqft)</label>
+            <input type="text" placeholder="e.g., 1,200" value={formData.sqft} onChange={(e) => update('sqft', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className="text-body font-medium text-text-primary">Furnishing Status</label>
+            <select value={formData.furnishingStatus} onChange={(e) => update('furnishingStatus', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option value="">Select</option>
+              <option>Furnished</option>
+              <option>Semi-Furnished</option>
+              <option>Unfurnished</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Facing</label>
+            <select value={formData.facing} onChange={(e) => update('facing', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option value="">Select</option>
+              <option>East</option>
+              <option>West</option>
+              <option>North</option>
+              <option>South</option>
+              <option>North-East</option>
+              <option>North-West</option>
+              <option>South-East</option>
+              <option>South-West</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Water Supply</label>
+            <select value={formData.waterSupply} onChange={(e) => update('waterSupply', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option value="">Select</option>
+              <option>Corporation</option>
+              <option>Borewell</option>
+              <option>Both</option>
+              <option>Tanker</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className="text-body font-medium text-text-primary">Floor</label>
+            <input type="text" placeholder="e.g., 4" value={formData.floor} onChange={(e) => update('floor', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Total Floors</label>
+            <input type="text" placeholder="e.g., 12" value={formData.totalFloors} onChange={(e) => update('totalFloors', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Balcony</label>
+            <select value={formData.balcony} onChange={(e) => update('balcony', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option>Yes</option>
+              <option>No</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className="text-body font-medium text-text-primary">Age of Building</label>
+            <select value={formData.ageOfBuilding} onChange={(e) => update('ageOfBuilding', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option value="">Select</option>
+              <option>Under Construction</option>
+              <option>Less than 1 Year</option>
+              <option>1-3 Years</option>
+              <option>3-5 Years</option>
+              <option>5-10 Years</option>
+              <option>10+ Years</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Preferred Tenant</label>
+            <select value={formData.preferredTenant} onChange={(e) => update('preferredTenant', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option value="">No Preference</option>
+              <option>Family</option>
+              <option>Bachelors / Singles</option>
+              <option>Working Professionals</option>
+              <option>Students</option>
+              <option>Company Lease</option>
+              <option>Any</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-body font-medium text-text-primary">Possession</label>
+            <select value={formData.possession} onChange={(e) => update('possession', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option>Immediately</option>
+              <option>Within 15 Days</option>
+              <option>Within 30 Days</option>
+              <option>After 30 Days</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <label className="text-body font-medium text-text-primary">Parking</label>
+            <select value={formData.parkingType} onChange={(e) => update('parkingType', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30">
+              <option value="">Select</option>
+              <option>Bike</option>
+              <option>Car</option>
+              <option>Bike and Car</option>
+              <option>None</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-4 rounded-button border border-outline bg-canvas-alt p-4 sm:flex-row sm:items-center sm:justify-between sm:col-span-2">
+            <div className="min-w-0">
+              <p className="text-body font-medium text-text-primary">Non-Veg Allowed</p>
+              <p className="text-label text-text-muted">Allow non-vegetarian cooking in the premises</p>
+            </div>
+            <button type="button" onClick={() => update('nonVegAllowed', !formData.nonVegAllowed)} className={cn('relative h-6 w-11 shrink-0 rounded-pill transition-colors', formData.nonVegAllowed ? 'bg-navy' : 'bg-slate-200')}>
+              <span className={cn('absolute left-0 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform', formData.nonVegAllowed ? 'translate-x-5' : 'translate-x-0.5')} />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 2: Property Location â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* --------- STEP 2: Property Location --------- */
 export function Step2Location({ formData, update }: StepProps) {
   return (
     <div className="space-y-6">
@@ -364,11 +427,15 @@ export function Step2Location({ formData, update }: StepProps) {
               <option>Mumbai</option>
               <option>Bangalore</option>
               <option>London</option>
+              <option>Delhi</option>
+              <option>Chennai</option>
+              <option>Hyderabad</option>
+              <option>Pune</option>
             </select>
           </div>
           <div>
             <label className="text-body font-medium text-text-primary">Neighborhood</label>
-            <input type="text" placeholder="Manhattan" value={formData.neighborhood} onChange={(e) => update('neighborhood', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+            <input type="text" placeholder="e.g., Indiranagar" value={formData.neighborhood} onChange={(e) => update('neighborhood', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
           </div>
         </div>
       </div>
@@ -399,11 +466,96 @@ export function Step2Location({ formData, update }: StepProps) {
           </div>
         </div>
       </div>
+
+      {/* What's Nearby */}
+      <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary"><MapPin size={20} className="text-primary" /> What&apos;s Nearby</h2>
+            <p className="mt-1 text-label text-text-muted">Add nearby places to help tenants evaluate the location.</p>
+          </div>
+        </div>
+
+        {/* Transit */}
+        <NearbySection
+          title="Transit - Bus Stations"
+          items={formData.nearby.transit.busStations}
+          onAdd={() => update('nearby', { ...formData.nearby, transit: { ...formData.nearby.transit, busStations: [...formData.nearby.transit.busStations, { name: '', distance: '', time: '' }] } })}
+          onRemove={(idx) => update('nearby', { ...formData.nearby, transit: { ...formData.nearby.transit, busStations: formData.nearby.transit.busStations.filter((_, i) => i !== idx) } })}
+          onChange={(idx, field, value) => update('nearby', { ...formData.nearby, transit: { ...formData.nearby.transit, busStations: formData.nearby.transit.busStations.map((item, i) => i === idx ? { ...item, [field]: value } : item) } })}
+        />
+        <NearbySection
+          title="Transit - Train Stations / Metro"
+          items={formData.nearby.transit.trainStations}
+          onAdd={() => update('nearby', { ...formData.nearby, transit: { ...formData.nearby.transit, trainStations: [...formData.nearby.transit.trainStations, { name: '', distance: '', time: '' }] } })}
+          onRemove={(idx) => update('nearby', { ...formData.nearby, transit: { ...formData.nearby.transit, trainStations: formData.nearby.transit.trainStations.filter((_, i) => i !== idx) } })}
+          onChange={(idx, field, value) => update('nearby', { ...formData.nearby, transit: { ...formData.nearby.transit, trainStations: formData.nearby.transit.trainStations.map((item, i) => i === idx ? { ...item, [field]: value } : item) } })}
+        />
+        <NearbySection
+          title="Transit - Airport"
+          items={formData.nearby.transit.airport}
+          onAdd={() => update('nearby', { ...formData.nearby, transit: { ...formData.nearby.transit, airport: [...formData.nearby.transit.airport, { name: '', distance: '', time: '' }] } })}
+          onRemove={(idx) => update('nearby', { ...formData.nearby, transit: { ...formData.nearby.transit, airport: formData.nearby.transit.airport.filter((_, i) => i !== idx) } })}
+          onChange={(idx, field, value) => update('nearby', { ...formData.nearby, transit: { ...formData.nearby.transit, airport: formData.nearby.transit.airport.map((item, i) => i === idx ? { ...item, [field]: value } : item) } })}
+        />
+        <NearbySection
+          title="Essentials (Grocery, Pharmacy, Clinic)"
+          items={formData.nearby.essentials}
+          onAdd={() => update('nearby', { ...formData.nearby, essentials: [...formData.nearby.essentials, { name: '', distance: '', time: '' }] })}
+          onRemove={(idx) => update('nearby', { ...formData.nearby, essentials: formData.nearby.essentials.filter((_, i) => i !== idx) })}
+          onChange={(idx, field, value) => update('nearby', { ...formData.nearby, essentials: formData.nearby.essentials.map((item, i) => i === idx ? { ...item, [field]: value } : item) })}
+        />
+        <NearbySection
+          title="Utility (ATM, Post Office, etc.)"
+          items={formData.nearby.utility}
+          onAdd={() => update('nearby', { ...formData.nearby, utility: [...formData.nearby.utility, { name: '', distance: '', time: '' }] })}
+          onRemove={(idx) => update('nearby', { ...formData.nearby, utility: formData.nearby.utility.filter((_, i) => i !== idx) })}
+          onChange={(idx, field, value) => update('nearby', { ...formData.nearby, utility: formData.nearby.utility.map((item, i) => i === idx ? { ...item, [field]: value } : item) })}
+        />
+      </div>
     </div>
   )
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 3: Amenities & Features â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* --------- Nearby Section Helper --------- */
+function NearbySection({ title, items, onAdd, onRemove, onChange }: {
+  title: string
+  items: { name: string; distance: string; time: string }[]
+  onAdd: () => void
+  onRemove: (idx: number) => void
+  onChange: (idx: number, field: 'name' | 'distance' | 'time', value: string) => void
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-body font-medium text-text-primary">{title}</p>
+        <button type="button" onClick={onAdd} className="inline-flex items-center gap-1 text-label font-bold text-primary hover:underline">
+          <Plus size={14} /> Add
+        </button>
+      </div>
+      {items.map((item, idx) => (
+        <div key={idx} className="grid gap-3 sm:grid-cols-[1fr_100px_100px_auto] items-end">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Name</label>
+            <input type="text" placeholder="e.g., Metro Station" value={item.name} onChange={(e) => onChange(idx, 'name', e.target.value)} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Distance</label>
+            <input type="text" placeholder="0.5 km" value={item.distance} onChange={(e) => onChange(idx, 'distance', e.target.value)} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Time</label>
+            <input type="text" placeholder="5 mins" value={item.time} onChange={(e) => onChange(idx, 'time', e.target.value)} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none" />
+          </div>
+          <button type="button" onClick={() => onRemove(idx)} className="h-10 px-2 rounded-input text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={14} /></button>
+        </div>
+      ))}
+      {items.length === 0 && <p className="text-label text-text-muted italic">No entries added yet.</p>}
+    </div>
+  )
+}
+
+/* --------- STEP 3: Amenities & Features --------- */
 export function Step3Amenities({ formData, update }: StepProps) {
   const amenities = formData.amenities
   const features = formData.buildingFeatures
@@ -431,13 +583,13 @@ export function Step3Amenities({ formData, update }: StepProps) {
     { key: 'security' as const, label: '24/7 Security', icon: ShieldCheck },
   ]
 
+  const ruleCategories = ['Health & Safety', 'Payments', 'Security', 'Lease', 'General']
+
   return (
     <div className="space-y-6">
       {/* General Amenities */}
       <div className="rounded-card border border-outline bg-white p-6 shadow-surface">
-        <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">
-          <Zap size={20} />General Amenities
-        </h2>
+        <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary"><Zap size={20} />General Amenities</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {amenityItems.map((a) => (
             <label key={a.key} className={cn('flex items-start gap-3 rounded-button border p-4 cursor-pointer transition-colors', amenities[a.key] ? 'border-navy bg-slate-50' : 'border-outline')}>
@@ -450,9 +602,7 @@ export function Step3Amenities({ formData, update }: StepProps) {
 
       {/* Building Features */}
       <div className="rounded-card border border-outline bg-white p-6 shadow-surface">
-        <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">
-          <Building2 size={20} />Building Features
-        </h2>
+        <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary"><Building2 size={20} />Building Features</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {featureItems.map((f) => {
             const Icon = f.icon
@@ -473,28 +623,49 @@ export function Step3Amenities({ formData, update }: StepProps) {
 
       {/* Special Features */}
       <div className="rounded-card border border-outline bg-white p-6 shadow-surface">
-        <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">
-          <Star size={20} />Special Features
-        </h2>
+        <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary"><Star size={20} />Special Features</h2>
         <div className="mt-4">
           <label className="text-body font-medium text-text-primary">Unique Selling Points</label>
-          <textarea
-            placeholder="Describe unique features like floor-to-ceiling windows, private balconies, or designer finishes..."
-            value={formData.sellingPoints}
-            onChange={(e) => update('sellingPoints', e.target.value)}
-            rows={3}
-            className="mt-1.5 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
-          />
+          <textarea placeholder="Describe unique features like floor-to-ceiling windows, private balconies, or designer finishes..." value={formData.sellingPoints} onChange={(e) => update('sellingPoints', e.target.value)} rows={3} className="mt-1.5 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none" />
         </div>
         <button type="button" className="mt-3 inline-flex items-center gap-1 rounded-button border border-outline px-3 py-2 text-label font-medium text-text-primary hover:bg-hover-light transition-colors">
           <Plus size={14} />Add custom tag
         </button>
       </div>
+
+      {/* Property Rules */}
+      <div className="rounded-card border border-outline bg-white p-6 shadow-surface space-y-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary"><ClipboardList size={20} />Property Rules</h2>
+            <p className="mt-1 text-label text-text-muted">Define rules that tenants must follow.</p>
+          </div>
+          <button type="button" onClick={() => update('rules', [...formData.rules, { rule: '', category: 'General' }])} className="inline-flex items-center gap-1 text-label font-bold text-primary hover:underline">
+            <Plus size={14} /> Add Rule
+          </button>
+        </div>
+        {formData.rules.map((r, idx) => (
+          <div key={idx} className="grid gap-3 sm:grid-cols-[1fr_180px_auto] items-end">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Rule</label>
+              <input type="text" placeholder="e.g., No smoking inside the unit" value={r.rule} onChange={(e) => { const updated = [...formData.rules]; updated[idx] = { ...updated[idx], rule: e.target.value }; update('rules', updated) }} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Category</label>
+              <select value={r.category} onChange={(e) => { const updated = [...formData.rules]; updated[idx] = { ...updated[idx], category: e.target.value }; update('rules', updated) }} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none">
+                {ruleCategories.map((cat) => <option key={cat}>{cat}</option>)}
+              </select>
+            </div>
+            <button type="button" onClick={() => update('rules', formData.rules.filter((_, i) => i !== idx))} className="h-10 px-2 rounded-input text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={14} /></button>
+          </div>
+        ))}
+        {formData.rules.length === 0 && <p className="text-label text-text-muted italic">No rules added yet. Click "Add Rule" to define property rules.</p>}
+      </div>
     </div>
   )
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 4: Media & Gallery â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* --------- STEP 4: Media & Gallery --------- */
 export function Step4Media({ formData, update }: StepProps) {
   return (
     <div className="space-y-6">
@@ -536,11 +707,7 @@ export function Step4Media({ formData, update }: StepProps) {
           {formData.photos.map((photo, idx) => (
             <div key={idx} className="relative h-32 overflow-hidden rounded-card">
               <img src={photo} alt={`Gallery ${idx + 1}`} className="h-full w-full object-cover" />
-              {idx === 0 && (
-                <span className="absolute left-2 top-2 rounded-pill bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
-                  Primary Cover
-                </span>
-              )}
+              {idx === 0 && <span className="absolute left-2 top-2 rounded-pill bg-primary px-2 py-0.5 text-[10px] font-bold text-white">Primary Cover</span>}
             </div>
           ))}
           <button type="button" className="flex h-32 flex-col items-center justify-center rounded-card border-2 border-dashed border-outline bg-canvas-alt text-text-muted hover:border-primary hover:text-primary transition-colors">
@@ -569,7 +736,7 @@ export function Step4Media({ formData, update }: StepProps) {
   )
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ STEP 5: Pricing & Lease â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* --------- STEP 5: Pricing & Lease --------- */
 export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps & { onComplete: () => void; goPrev: () => void }) {
   const [extraSlots, setExtraSlots] = useState<{ day: string; startTime: string; endTime: string }[]>(
     () => formData.preferredVisitSlots.length > 1 ? formData.preferredVisitSlots.slice(1) : []
@@ -579,7 +746,6 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
     update('utilities', { ...utilities, [key]: !utilities[key] })
   }
 
-  // Sync all slots (primary + extra) to formData whenever they change
   const syncSlots = (primary: { day: string; startTime: string; endTime: string }, extras: { day: string; startTime: string; endTime: string }[]) => {
     update('preferredVisitSlots', [primary, ...extras])
   }
@@ -597,13 +763,7 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
       <div className="rounded-card border border-outline bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-5">
           {steps.map((s) => (
-            <div
-              key={s.number}
-              className={cn(
-                'flex min-h-10 items-center gap-2 rounded-button px-3 py-2',
-                s.number === 5 ? 'bg-primary-100' : 'bg-canvas-alt'
-              )}
-            >
+            <div key={s.number} className={cn('flex min-h-10 items-center gap-2 rounded-button px-3 py-2', s.number === 5 ? 'bg-primary-100' : 'bg-canvas-alt')}>
               <div className={cn('flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold', s.number < 5 ? 'bg-primary text-white' : 'bg-navy text-white')}>
                 {s.number < 5 ? <Check size={12} /> : s.number}
               </div>
@@ -617,10 +777,7 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
         <div className="space-y-6">
           {/* Rental Details */}
           <div className="space-y-5 rounded-card border border-outline bg-white p-6 shadow-surface">
-            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">
-              <DollarSign size={20} className="text-primary" />
-              Rental Details
-            </h2>
+            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary"><DollarSign size={20} className="text-primary" />Rental Details</h2>
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_160px] lg:items-end">
               <div>
                 <label className="text-label font-medium text-text-muted">Base Rent (Monthly)</label>
@@ -663,10 +820,7 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
 
           {/* Lease Terms */}
           <div className="space-y-5 rounded-card border border-outline bg-white p-6 shadow-surface">
-            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">
-              <ClipboardList size={20} className="text-primary" />
-              Lease Terms
-            </h2>
+            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary"><ClipboardList size={20} className="text-primary" />Lease Terms</h2>
             <div>
               <label className="text-body font-medium text-text-primary">Utilities Included</label>
               <div className="mt-3 flex flex-wrap gap-3">
@@ -696,10 +850,7 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
         {/* Availability + Listing Summary */}
         <div className="space-y-6">
           <div className="space-y-5 rounded-card border border-outline bg-white p-6 shadow-surface">
-            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary">
-              <CalendarClock size={20} className="text-primary" />
-              Availability
-            </h2>
+            <h2 className="flex items-center gap-2 text-heading-3 font-bold text-text-primary"><CalendarClock size={20} className="text-primary" />Availability</h2>
             <div>
               <label className="text-label font-medium text-text-muted">Available From</label>
               <input type="text" value={formData.availableFrom} onChange={(e) => update('availableFrom', e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
@@ -709,28 +860,15 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
             <div>
               <div className="flex items-center justify-between">
                 <label className="text-label font-medium text-text-muted">Preferred Visit Timings</label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newSlots = [...extraSlots, { day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' }]
-                    setExtraSlots(newSlots)
-                    syncSlots({ day: formData.visitWeekday, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, newSlots)
-                  }}
-                  className="text-label font-bold text-primary hover:underline"
-                >
-                  + Add Slot
-                </button>
+                <button type="button" onClick={() => { const newSlots = [...extraSlots, { day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' }]; setExtraSlots(newSlots); syncSlots({ day: formData.visitWeekday, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, newSlots) }} className="text-label font-bold text-primary hover:underline">+ Add Slot</button>
               </div>
               <div className="mt-3 space-y-3">
-                {/* Primary slot */}
                 <div className="rounded-lg border border-outline bg-white p-3">
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div>
                       <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Day</label>
                       <select value={formData.visitWeekday} onChange={(e) => { update('visitWeekday', e.target.value); syncSlots({ day: e.target.value, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, extraSlots) }} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none">
-                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
-                          <option key={day}>{day}</option>
-                        ))}
+                        {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (<option key={day}>{day}</option>))}
                       </select>
                     </div>
                     <div>
@@ -743,17 +881,13 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
                     </div>
                   </div>
                 </div>
-
-                {/* Additional slots */}
                 {extraSlots.map((slot, index) => (
                   <div key={index} className="rounded-lg border border-outline bg-white p-3">
                     <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
                       <div>
                         <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Day</label>
                         <select value={slot.day} onChange={(e) => { const updated = extraSlots.map((s, i) => i === index ? { ...s, day: e.target.value } : s); setExtraSlots(updated); syncSlots({ day: formData.visitWeekday, startTime: formData.visitStartTime, endTime: formData.visitEndTime }, updated) }} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-label text-text-primary focus:border-primary focus:outline-none">
-                          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
-                            <option key={day}>{day}</option>
-                          ))}
+                          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (<option key={day}>{day}</option>))}
                         </select>
                       </div>
                       <div>
@@ -774,24 +908,14 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
               <p className="mt-2 text-[11px] text-text-muted">These timings will be shown to tenants when they schedule a property visit.</p>
             </div>
 
-            {/* Schedule On/Off Toggle */}
+            {/* Schedule On/Off */}
             <div className="rounded-lg border border-outline bg-white p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-label font-bold text-text-primary">Visit Scheduling</p>
-                  <p className="mt-0.5 text-[11px] text-text-muted">
-                    {formData.visitSchedulingEnabled ? 'Tenants can schedule visits for this property' : 'Visit scheduling is turned off — tenants cannot book visits'}
-                  </p>
+                  <p className="mt-0.5 text-[11px] text-text-muted">{formData.visitSchedulingEnabled ? 'Tenants can schedule visits for this property' : 'Visit scheduling is turned off'}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => update('visitSchedulingEnabled', !formData.visitSchedulingEnabled)}
-                  className={formData.visitSchedulingEnabled
-                    ? 'flex h-6 w-11 items-center justify-end rounded-pill bg-primary p-1'
-                    : 'flex h-6 w-11 items-center justify-start rounded-pill bg-slate-300 p-1'
-                  }
-                  aria-pressed={formData.visitSchedulingEnabled}
-                >
+                <button type="button" onClick={() => update('visitSchedulingEnabled', !formData.visitSchedulingEnabled)} className={formData.visitSchedulingEnabled ? 'flex h-6 w-11 items-center justify-end rounded-pill bg-primary p-1' : 'flex h-6 w-11 items-center justify-start rounded-pill bg-slate-300 p-1'} aria-pressed={formData.visitSchedulingEnabled}>
                   <span className="h-4 w-4 rounded-full bg-white shadow-sm" />
                 </button>
               </div>
@@ -818,9 +942,7 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
                 <span className="whitespace-nowrap text-body font-bold text-text-primary">${initialIntake.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
-            <p className="mt-3 text-label text-text-muted">
-              Includes First Month + {formData.securityDeposit}x Security Deposit. Subject to local tax regulations.
-            </p>
+            <p className="mt-3 text-label text-text-muted">Includes First Month + {formData.securityDeposit}x Security Deposit. Subject to local tax regulations.</p>
           </div>
         </div>
       </div>
@@ -839,7 +961,7 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
   )
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ Bottom Info Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* --------- Bottom Info Cards --------- */
 export function BottomInfoCards() {
   const cards = [
     { icon: ShieldCheck, title: 'Verified Listings', desc: 'Verified properties receive 5x more views and inquiries.', color: 'bg-primary-100 text-primary' },
@@ -867,7 +989,7 @@ export function BottomInfoCards() {
   )
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* --------- Types --------- */
 export type StepProps = {
   formData: OwnerRegisterPropertyFormData
   update: <K extends keyof OwnerRegisterPropertyFormData>(

@@ -23,6 +23,14 @@ export const PROTOTYPE_USER_IDS = {
   admin1: 'user-admin-1',
   tenantOwner: 'user-tenant-owner',
   enterprise1: 'user-enterprise-1',
+  // New enterprise ecosystem accounts
+  enterprise2: 'user-enterprise-2',
+  entTenant1: 'user-ent-tenant-1',
+  entTenant2: 'user-ent-tenant-2',
+  entTenant3: 'user-ent-tenant-3',
+  entTenant4: 'user-ent-tenant-4',
+  entBroker1: 'user-ent-broker-1',
+  entBroker2: 'user-ent-broker-2',
 } as const
 
 export const PROTOTYPE_PROPERTY_IDS = {
@@ -31,6 +39,9 @@ export const PROTOTYPE_PROPERTY_IDS = {
   owner1: 'property-owner-1',
   owner2: 'property-owner-2',
   tenantOwner1: 'property-tenant-owner-1',
+  enterpriseBlockA: 'property-enterprise-block-a',
+  enterpriseBlockB: 'property-enterprise-block-b',
+  enterpriseBlockC: 'property-enterprise-block-c',
 } as const
 
 export const PROTOTYPE_LISTING_IDS = {
@@ -345,6 +356,79 @@ export const prototypeUsers: PrototypeUser[] = [
     primaryRole: 'enterprise',
     avatar: avatars.owner,
   }),
+  // New Enterprise Account (fresh - no seeded properties)
+  createUser({
+    id: PROTOTYPE_USER_IDS.enterprise2,
+    accountName: 'Enterprise2',
+    phone: '9000005002',
+    firstName: 'Nexus',
+    lastName: 'Properties',
+    roles: ['enterprise'],
+    primaryRole: 'enterprise',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=160&q=80',
+  }),
+  // Enterprise Tenants (4 tenants)
+  createUser({
+    id: PROTOTYPE_USER_IDS.entTenant1,
+    accountName: 'EntTenant1',
+    phone: '9000006001',
+    firstName: 'Rahul',
+    lastName: 'Sharma',
+    roles: ['tenant'],
+    primaryRole: 'tenant',
+    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=160&q=80',
+  }),
+  createUser({
+    id: PROTOTYPE_USER_IDS.entTenant2,
+    accountName: 'EntTenant2',
+    phone: '9000006002',
+    firstName: 'Ananya',
+    lastName: 'Patel',
+    roles: ['tenant'],
+    primaryRole: 'tenant',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=160&q=80',
+  }),
+  createUser({
+    id: PROTOTYPE_USER_IDS.entTenant3,
+    accountName: 'EntTenant3',
+    phone: '9000006003',
+    firstName: 'Vikram',
+    lastName: 'Reddy',
+    roles: ['tenant'],
+    primaryRole: 'tenant',
+    avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=160&q=80',
+  }),
+  createUser({
+    id: PROTOTYPE_USER_IDS.entTenant4,
+    accountName: 'EntTenant4',
+    phone: '9000006004',
+    firstName: 'Meera',
+    lastName: 'Krishnan',
+    roles: ['tenant'],
+    primaryRole: 'tenant',
+    avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=160&q=80',
+  }),
+  // Enterprise Brokers (2 brokers)
+  createUser({
+    id: PROTOTYPE_USER_IDS.entBroker1,
+    accountName: 'EntBroker1',
+    phone: '9000007001',
+    firstName: 'Arjun',
+    lastName: 'Kapoor',
+    roles: ['broker'],
+    primaryRole: 'broker',
+    avatar: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=160&q=80',
+  }),
+  createUser({
+    id: PROTOTYPE_USER_IDS.entBroker2,
+    accountName: 'EntBroker2',
+    phone: '9000007002',
+    firstName: 'Priya',
+    lastName: 'Nair',
+    roles: ['broker'],
+    primaryRole: 'broker',
+    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=160&q=80',
+  }),
 ]
 
 export const prototypeProperties: PrototypeProperty[] = [
@@ -427,11 +511,100 @@ export const prototypeProperties: PrototypeProperty[] = [
   }),
 ]
 
+// ── Enterprise Block Properties ──
+function createEnterpriseBlockProperty(blockName: string, id: string, floors: number, totalUnits: number) {
+  // Blocks are created with empty units — units are added individually via "Add Unit"
+  const rentPerUnit = blockName === 'A' ? 45000 : blockName === 'B' ? 38000 : 52000
+
+  const property: import('@shared/types/prototype').PrototypeProperty = {
+    id,
+    ownerId: PROTOTYPE_USER_IDS.enterprise1,
+    title: `Meridian Heights - Block ${blockName}`,
+    propertyType: 'Commercial Complex',
+    description: `Block ${blockName} of The Meridian Heights enterprise complex. ${floors} floors, capacity for ${totalUnits} units. Add units individually to list them for tenants.`,
+    address: `The Meridian Heights, Block ${blockName}, Upper East Side`,
+    unit: `Block ${blockName}`,
+    postalCode: '10021',
+    city: 'New York',
+    neighborhood: 'Upper East Side',
+    price: `Rs. ${(rentPerUnit).toLocaleString('en-IN')}`,
+    pricePeriod: '/ mo',
+    deposit: `Rs. ${(rentPerUnit * 2).toLocaleString('en-IN')}`,
+    beds: 2,
+    baths: 2,
+    sqft: '1,200',
+    availableFrom: '2026-07-01',
+    visitWeekday: 'Saturday',
+    visitStartTime: '10:00 AM',
+    visitEndTime: '1:00 PM',
+    preferredVisitSlots: [
+      { day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' },
+      { day: 'Wednesday', startTime: '2:00 PM', endTime: '5:00 PM' },
+    ],
+    visitSchedulingEnabled: true,
+    leaseDuration: 12,
+    noticePeriod: '30',
+    image: blockName === 'A'
+      ? 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'
+      : blockName === 'B'
+        ? 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80'
+        : 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80',
+    gallery: [
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
+    ],
+    highlights: [
+      { label: 'No. of Floors', value: String(floors) },
+      { label: 'Total Units Capacity', value: String(totalUnits) },
+      { label: 'Units Added', value: '0' },
+      { label: 'Property Type', value: 'Enterprise Complex' },
+    ],
+    overviewSpecs: [
+      { label: 'Total Units', value: String(totalUnits) },
+      { label: 'Units Added', value: '0' },
+      { label: 'Floors', value: String(floors) },
+      { label: 'Block', value: blockName },
+    ],
+    overview: [`Block ${blockName} enterprise property — ${floors} floors, capacity for ${totalUnits} units. Use "Add Unit" to create individual units that tenants can browse.`],
+    amenities: [
+      { icon: 'security', label: '24/7 Security' },
+      { icon: 'local_parking', label: 'Covered Parking' },
+      { icon: 'fitness_center', label: 'Gym' },
+    ],
+    rules: [
+      { rule: 'Enterprise lease terms apply', category: 'Lease' },
+    ],
+    nearby,
+    noBrokerServices: false,
+    views: 0,
+    shortlists: 0,
+    contacts: 0,
+    enterpriseBlock: {
+      blockName,
+      floors,
+      unitsPerFloor: Math.ceil(totalUnits / floors),
+      units: [], // Empty — units added via Add Unit
+    },
+    createdAt: seedNow,
+    updatedAt: seedNow,
+  }
+  return property
+}
+
+// Add enterprise properties to the main array
+prototypeProperties.push(
+  createEnterpriseBlockProperty('A', PROTOTYPE_PROPERTY_IDS.enterpriseBlockA, 6, 24),
+  createEnterpriseBlockProperty('B', PROTOTYPE_PROPERTY_IDS.enterpriseBlockB, 8, 48),
+  createEnterpriseBlockProperty('C', PROTOTYPE_PROPERTY_IDS.enterpriseBlockC, 4, 12),
+)
+
 export const prototypeListings: PrototypeListing[] = [
   createListing(PROTOTYPE_LISTING_IDS.multi1, PROTOTYPE_PROPERTY_IDS.multi1, PROTOTYPE_USER_IDS.multiPropertyOwner, 'Recommended'),
   createListing(PROTOTYPE_LISTING_IDS.owner1, PROTOTYPE_PROPERTY_IDS.owner1, PROTOTYPE_USER_IDS.owner1),
   createListing(PROTOTYPE_LISTING_IDS.owner2, PROTOTYPE_PROPERTY_IDS.owner2, PROTOTYPE_USER_IDS.owner2),
   createListing(PROTOTYPE_LISTING_IDS.tenantOwner1, PROTOTYPE_PROPERTY_IDS.tenantOwner1, PROTOTYPE_USER_IDS.tenantOwner),
+  // Enterprise block-level listings are NOT created here.
+  // Individual unit listings are created via the "Add Unit" page.
 ]
 
 export const prototypeBrokerAssignments: BrokerAssignment[] = [
