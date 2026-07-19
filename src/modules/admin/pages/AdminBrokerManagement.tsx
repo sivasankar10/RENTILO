@@ -15,6 +15,8 @@ type TabFilter = 'All' | 'Active' | 'Banned'
 type EnterpriseTab = 'Enterprise' | 'Non-Enterprise'
 type SortKey = 'success' | 'deals' | 'active' | 'name'
 
+const BROKERS_PER_PAGE = 5
+
 function compareBrokers(a: AdminBroker, b: AdminBroker, sortKey: SortKey): number {
   switch (sortKey) {
     case 'success':
@@ -36,14 +38,12 @@ export function AdminBrokerManagement() {
   const queue = useAdminStore((s) => s.assignmentQueue)
   const setBrokerStatus = useAdminStore((s) => s.setBrokerStatus)
   const removeBroker = useAdminStore((s) => s.removeBroker)
-  const removeEnterpriseBroker = useAdminStore((s) => s.removeEnterpriseBroker)
   const navigate = useNavigate()
 
   // Dynamic non-enterprise brokers from prototype store
   const prototypeAssignments = usePrototypeStore((s) => s.brokerAssignments)
   const prototypeUsers = usePrototypeStore((s) => s.users)
   const prototypeProperties = usePrototypeStore((s) => s.properties)
-  const removeBrokerAssignment = usePrototypeStore((s) => s.removeBrokerAssignment)
 
   const nonEnterpriseBrokers = useMemo(() => {
     return prototypeAssignments
@@ -73,6 +73,7 @@ export function AdminBrokerManagement() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('success')
   const [currentPage, setCurrentPage] = useState(1)
+  const [enterprisePage, setEnterprisePage] = useState(1)
 
   const filteredBrokers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -91,6 +92,24 @@ export function AdminBrokerManagement() {
 
     return [...filtered].sort((a, b) => compareBrokers(a, b, sortKey))
   }, [brokers, activeTab, searchQuery, sortKey])
+
+  const totalPages = Math.max(1, Math.ceil(filteredBrokers.length / BROKERS_PER_PAGE))
+  const safePage = Math.min(currentPage, totalPages)
+  const pagedBrokers = filteredBrokers.slice(
+    (safePage - 1) * BROKERS_PER_PAGE,
+    safePage * BROKERS_PER_PAGE,
+  )
+  const rangeStart = filteredBrokers.length === 0 ? 0 : (safePage - 1) * BROKERS_PER_PAGE + 1
+  const rangeEnd = Math.min(safePage * BROKERS_PER_PAGE, filteredBrokers.length)
+
+  // Pagination for the Enterprise / Non-Enterprise tabbed table (active list only).
+  const activeEnterpriseList = enterpriseTab === 'Enterprise' ? enterpriseBrokers : nonEnterpriseBrokers
+  const entTotalPages = Math.max(1, Math.ceil(activeEnterpriseList.length / BROKERS_PER_PAGE))
+  const entSafePage = Math.min(enterprisePage, entTotalPages)
+  const entStartIdx = (entSafePage - 1) * BROKERS_PER_PAGE
+  const pagedEnterpriseList = activeEnterpriseList.slice(entStartIdx, entStartIdx + BROKERS_PER_PAGE)
+  const entRangeStart = activeEnterpriseList.length === 0 ? 0 : entStartIdx + 1
+  const entRangeEnd = Math.min(entStartIdx + BROKERS_PER_PAGE, activeEnterpriseList.length)
 
   const handleSortChange = (nextSortKey: SortKey) => {
     setSortKey(nextSortKey)
@@ -198,21 +217,18 @@ export function AdminBrokerManagement() {
             title="Attention Required"
             value="3 Expiring Deal Windows"
             description="Review active windows before automatic termination."
-            onClick={() => toast.info('Review queue opened', 'Showing 3 deals nearing expiry.')}
           />
           <AlertCard
             tone="error"
             title="System Alert"
             value="2 Failed Deals"
             description="Transactions flagged for non-compliance or timeout."
-            onClick={() => toast.info('Compliance log opened', 'Routing to investigation panel.')}
           />
           <AlertCard
             tone="success"
             title="Performance"
             value="94.2% Success Rate"
             description="Avg broker performance is up 2.4% this month."
-            onClick={() => toast.info('Performance details', 'Opening detailed analytics view.')}
           />
         </div>
 
@@ -291,7 +307,7 @@ export function AdminBrokerManagement() {
                     </td>
                   </tr>
                 ) : (
-                  filteredBrokers.map((broker) => (
+                  pagedBrokers.map((broker) => (
                     <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -343,21 +359,35 @@ export function AdminBrokerManagement() {
 
           <div className="flex items-center justify-between border-t border-outline px-6 py-4">
             <p className="text-label text-text-muted">
-              Showing {filteredBrokers.length} of {brokers.length} brokers
+              Showing {rangeStart}–{rangeEnd} of {filteredBrokers.length} brokers
             </p>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="rounded-button px-3 py-1.5 text-label font-medium text-text-muted hover:bg-hover-light transition-colors">Previous</button>
-              {[1, 2, 3].map((page) => (
+              <button
+                type="button"
+                onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
+                disabled={safePage === 1}
+                className="rounded-button px-3 py-1.5 text-label font-medium text-text-muted hover:bg-hover-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   type="button"
                   onClick={() => setCurrentPage(page)}
-                  className={cn('h-8 w-8 rounded-button text-label font-medium transition-colors', currentPage === page ? 'bg-primary text-white' : 'text-text-muted hover:bg-hover-light')}
+                  className={cn('h-8 w-8 rounded-button text-label font-medium transition-colors', safePage === page ? 'bg-primary text-white' : 'text-text-muted hover:bg-hover-light')}
                 >
                   {page}
                 </button>
               ))}
-              <button type="button" onClick={() => setCurrentPage((p) => Math.min(3, p + 1))} className="rounded-button px-3 py-1.5 text-label font-medium text-text-muted hover:bg-hover-light transition-colors">Next</button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
+                disabled={safePage === totalPages}
+                className="rounded-button px-3 py-1.5 text-label font-medium text-text-muted hover:bg-hover-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>
@@ -370,7 +400,7 @@ export function AdminBrokerManagement() {
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => setEnterpriseTab(tab)}
+                  onClick={() => { setEnterpriseTab(tab); setEnterprisePage(1) }}
                   className={cn(
                     'px-8 py-4 text-heading-3 font-bold transition-colors border-b-2',
                     enterpriseTab === tab ? 'border-navy text-text-primary' : 'border-transparent text-text-muted hover:text-text-primary',
@@ -390,19 +420,18 @@ export function AdminBrokerManagement() {
                     <th className="px-4 py-3 text-left text-filter-label uppercase tracking-wider text-text-muted">Property</th>
                     <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Valuation (In Lakhs)</th>
                     <th className="px-4 py-3 text-center text-filter-label uppercase tracking-wider text-text-muted">Status</th>
-                    <th className="w-10 px-2 py-3" />
                   </tr>
                 </thead>
                 <tbody>
                   {enterpriseTab === 'Enterprise' ? (
-                    enterpriseBrokers.length === 0 ? (
+                    activeEnterpriseList.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-10 text-center text-body text-text-muted">
+                        <td colSpan={5} className="py-10 text-center text-body text-text-muted">
                           No enterprise brokers to display.
                         </td>
                       </tr>
                     ) : (
-                      enterpriseBrokers.map((broker) => (
+                      pagedEnterpriseList.map((broker) => (
                         <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -424,43 +453,19 @@ export function AdminBrokerManagement() {
                           <td className="px-4 py-4 text-center text-body text-text-primary">{broker.valuation}</td>
                           <td className="px-4 py-4 text-center text-body font-semibold text-text-primary">
                             {broker.status}
-                          </td>
-                          <td className="px-2 py-4 text-center">
-                            <ActionMenu
-                              ariaLabel={`Actions for ${broker.name}`}
-                              items={[
-                                { label: 'View deal', icon: Eye, onClick: () => toast.info('Deal opened', `Showing details for ${broker.property}.`) },
-                                { label: 'Send message', icon: Mail, onClick: () => toast.success('Message sent', `Notified ${broker.name}.`) },
-                                {
-                                  label: 'Remove from deal',
-                                  icon: Trash2,
-                                  variant: 'danger',
-                                  onClick: () => confirm({
-                                    title: 'Remove from deal?',
-                                    description: `${broker.name} will be unassigned from ${broker.property}.`,
-                                    confirmLabel: 'Remove',
-                                    variant: 'danger',
-                                    onConfirm: () => {
-                                      removeEnterpriseBroker(broker.id)
-                                      toast.success('Broker removed from deal')
-                                    },
-                                  }),
-                                },
-                              ]}
-                            />
                           </td>
                         </tr>
                       ))
                     )
                   ) : (
-                    nonEnterpriseBrokers.length === 0 ? (
+                    activeEnterpriseList.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-10 text-center text-body text-text-muted">
+                        <td colSpan={5} className="py-10 text-center text-body text-text-muted">
                           No non-enterprise broker assignments yet.
                         </td>
                       </tr>
                     ) : (
-                      nonEnterpriseBrokers.map((broker) => (
+                      pagedEnterpriseList.map((broker) => (
                         <tr key={broker.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -482,30 +487,6 @@ export function AdminBrokerManagement() {
                           <td className="px-4 py-4 text-center text-body text-text-primary">{broker.valuation}</td>
                           <td className="px-4 py-4 text-center text-body font-semibold text-text-primary">
                             {broker.status}
-                          </td>
-                          <td className="px-2 py-4 text-center">
-                            <ActionMenu
-                              ariaLabel={`Actions for ${broker.name}`}
-                              items={[
-                                { label: 'View details', icon: Eye, onClick: () => navigate(`/admin/broker-management/deal/${broker.id}`) },
-                                { label: 'Send message', icon: Mail, onClick: () => navigate(`${ROUTES.ADMIN.MESSAGES}?user=${encodeURIComponent(broker.brokerId)}`) },
-                                {
-                                  label: 'Remove assignment',
-                                  icon: Trash2,
-                                  variant: 'danger',
-                                  onClick: () => confirm({
-                                    title: 'Remove broker assignment?',
-                                    description: `${broker.name} will be unassigned from ${broker.property}.`,
-                                    confirmLabel: 'Remove',
-                                    variant: 'danger',
-                                    onConfirm: () => {
-                                      removeBrokerAssignment(broker.propertyId, broker.brokerId)
-                                      toast.success('Broker assignment removed')
-                                    },
-                                  }),
-                                },
-                              ]}
-                            />
                           </td>
                         </tr>
                       ))
@@ -513,6 +494,42 @@ export function AdminBrokerManagement() {
                   )}
                 </tbody>
               </table>
+
+              {activeEnterpriseList.length > 0 && (
+                <div className="flex items-center justify-between border-t border-outline px-6 py-4">
+                  <p className="text-label text-text-muted">
+                    Showing {entRangeStart}–{entRangeEnd} of {activeEnterpriseList.length} brokers
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setEnterprisePage(Math.max(1, entSafePage - 1))}
+                      disabled={entSafePage === 1}
+                      className="rounded-button px-3 py-1.5 text-label font-medium text-text-muted hover:bg-hover-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: entTotalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setEnterprisePage(page)}
+                        className={cn('h-8 w-8 rounded-button text-label font-medium transition-colors', entSafePage === page ? 'bg-primary text-white' : 'text-text-muted hover:bg-hover-light')}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setEnterprisePage(Math.min(entTotalPages, entSafePage + 1))}
+                      disabled={entSafePage === entTotalPages}
+                      className="rounded-button px-3 py-1.5 text-label font-medium text-text-muted hover:bg-hover-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -628,21 +645,15 @@ function AlertCard({
   title,
   value,
   description,
-  onClick,
 }: {
   tone: 'error' | 'success'
   title: string
   value: string
   description: string
-  onClick: () => void
 }) {
   const Icon = tone === 'success' ? TrendingUp : AlertCircle
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="text-left rounded-card border border-outline bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
-    >
+    <div className="rounded-card border border-outline bg-white p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <div
           className={cn(
@@ -658,7 +669,7 @@ function AlertCard({
           <p className="mt-0.5 text-label text-text-muted">{description}</p>
         </div>
       </div>
-    </button>
+    </div>
   )
 }
 

@@ -3,26 +3,82 @@ import { Bell, Star } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@shared/constants/routes'
 import { useOnboardingStore, tenantCanViewAgreement } from '@shared/store/onboardingStore'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { TenantAccountSidebar } from '../components/TenantAccountSidebar'
 import { TenantHomeBackBar } from '../components/TenantHomeBackBar'
 import { useTenantId } from '../hooks/useTenantId'
 
 const filters = ['All', 'Unread', 'Important'] as const
 
+type TenantNotification = {
+  id: string
+  title: string
+  description: string
+  unread: boolean
+  important: boolean
+  createdAt: string
+  source: 'onboarding' | 'proto'
+  onboardingId?: string
+  action?: string
+}
+
 export function NotificationsPage() {
   const navigate = useNavigate()
   const tenantId = useTenantId()
   const [filter, setFilter] = useState<(typeof filters)[number]>('All')
-  const notifications = useOnboardingStore((state) => state.notifications.filter((item) => item.audience === 'tenant'))
+
+  // Onboarding-workflow notifications (agreements, payments, check-in) tied to this tenant's records.
+  const onboardingNotifications = useOnboardingStore((state) => state.notifications.filter((item) => item.audience === 'tenant'))
   const records = useOnboardingStore((state) => state.records)
   const markRead = useOnboardingStore((state) => state.markNotificationRead)
   const toggleImportant = useOnboardingStore((state) => state.toggleNotificationImportant)
-  const tenantNotifications = notifications.filter((item) => records.some((record) => record.id === item.onboardingId && record.tenant.id === tenantId))
-  const unreadCount = tenantNotifications.filter((item) => item.unread).length
-  const visible = tenantNotifications.filter((item) => filter === 'All' || (filter === 'Unread' ? item.unread : item.important))
+  const tenantOnboardingNotifs = onboardingNotifications.filter((item) => records.some((record) => record.id === item.onboardingId && record.tenant.id === tenantId))
 
-  const open = (notification: (typeof notifications)[number]) => {
-    markRead(notification.id)
+  // Admin broadcasts from the prototype store (targeted at tenants or everyone).
+  const protoNotifications = usePrototypeStore((state) =>
+    state.notifications.filter(
+      (n) => n.userId === tenantId || ((n.role === 'tenant' || n.role === 'all') && !n.userId),
+    ),
+  )
+  const markProtoRead = usePrototypeStore((state) => state.markNotificationRead)
+
+  const merged: TenantNotification[] = [
+    ...tenantOnboardingNotifs.map((n) => ({
+      id: n.id,
+      title: n.title,
+      description: n.description,
+      unread: n.unread,
+      important: n.important,
+      createdAt: n.createdAt,
+      action: n.action,
+      onboardingId: n.onboardingId,
+      source: 'onboarding' as const,
+    })),
+    ...protoNotifications.map((n) => ({
+      id: n.id,
+      title: n.title,
+      description: n.description,
+      unread: n.unread,
+      important: n.important,
+      createdAt: new Date(n.createdAt).toLocaleString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      }),
+      source: 'proto' as const,
+    })),
+  ].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+
+  const unreadCount = merged.filter((item) => item.unread).length
+  const visible = merged.filter((item) => filter === 'All' || (filter === 'Unread' ? item.unread : item.important))
+
+  const markNotificationRead = (notification: TenantNotification) => {
+    if (notification.source === 'proto') markProtoRead(notification.id)
+    else markRead(notification.id)
+  }
+
+  const open = (notification: TenantNotification) => {
+    markNotificationRead(notification)
+    // Broadcasts have no workflow target — reading them is enough.
+    if (notification.source === 'proto') return
     const record = records.find((item) => item.id === notification.onboardingId && item.tenant.id === tenantId)
     if (!record) return
     if (notification.action === 'review_agreement' && tenantCanViewAgreement(record)) {
@@ -40,7 +96,7 @@ export function NotificationsPage() {
           <TenantHomeBackBar />
           <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div><h1 className="font-display text-[32px] font-extrabold text-brand">Notifications</h1><p className="mt-2 font-body text-[15px] text-brand-on-surface-variant">Follow application approvals, agreements, payments, and check-in.</p></div>
-            <div className="flex flex-col items-start gap-2 sm:items-end"><div className="flex rounded-full bg-brand-container-high p-1">{filters.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={filter === item ? 'rounded-full bg-white px-4 py-2 text-sm font-bold text-brand shadow-sm' : 'px-4 py-2 text-sm font-semibold text-brand-outline'}>{item}{item === 'Unread' && unreadCount ? ` (${unreadCount})` : ''}</button>)}</div><button type="button" disabled={!unreadCount} onClick={() => tenantNotifications.forEach((item) => item.unread && markRead(item.id))} className="text-xs font-bold text-brand disabled:opacity-40">Mark all as read</button></div>
+            <div className="flex flex-col items-start gap-2 sm:items-end"><div className="flex rounded-full bg-brand-container-high p-1">{filters.map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={filter === item ? 'rounded-full bg-white px-4 py-2 text-sm font-bold text-brand shadow-sm' : 'px-4 py-2 text-sm font-semibold text-brand-outline'}>{item}{item === 'Unread' && unreadCount ? ` (${unreadCount})` : ''}</button>)}</div><button type="button" disabled={!unreadCount} onClick={() => merged.forEach((item) => item.unread && markNotificationRead(item))} className="text-xs font-bold text-brand disabled:opacity-40">Mark all as read</button></div>
           </header>
 
           <section className="mt-8 space-y-4">
@@ -49,7 +105,9 @@ export function NotificationsPage() {
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-brand"><Bell size={19} /></div>
                   <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="font-body text-sm font-bold text-brand">{notification.title}</h2>{notification.unread && <span className="h-2 w-2 rounded-full bg-blue-500" />}{notification.important && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700">Important</span>}</div><p className="mt-1 font-body text-sm text-brand-on-surface-variant">{notification.description}</p><p className="mt-2 text-[11px] font-bold uppercase text-brand-outline">{notification.createdAt}</p></div>
-                  <button type="button" onClick={(event) => { event.stopPropagation(); toggleImportant(notification.id) }} className={notification.important ? 'p-2 text-amber-600' : 'p-2 text-brand-outline'}><Star size={18} fill={notification.important ? 'currentColor' : 'none'} /></button>
+                  {notification.source === 'onboarding' && (
+                    <button type="button" onClick={(event) => { event.stopPropagation(); toggleImportant(notification.id) }} className={notification.important ? 'p-2 text-amber-600' : 'p-2 text-brand-outline'}><Star size={18} fill={notification.important ? 'currentColor' : 'none'} /></button>
+                  )}
                 </div>
               </article>
             ))}

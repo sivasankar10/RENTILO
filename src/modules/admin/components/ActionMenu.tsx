@@ -18,7 +18,9 @@ interface ActionMenuProps {
 
 export function ActionMenu({ items, ariaLabel = 'Open actions menu' }: ActionMenuProps) {
   const [open, setOpen] = useState(false)
+  const [openUp, setOpenUp] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -31,14 +33,27 @@ export function ActionMenu({ items, ariaLabel = 'Open actions menu' }: ActionMen
     return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setOpen((prev) => {
+      const next = !prev
+      // Decide direction when opening: flip up if there isn't room below.
+      if (next && triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect()
+        const estimatedHeight = items.length * 40 + 8
+        const spaceBelow = window.innerHeight - rect.bottom
+        setOpenUp(spaceBelow < estimatedHeight && rect.top > estimatedHeight)
+      }
+      return next
+    })
+  }
+
   return (
     <div ref={ref} className="relative inline-block">
       <button
+        ref={triggerRef}
         type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          setOpen((v) => !v)
-        }}
+        onClick={handleToggle}
         className="p-1.5 rounded-button text-text-muted hover:bg-hover-light hover:text-text-primary transition-colors"
         aria-label={ariaLabel}
         aria-expanded={open}
@@ -48,7 +63,10 @@ export function ActionMenu({ items, ariaLabel = 'Open actions menu' }: ActionMen
 
       {open && (
         <div
-          className="absolute right-0 top-full z-30 mt-1 min-w-[180px] rounded-card border border-outline bg-white py-1 shadow-modal"
+          className={cn(
+            'absolute right-0 z-30 min-w-[180px] rounded-card border border-outline bg-white py-1 shadow-modal',
+            openUp ? 'bottom-full mb-1' : 'top-full mt-1',
+          )}
           role="menu"
           onClick={(e) => e.stopPropagation()}
         >

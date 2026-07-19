@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Ban, ChevronLeft, ChevronRight, Eye, Filter, Info, MessageSquare, Search, Send, Trash2, UserCheck } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
@@ -28,6 +28,8 @@ const statusColors = {
   Active: 'bg-status-success-bg text-status-success-text',
   'Temp Banned': 'bg-slate-100 text-slate-600',
 } as const
+
+const PAGE_SIZE = 8
 
 export function AdminUserManagement() {
   const navigate = useNavigate()
@@ -60,6 +62,26 @@ export function AdminUserManagement() {
       return true
     })
   }, [users, roleFilter, statusFilter, searchQuery])
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE))
+
+  // Keep the current page in range when the filtered results shrink.
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages))
+  }, [totalPages])
+
+  // Reset to the first page whenever the filters or search change.
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [roleFilter, statusFilter, searchQuery])
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return filteredUsers.slice(start, start + PAGE_SIZE)
+  }, [filteredUsers, currentPage])
+
+  const rangeStart = filteredUsers.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, filteredUsers.length)
 
   const handleBroadcast = () => {
     if (!notificationTitle.trim()) {
@@ -274,14 +296,14 @@ export function AdminUserManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.length === 0 ? (
+                {paginatedUsers.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-10 text-center text-body text-text-muted">
                       No users match the current filters.
                     </td>
                   </tr>
                 ) : (
-                  filteredUsers.map((user) => (
+                  paginatedUsers.map((user) => (
                     <tr key={user.id} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -342,23 +364,38 @@ export function AdminUserManagement() {
 
           <div className="flex items-center justify-between border-t border-outline px-6 py-4">
             <p className="text-label text-text-muted">
-              Showing {filteredUsers.length} of {users.length} users
+              {filteredUsers.length === 0
+                ? 'Showing 0 of 0 users'
+                : `Showing ${rangeStart}-${rangeEnd} of ${filteredUsers.length} users`}
             </p>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="flex h-8 w-8 items-center justify-center rounded-button text-text-muted hover:bg-hover-light transition-colors" aria-label="Previous page">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex h-8 w-8 items-center justify-center rounded-button text-text-muted hover:bg-hover-light transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Previous page"
+              >
                 <ChevronLeft size={16} />
               </button>
-              {[1, 2, 3].map((page) => (
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   type="button"
                   onClick={() => setCurrentPage(page)}
+                  aria-current={currentPage === page ? 'page' : undefined}
                   className={cn('h-8 w-8 rounded-button text-label font-medium transition-colors', currentPage === page ? 'bg-navy text-white' : 'text-text-muted hover:bg-hover-light border border-outline')}
                 >
                   {page}
                 </button>
               ))}
-              <button type="button" onClick={() => setCurrentPage((p) => Math.min(3, p + 1))} className="flex h-8 w-8 items-center justify-center rounded-button text-text-muted hover:bg-hover-light transition-colors" aria-label="Next page">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-button text-text-muted hover:bg-hover-light transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Next page"
+              >
                 <ChevronRight size={16} />
               </button>
             </div>

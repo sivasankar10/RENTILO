@@ -210,7 +210,7 @@ export function OwnerLayout() {
   // Unread notification count from prototypeStore (broker requests, assignments etc.)
   const unreadProtoCount = usePrototypeStore((state) =>
     state.notifications.filter(
-      (n) => n.unread && (n.userId === user?.id || (n.role === 'owner' && !n.userId)),
+      (n) => n.unread && (n.userId === user?.id || ((n.role === 'owner' || n.role === 'all') && !n.userId)),
     ).length,
   )
   

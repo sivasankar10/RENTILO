@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, ChevronLeft, ChevronRight, Eye, Flag, Home, Pause, Pencil, Play, Plus, Search, ShieldAlert, Trash2 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
@@ -16,6 +16,8 @@ type OccupancyStatus = 'Occupied' | 'Pending' | null
 
 type ListingTab = 'Enterprise' | 'Non-Enterprise'
 type SortKey = 'latest' | 'highest-rent' | 'lowest-rent' | 'updated'
+
+const PAGE_SIZE = 5
 
 const statusColors: Record<ListingStatus, string> = {
   Active: 'bg-status-success-bg text-status-success-text',
@@ -83,6 +85,26 @@ export function AdminListingManagement() {
     if (sortBy === 'lowest-rent') data = [...data].sort((a, b) => parseRent(a.rent) - parseRent(b.rent))
     return data
   }, [listings, segment, statusFilter, searchQuery, sortBy])
+
+  const totalPages = Math.max(1, Math.ceil(filteredListings.length / PAGE_SIZE))
+
+  // Keep the current page in range when the filtered results shrink.
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages))
+  }, [totalPages])
+
+  // Reset to the first page whenever the filters or search change.
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [segment, statusFilter, searchQuery, sortBy])
+
+  const paginatedListings = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return filteredListings.slice(start, start + PAGE_SIZE)
+  }, [filteredListings, currentPage])
+
+  const rangeStart = filteredListings.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, filteredListings.length)
 
   const stats = useMemo(() => {
     const segmentListings = listings.filter((l) => l.segment === segment)
@@ -274,14 +296,14 @@ export function AdminListingManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filteredListings.length === 0 ? (
+                {paginatedListings.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-10 text-center text-body text-text-muted">
                       No listings match the current filters.
                     </td>
                   </tr>
                 ) : (
-                  filteredListings.map((listing) => (
+                  paginatedListings.map((listing) => (
                     <tr
                       key={listing.id}
                       onClick={() => handleRowClick(listing)}
@@ -339,23 +361,38 @@ export function AdminListingManagement() {
 
           <div className="flex items-center justify-between border-t border-outline px-6 py-4">
             <p className="text-label text-text-muted">
-              Showing {filteredListings.length} of {stats.total} listings
+              {filteredListings.length === 0
+                ? 'Showing 0 of 0 listings'
+                : `Showing ${rangeStart}-${rangeEnd} of ${filteredListings.length} listings`}
             </p>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="flex h-8 w-8 items-center justify-center rounded-button text-text-muted hover:bg-hover-light transition-colors" aria-label="Previous page">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex h-8 w-8 items-center justify-center rounded-button text-text-muted hover:bg-hover-light transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Previous page"
+              >
                 <ChevronLeft size={16} />
               </button>
-              {[1, 2, 3].map((page) => (
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   type="button"
                   onClick={() => setCurrentPage(page)}
+                  aria-current={currentPage === page ? 'page' : undefined}
                   className={cn('h-8 w-8 rounded-button text-label font-medium transition-colors', currentPage === page ? 'bg-navy text-white' : 'text-text-muted hover:bg-hover-light border border-outline')}
                 >
                   {page}
                 </button>
               ))}
-              <button type="button" onClick={() => setCurrentPage((p) => Math.min(3, p + 1))} className="flex h-8 w-8 items-center justify-center rounded-button text-text-muted hover:bg-hover-light transition-colors" aria-label="Next page">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex h-8 w-8 items-center justify-center rounded-button text-text-muted hover:bg-hover-light transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Next page"
+              >
                 <ChevronRight size={16} />
               </button>
             </div>
