@@ -22,6 +22,8 @@ export function useTenantMarketplace() {
       const property = properties.find((item) => item.id === listing.propertyId)
       const owner = users.find((item) => item.id === listing.ownerId)
       if (!property || !owner) return null
+      // Skip block-level enterprise properties — only show individual units
+      if (property.enterpriseBlock) return null
       return {
         listing,
         property,

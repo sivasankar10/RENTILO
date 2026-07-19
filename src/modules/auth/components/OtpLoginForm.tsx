@@ -100,6 +100,44 @@ export function OtpLoginForm() {
 
       <p className="text-label text-text-muted text-center px-2">{AUTH_MOCK_HINT}</p>
 
+      {/* Test Credentials */}
+      <div className="rounded-card border border-outline bg-canvas-alt p-4 space-y-3">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-text-muted text-center">Test Accounts (OTP: 123456)</p>
+        <div className="grid grid-cols-2 gap-2 text-[12px]">
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold uppercase text-text-muted">Tenants</p>
+            <p className="font-mono text-text-primary">9000001001</p>
+            <p className="font-mono text-text-primary">9000001002</p>
+            <p className="font-mono text-text-primary">9000006001</p>
+            <p className="font-mono text-text-primary">9000006002</p>
+            <p className="font-mono text-text-primary">9000006003</p>
+            <p className="font-mono text-text-primary">9000006004</p>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold uppercase text-text-muted">Owners</p>
+            <p className="font-mono text-text-primary">9000002001 <span className="text-text-muted">(Multi)</span></p>
+            <p className="font-mono text-text-primary">9000002002</p>
+            <p className="font-mono text-text-primary">9000002003</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-[12px]">
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold uppercase text-text-muted">Brokers</p>
+            <p className="font-mono text-text-primary">9000003001</p>
+            <p className="font-mono text-text-primary">9000003002</p>
+            <p className="font-mono text-text-primary">9000007001</p>
+            <p className="font-mono text-text-primary">9000007002</p>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-bold uppercase text-text-muted">Enterprise</p>
+            <p className="font-mono text-text-primary">9000005001</p>
+            <p className="font-mono text-text-primary">9000005002 <span className="text-text-muted">(New)</span></p>
+            <p className="text-[10px] font-bold uppercase text-text-muted mt-2">Admin</p>
+            <p className="font-mono text-text-primary">9000009001</p>
+          </div>
+        </div>
+      </div>
+
       <p className="text-center text-body text-text-muted">
         New to Rentilo?{' '}
         <Link to={ROUTES.AUTH.REGISTER} className="text-primary font-semibold hover:underline">

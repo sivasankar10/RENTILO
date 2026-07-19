@@ -40,6 +40,22 @@ export interface OwnerRegisterPropertyFormData {
   referenceId: string
   currentStatus: string
   description: string
+  // Property specs
+  bedrooms: number
+  bathrooms: number
+  sqft: string
+  furnishingStatus: string
+  facing: string
+  floor: string
+  totalFloors: string
+  balcony: string
+  ageOfBuilding: string
+  preferredTenant: string
+  possession: string
+  parkingType: string
+  waterSupply: string
+  nonVegAllowed: boolean
+  // Location
   streetAddress: string
   unit: string
   postalCode: string
@@ -47,6 +63,7 @@ export interface OwnerRegisterPropertyFormData {
   neighborhood: string
   residentialZoning: boolean
   mixedUse: boolean
+  // Amenities & features
   amenities: {
     wifi: boolean
     ac: boolean
@@ -63,8 +80,22 @@ export interface OwnerRegisterPropertyFormData {
   }
   sellingPoints: string
   customTags: string[]
+  // Nearby places
+  nearby: {
+    essentials: { name: string; distance: string; time: string }[]
+    utility: { name: string; distance: string; time: string }[]
+    transit: {
+      busStations: { name: string; distance: string; time: string }[]
+      airport: { name: string; distance: string; time: string }[]
+      trainStations: { name: string; distance: string; time: string }[]
+    }
+  }
+  // Property rules
+  rules: { rule: string; category: string }[]
+  // Media
   photos: string[]
   virtualTourUrl: string
+  // Pricing & lease
   baseRent: string
   priceNegotiable: boolean
   securityDeposit: string
@@ -192,6 +223,22 @@ const initialRegisterPropertyDraft: OwnerRegisterPropertyFormData = {
   referenceId: '',
   currentStatus: 'Available for Rent',
   description: '',
+  // Property specs
+  bedrooms: 1,
+  bathrooms: 1,
+  sqft: '',
+  furnishingStatus: '',
+  facing: '',
+  floor: '',
+  totalFloors: '',
+  balcony: 'No',
+  ageOfBuilding: '',
+  preferredTenant: '',
+  possession: 'Immediately',
+  parkingType: '',
+  waterSupply: '',
+  nonVegAllowed: true,
+  // Location
   streetAddress: '',
   unit: '',
   postalCode: '',
@@ -199,6 +246,7 @@ const initialRegisterPropertyDraft: OwnerRegisterPropertyFormData = {
   neighborhood: '',
   residentialZoning: true,
   mixedUse: false,
+  // Amenities & features
   amenities: {
     wifi: false,
     ac: true,
@@ -215,12 +263,26 @@ const initialRegisterPropertyDraft: OwnerRegisterPropertyFormData = {
   },
   sellingPoints: '',
   customTags: [],
+  // Nearby places
+  nearby: {
+    essentials: [],
+    utility: [],
+    transit: {
+      busStations: [],
+      airport: [],
+      trainStations: [],
+    },
+  },
+  // Property rules
+  rules: [],
+  // Media
   photos: [
     'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80',
     'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=400&q=80',
     'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=400&q=80',
   ],
   virtualTourUrl: '',
+  // Pricing & lease
   baseRent: '2400',
   priceNegotiable: true,
   securityDeposit: '1.5',
@@ -247,6 +309,22 @@ const seededPropertyEditDrafts: Record<string, OwnerRegisterPropertyFormData> = 
     currentStatus: 'Available for Rent',
     description:
       'MultiOwner Skyline 14B is a session-prototype listing with verified owner details, visit scheduling, agreement flow, and cross-role visibility. 2 bedrooms, 2 bathrooms, 1,240 sqft with semi-furnished interiors.',
+    // Property specs
+    bedrooms: 2,
+    bathrooms: 2,
+    sqft: '1,240',
+    furnishingStatus: 'Semi-Furnished',
+    facing: 'East',
+    floor: '4',
+    totalFloors: '12',
+    balcony: 'Yes',
+    ageOfBuilding: '3-5 Years',
+    preferredTenant: 'Family',
+    possession: 'Immediately',
+    parkingType: 'Bike and Car',
+    waterSupply: 'Corporation',
+    nonVegAllowed: true,
+    // Location
     streetAddress: '14B Skyline Plaza, Indiranagar',
     unit: '14B',
     postalCode: '560001',
@@ -271,6 +349,33 @@ const seededPropertyEditDrafts: Record<string, OwnerRegisterPropertyFormData> = 
     sellingPoints:
       'Semi-furnished apartment with gated security, fitness center, bike and car parking, and pet-friendly policy.',
     customTags: ['2 Beds', '2 Baths', '1,240 sqft', 'Semi-Furnished', 'Bike and Car'],
+    // Nearby places
+    nearby: {
+      essentials: [
+        { name: 'Fresh Mart Grocery', distance: '0.4 km', time: '5 mins' },
+        { name: 'City Pharmacy', distance: '0.5 km', time: '6 mins' },
+        { name: 'Apollo Clinic', distance: '1.2 km', time: '14 mins' },
+      ],
+      utility: [
+        { name: 'HDFC ATM', distance: '0.3 km', time: '4 mins' },
+        { name: 'Power Substation', distance: '0.8 km', time: '10 mins' },
+      ],
+      transit: {
+        busStations: [
+          { name: 'Main Road Bus Stop', distance: '0.6 km', time: '7 mins' },
+          { name: 'Metro Feeder Stop', distance: '0.7 km', time: '9 mins' },
+        ],
+        airport: [{ name: 'City Airport', distance: '18 km', time: '35 mins' }],
+        trainStations: [{ name: 'Metro Station', distance: '1.4 km', time: '17 mins' }],
+      },
+    },
+    // Property rules
+    rules: [
+      { rule: 'No smoking inside the unit or common areas', category: 'Health & Safety' },
+      { rule: 'Monthly rent due by the 5th of each month', category: 'Payments' },
+      { rule: 'Visitors must register after 9:00 PM', category: 'Security' },
+      { rule: 'Subletting requires owner approval', category: 'Lease' },
+    ],
     photos: [
       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1556912173-46c336c7fd55?auto=format&fit=crop&w=800&q=80',
@@ -309,6 +414,16 @@ const cloneRegisterPropertyData = (
   photos: [...data.photos],
   utilities: { ...data.utilities },
   preferredVisitSlots: data.preferredVisitSlots ? data.preferredVisitSlots.map((s) => ({ ...s })) : [{ day: data.visitWeekday, startTime: data.visitStartTime, endTime: data.visitEndTime }],
+  nearby: {
+    essentials: data.nearby.essentials.map((e) => ({ ...e })),
+    utility: data.nearby.utility.map((u) => ({ ...u })),
+    transit: {
+      busStations: data.nearby.transit.busStations.map((b) => ({ ...b })),
+      airport: data.nearby.transit.airport.map((a) => ({ ...a })),
+      trainStations: data.nearby.transit.trainStations.map((t) => ({ ...t })),
+    },
+  },
+  rules: data.rules.map((r) => ({ ...r })),
 })
 
 const getSeededEditDraft = (propertyId: string): OwnerRegisterPropertyFormData =>

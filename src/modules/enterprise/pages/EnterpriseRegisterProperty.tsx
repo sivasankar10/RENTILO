@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowRight, Building2, Check, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
@@ -12,7 +12,7 @@ interface BlockData {
   id: string
   name: string
   floors: number
-  unitsPerFloor: number
+  totalUnits: number
 }
 
 const steps = [
@@ -20,7 +20,7 @@ const steps = [
   { number: 2 as StepNumber, label: 'Property Location' },
   { number: 3 as StepNumber, label: 'Amenities & Features' },
   { number: 4 as StepNumber, label: 'Media & Gallery' },
-  { number: 5 as StepNumber, label: 'Pricing & Lease' },
+  { number: 5 as StepNumber, label: 'Lease Terms' },
 ]
 
 const propertyTypes = ['Commercial Office', 'Residential Complex', 'Mixed Use', 'Retail Space', 'Industrial Park', 'Co-working Space']
@@ -29,7 +29,15 @@ const statusOptions = ['Available for Rent', 'Under Construction', 'Pre-leasing'
 export function EnterpriseRegisterProperty() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { blockId } = useParams<{ blockId?: string }>()
   const createOwnerProperty = usePrototypeStore((s) => s.createOwnerProperty)
+  const allProperties = usePrototypeStore((s) => s.properties)
+
+  // Edit mode detection
+  const isEditMode = Boolean(blockId)
+  const editProperty = blockId ? allProperties.find((p) => p.id === blockId) : null
+  const editBlockData = editProperty?.enterpriseBlock
+
   const [currentStep, setCurrentStep] = useState<StepNumber>(1)
   const [propertyName, setPropertyName] = useState('')
   const [propertyType, setPropertyType] = useState('')
@@ -40,10 +48,33 @@ export function EnterpriseRegisterProperty() {
   const [blocks, setBlocks] = useState<BlockData[]>([])
   const [supportStatus, setSupportStatus] = useState('')
 
+  // Pre-fill in edit mode
+  useEffect(() => {
+    if (!editProperty) return
+    if (editBlockData) {
+      // Property with block
+      setPropertyName(editProperty.title.replace(` - Block ${editBlockData.blockName}`, '').replace(` - ${editBlockData.blockName}`, ''))
+      setPropertyType(editProperty.propertyType)
+      setDescription(editProperty.description)
+      setBlocks([{
+        id: 'edit-block',
+        name: `Block ${editBlockData.blockName}`,
+        floors: editBlockData.floors,
+        totalUnits: editBlockData.unitsPerFloor * editBlockData.floors,
+      }])
+    } else {
+      // Standalone property (no blocks yet)
+      setPropertyName(editProperty.title)
+      setPropertyType(editProperty.propertyType)
+      setDescription(editProperty.description)
+      setBlocks([]) // No blocks
+    }
+  }, [editProperty, editBlockData])
+
   const addBlock = () => {
     setBlocks((current) => [
       ...current,
-      { id: `block-${Date.now()}`, name: `Block ${String.fromCharCode(65 + current.length)}`, floors: 4, unitsPerFloor: 8 },
+      { id: `block-${Date.now()}`, name: `Block ${String.fromCharCode(65 + current.length)}`, floors: 4, totalUnits: 24 },
     ])
   }
 
@@ -64,6 +95,102 @@ export function EnterpriseRegisterProperty() {
 
   const handleSubmit = () => {
     const ownerId = user?.id ?? ''
+
+    // EDIT MODE: update existing property + create/update blocks
+    if (isEditMode && blockId) {
+      const timestamp = new Date().toISOString()
+
+      if (blocks.length === 0) {
+        // Just update property details (no blocks added)
+        usePrototypeStore.setState((state) => ({
+          properties: state.properties.map((p) =>
+            p.id === blockId ? {
+              ...p,
+              title: propertyName || p.title,
+              propertyType: propertyType || p.propertyType,
+              description: description || p.description,
+              updatedAt: timestamp,
+            } : p
+          ),
+        }))
+        setSupportStatus('Property updated.')
+        setTimeout(() => navigate(ROUTES.ENTERPRISE.PORTFOLIO), 800)
+        return
+      }
+
+      // First block = update existing property (add enterpriseBlock if it doesn't have one)
+      const firstBlock = blocks[0]
+      usePrototypeStore.setState((state) => ({
+        properties: state.properties.map((p) =>
+          p.id === blockId ? {
+            ...p,
+            title: `${propertyName || 'Enterprise Property'} - ${firstBlock.name}`,
+            propertyType: propertyType || 'Commercial Complex',
+            description: description || `${firstBlock.name}. ${firstBlock.floors} floors, ${firstBlock.totalUnits} units capacity.`,
+            enterpriseBlock: p.enterpriseBlock
+              ? { ...p.enterpriseBlock, blockName: firstBlock.name.replace('Block ', ''), floors: firstBlock.floors, unitsPerFloor: Math.ceil(firstBlock.totalUnits / firstBlock.floors) }
+              : { blockName: firstBlock.name.replace('Block ', ''), floors: firstBlock.floors, unitsPerFloor: Math.ceil(firstBlock.totalUnits / firstBlock.floors), units: [] },
+            updatedAt: timestamp,
+          } : p
+        ),
+      }))
+
+      // Additional blocks (index 1+) = create new
+      if (blocks.length > 1) {
+        const newBlocks = blocks.slice(1)
+        newBlocks.forEach((block) => {
+          const newPropertyId = `property-enterprise-${block.name.toLowerCase().replace(/\s/g, '-')}-${Date.now()}`
+          const newProperty = {
+            id: newPropertyId,
+            ownerId,
+            title: `${propertyName || 'Enterprise Property'} - ${block.name}`,
+            propertyType: propertyType || 'Commercial Complex',
+            description: description || `${block.name}. ${block.floors} floors, ${block.totalUnits} units capacity.`,
+            address: `${propertyName}, ${block.name}`,
+            unit: block.name,
+            postalCode: '560001',
+            city: 'Bangalore',
+            neighborhood: 'Central',
+            price: 'Rs. 45,000',
+            pricePeriod: '/ mo',
+            deposit: 'Rs. 90,000',
+            beds: 2,
+            baths: 2,
+            sqft: '1,200',
+            availableFrom: '2026-07-15',
+            visitWeekday: 'Saturday',
+            visitStartTime: '10:00 AM',
+            visitEndTime: '1:00 PM',
+            preferredVisitSlots: [{ day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' }],
+            visitSchedulingEnabled: true,
+            leaseDuration: 12,
+            noticePeriod: '30',
+            image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+            gallery: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'],
+            highlights: [{ label: 'Floors', value: String(block.floors) }, { label: 'Total Units', value: String(block.totalUnits) }],
+            overviewSpecs: [{ label: 'Block', value: block.name }, { label: 'Total Units', value: String(block.totalUnits) }, { label: 'Floors', value: String(block.floors) }],
+            overview: [`${block.name} — ${block.floors} floors, ${block.totalUnits} units capacity.`],
+            amenities: [{ icon: 'security', label: '24/7 Security' }],
+            rules: [{ rule: 'Enterprise lease terms', category: 'Lease' }],
+            nearby: { essentials: [], utility: [], transit: { busStations: [], airport: [], trainStations: [] } },
+            noBrokerServices: false,
+            views: 0,
+            shortlists: 0,
+            contacts: 0,
+            enterpriseBlock: { blockName: block.name.replace('Block ', ''), floors: block.floors, unitsPerFloor: Math.ceil(block.totalUnits / block.floors), units: [] },
+            createdAt: timestamp,
+            updatedAt: timestamp,
+          }
+          usePrototypeStore.setState((state) => ({ properties: [...state.properties, newProperty] }))
+        })
+      }
+
+      setSupportStatus(`Property updated. ${blocks.length > 1 ? `${blocks.length - 1} new block(s) created.` : ''}`)
+      setTimeout(() => navigate(ROUTES.ENTERPRISE.PORTFOLIO), 800)
+      return
+    }
+
+    // CREATE MODE
     if (blocks.length === 0) {
       // Create a single property without block structure
       createOwnerProperty(ownerId, {
@@ -72,21 +199,9 @@ export function EnterpriseRegisterProperty() {
         description,
       })
     } else {
-      // Create one property per block
+      // Create one property per block — with EMPTY units array
+      // Units are added individually via "Add Unit" page
       blocks.forEach((block) => {
-        const units: { unitId: string; floor: number; unitNumber: string; status: 'Vacant' | 'Occupied' | 'Maintenance'; tenantName?: string }[] = []
-        for (let floor = 1; floor <= block.floors; floor++) {
-          for (let unit = 1; unit <= block.unitsPerFloor; unit++) {
-            units.push({
-              unitId: `unit-${block.name}-${floor}-${unit}-${Date.now()}`,
-              floor,
-              unitNumber: `${floor}0${unit}`,
-              status: 'Vacant',
-            })
-          }
-        }
-
-        // Use the low-level store setter to add the property with enterprise block data
         const timestamp = new Date().toISOString()
         const propertyId = `property-enterprise-${block.name.toLowerCase().replace(/\s/g, '-')}-${Date.now()}`
         const property = {
@@ -94,7 +209,7 @@ export function EnterpriseRegisterProperty() {
           ownerId,
           title: `${propertyName || 'Enterprise Property'} - ${block.name}`,
           propertyType: propertyType || 'Commercial Complex',
-          description: description || `${block.name} of ${propertyName}. ${block.floors} floors, ${block.unitsPerFloor} units per floor.`,
+          description: description || `${block.name} of ${propertyName}. ${block.floors} floors, ${block.totalUnits} total units.`,
           address: `${propertyName}, ${block.name}`,
           unit: block.name,
           postalCode: '560001',
@@ -118,14 +233,14 @@ export function EnterpriseRegisterProperty() {
           gallery: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'],
           highlights: [
             { label: 'Floors', value: String(block.floors) },
-            { label: 'Units/Floor', value: String(block.unitsPerFloor) },
-            { label: 'Total Units', value: String(block.floors * block.unitsPerFloor) },
+            { label: 'Total Units', value: String(block.totalUnits) },
           ],
           overviewSpecs: [
             { label: 'Block', value: block.name },
-            { label: 'Total Units', value: String(block.floors * block.unitsPerFloor) },
+            { label: 'Total Units', value: String(block.totalUnits) },
+            { label: 'Floors', value: String(block.floors) },
           ],
-          overview: [`${block.name} enterprise block with ${block.floors * block.unitsPerFloor} units.`],
+          overview: [`${block.name} enterprise block — ${block.floors} floors, capacity for ${block.totalUnits} units. Add units individually to list them for tenants.`],
           amenities: [{ icon: 'security', label: '24/7 Security' }],
           rules: [{ rule: 'Enterprise lease terms', category: 'Lease' }],
           nearby: { essentials: [], utility: [], transit: { busStations: [], airport: [], trainStations: [] } },
@@ -136,34 +251,22 @@ export function EnterpriseRegisterProperty() {
           enterpriseBlock: {
             blockName: block.name.replace('Block ', ''),
             floors: block.floors,
-            unitsPerFloor: block.unitsPerFloor,
-            units,
+            unitsPerFloor: Math.ceil(block.totalUnits / block.floors),
+            units: [], // Empty — units added via Add Unit page
           },
           createdAt: timestamp,
           updatedAt: timestamp,
         }
 
-        // Add to prototype store
+        // Add property to store — NO listing created for the block itself
+        // Individual unit listings are created when units are added
         usePrototypeStore.setState((state) => ({
           properties: [...state.properties, property],
-          listings: [...state.listings, {
-            id: `listing-${propertyId}`,
-            propertyId,
-            ownerId,
-            segment: 'enterprise' as const,
-            status: 'Active' as const,
-            postedDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
-            updated: 'Just now',
-            badge: null,
-            brokerEnabled: true,
-            createdAt: timestamp,
-            updatedAt: timestamp,
-          }],
         }))
       })
     }
 
-    setSupportStatus('Listing submitted successfully. Blocks created.')
+    setSupportStatus('Property registered. Add units via the Portfolio page to list them for tenants.')
     setTimeout(() => navigate(ROUTES.ENTERPRISE.PORTFOLIO), 1000)
   }
 
@@ -177,7 +280,7 @@ export function EnterpriseRegisterProperty() {
               Properties › <span className="text-text-primary">Add New Listing</span>
             </p>
             <h1 className="mt-2 text-heading-1 font-bold tracking-tight text-text-primary">
-              Register New Property
+              {isEditMode ? 'Edit Property' : 'Register New Property'}
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -185,7 +288,7 @@ export function EnterpriseRegisterProperty() {
               Save as Draft
             </button>
             <button type="button" onClick={handleSubmit} className="rounded-button bg-navy px-5 py-2.5 text-body font-semibold text-white shadow-sm hover:bg-slate-800 transition-colors">
-              Submit Listing
+              {isEditMode ? 'Save Changes' : 'Submit Listing'}
             </button>
           </div>
         </div>
@@ -300,12 +403,12 @@ export function EnterpriseRegisterProperty() {
                               <input value={block.name} onChange={(e) => updateBlock(block.id, { name: e.target.value })} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-body font-semibold text-text-primary focus:border-primary focus:outline-none" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Number of Floors</label>
+                              <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Total Floors</label>
                               <input type="number" min="1" max="100" value={block.floors} onChange={(e) => updateBlock(block.id, { floors: parseInt(e.target.value) || 1 })} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-body font-semibold text-text-primary focus:border-primary focus:outline-none" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Units per Floor</label>
-                              <input type="number" min="1" max="50" value={block.unitsPerFloor} onChange={(e) => updateBlock(block.id, { unitsPerFloor: parseInt(e.target.value) || 1 })} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-body font-semibold text-text-primary focus:border-primary focus:outline-none" />
+                              <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Total Units</label>
+                              <input type="number" min="1" max="500" value={block.totalUnits} onChange={(e) => updateBlock(block.id, { totalUnits: parseInt(e.target.value) || 1 })} className="mt-1 h-10 w-full rounded-input border border-outline bg-white px-3 text-body font-semibold text-text-primary focus:border-primary focus:outline-none" />
                             </div>
                           </div>
                           <button type="button" onClick={() => removeBlock(block.id)} className="mt-5 p-2 rounded-lg text-text-muted hover:text-red-600 hover:bg-red-50 transition-colors" title="Remove block">
@@ -313,7 +416,7 @@ export function EnterpriseRegisterProperty() {
                           </button>
                         </div>
                         <p className="mt-3 text-[11px] text-text-muted">
-                          Total units in {block.name}: <span className="font-bold text-text-primary">{block.floors * block.unitsPerFloor}</span>
+                          {block.name}: <span className="font-bold text-text-primary">{block.floors} floors, {block.totalUnits} units capacity</span>
                         </p>
                       </div>
                     ))}
@@ -322,7 +425,7 @@ export function EnterpriseRegisterProperty() {
                   {blocks.length > 0 && (
                     <div className="mt-4 rounded-lg bg-primary-50 px-4 py-3">
                       <p className="text-label font-semibold text-primary">
-                        Total: {blocks.length} block{blocks.length > 1 ? 's' : ''} · {blocks.reduce((sum, b) => sum + b.floors, 0)} floors · {blocks.reduce((sum, b) => sum + b.floors * b.unitsPerFloor, 0)} units
+                        Total: {blocks.length} block{blocks.length > 1 ? 's' : ''} · {blocks.reduce((sum, b) => sum + b.floors, 0)} floors · {blocks.reduce((sum, b) => sum + b.totalUnits, 0)} units capacity
                       </p>
                     </div>
                   )}
@@ -641,48 +744,25 @@ export function EnterpriseRegisterProperty() {
 
             {currentStep === 5 && (
               <div className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-                  {/* Rental Details */}
-                  <div className="rounded-card border border-outline bg-white p-8 shadow-sm space-y-6">
-                    <h2 className="text-heading-3 font-bold text-text-primary flex items-center gap-2">💰 Rental Details</h2>
-                    <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]">
-                      <div>
-                        <label className="text-label font-medium text-text-muted">Base Rent (Monthly)</label>
-                        <div className="mt-1.5 flex items-center gap-0 rounded-input border border-outline bg-white overflow-hidden h-11">
-                          <span className="px-3 text-body text-text-muted bg-canvas-alt h-full flex items-center border-r border-outline">$</span>
-                          <input defaultValue="2400" className="flex-1 h-full px-3 text-body font-semibold text-text-primary outline-none" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-label font-medium text-text-muted">Security Deposit (Months or Fixed)</label>
-                        <input defaultValue="1.5" className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body font-semibold text-text-primary focus:border-primary focus:outline-none" />
-                      </div>
-                      <div>
-                        <label className="text-label font-medium text-text-muted">&nbsp;</label>
-                        <select defaultValue="Months" className="mt-1.5 h-11 rounded-input border border-outline bg-white px-3 text-body text-text-primary focus:border-primary focus:outline-none">
-                          <option>Months</option>
-                          <option>Fixed</option>
-                        </select>
-                      </div>
-                    </div>
+                {/* Lease Terms only — Pricing is configured per unit in Add Unit */}
+                <div className="rounded-card border border-outline bg-white p-8 shadow-sm space-y-6">
+                  <h2 className="text-heading-3 font-bold text-text-primary flex items-center gap-2">📋 Lease Terms</h2>
+                  <p className="text-[13px] text-text-muted">These terms apply as defaults across all units. Pricing is set individually when adding units.</p>
 
-                    <div>
-                      <label className="text-label font-medium text-text-muted">Minimum Lease Duration (Months)</label>
-                      <div className="mt-3 flex items-center justify-between text-[12px] text-text-muted">
-                        <span>1 Month</span>
-                        <span className="text-primary font-bold">12 Months</span>
-                        <span>24 Months</span>
-                      </div>
-                      <input type="range" min="1" max="24" defaultValue="12" className="mt-1 w-full accent-primary" />
+                  <div>
+                    <label className="text-label font-medium text-text-muted">Minimum Lease Duration (Months)</label>
+                    <div className="mt-3 flex items-center justify-between text-[12px] text-text-muted">
+                      <span>1 Month</span>
+                      <span className="text-primary font-bold">12 Months</span>
+                      <span>24 Months</span>
                     </div>
+                    <input type="range" min="1" max="24" defaultValue="12" className="mt-1 w-full accent-primary" />
                   </div>
 
-                  {/* Availability */}
-                  <div className="rounded-card border border-outline bg-white p-6 shadow-sm space-y-5">
-                    <h2 className="text-body font-bold text-text-primary flex items-center gap-2">📅 Availability</h2>
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="text-label font-medium text-text-muted">Available From</label>
-                      <input type="text" defaultValue="06/01/2024" className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none" />
+                      <input type="text" defaultValue="07/15/2026" className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none" />
                     </div>
                     <div>
                       <label className="text-label font-medium text-text-muted">Notice Period (Days)</label>
@@ -692,93 +772,42 @@ export function EnterpriseRegisterProperty() {
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-                  {/* Lease Terms */}
-                  <div className="rounded-card border border-outline bg-white p-8 shadow-sm space-y-6">
-                    <h2 className="text-heading-3 font-bold text-text-primary flex items-center gap-2">📋 Lease Terms</h2>
-
-                    <div>
-                      <p className="text-label font-medium text-text-muted mb-3">Utilities Included</p>
-                      <div className="flex flex-wrap gap-3">
-                        {[
-                          { label: 'Electricity', defaultChecked: true },
-                          { label: 'Water', defaultChecked: true },
-                          { label: 'Internet', defaultChecked: false },
-                          { label: 'Gas', defaultChecked: false },
-                        ].map((util) => (
-                          <label key={util.label} className="inline-flex items-center gap-2 rounded-lg border border-outline px-4 py-2.5 cursor-pointer hover:bg-hover-light transition-colors">
-                            <input type="checkbox" defaultChecked={util.defaultChecked} className="h-4 w-4 rounded border-outline text-primary" />
-                            <span className="text-[13px] font-semibold text-text-primary">{util.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-body font-semibold text-text-primary">Pet Policy</p>
-                          <p className="text-[11px] text-text-muted">Allow domestic animals within the premises</p>
-                        </div>
-                        <label className="relative inline-flex cursor-pointer">
-                          <input type="checkbox" defaultChecked className="sr-only peer" />
-                          <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-5" />
+                  <div>
+                    <p className="text-label font-medium text-text-muted mb-3">Utilities Included</p>
+                    <div className="flex flex-wrap gap-3">
+                      {[
+                        { label: 'Electricity', defaultChecked: true },
+                        { label: 'Water', defaultChecked: true },
+                        { label: 'Internet', defaultChecked: false },
+                        { label: 'Gas', defaultChecked: false },
+                      ].map((util) => (
+                        <label key={util.label} className="inline-flex items-center gap-2 rounded-lg border border-outline px-4 py-2.5 cursor-pointer hover:bg-hover-light transition-colors">
+                          <input type="checkbox" defaultChecked={util.defaultChecked} className="h-4 w-4 rounded border-outline text-primary" />
+                          <span className="text-[13px] font-semibold text-text-primary">{util.label}</span>
                         </label>
-                      </div>
-                      <textarea rows={3} placeholder="Describe pet weight limits, breeds, or additional fees..." className="mt-3 w-full resize-none rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary focus:border-primary focus:outline-none" />
+                      ))}
                     </div>
                   </div>
 
-                  {/* Listing Summary */}
-                  <div className="rounded-card border border-outline bg-canvas-alt p-6 shadow-sm h-fit">
-                    <h3 className="text-body font-bold text-text-primary">Listing Summary</h3>
-                    <div className="mt-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] text-text-muted">Annual Revenue</span>
-                        <span className="text-[13px] font-bold text-text-primary">$28,800.00</span>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-body font-semibold text-text-primary">Pet Policy</p>
+                        <p className="text-[11px] text-text-muted">Allow domestic animals within the premises</p>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] text-text-muted">Initial Intake</span>
-                        <span className="text-[13px] font-bold text-text-primary">$6,000.00</span>
-                      </div>
+                      <label className="relative inline-flex cursor-pointer">
+                        <input type="checkbox" defaultChecked className="sr-only peer" />
+                        <div className="w-10 h-5 bg-slate-200 rounded-full peer peer-checked:bg-primary transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-transform peer-checked:after:translate-x-5" />
+                      </label>
                     </div>
-                    <p className="mt-4 text-[11px] text-text-muted leading-relaxed">
-                      Includes First Month + 1.5x Security Deposit. Subject to local tax regulations.
-                    </p>
                   </div>
                 </div>
 
-                {/* Bottom Info Cards */}
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="flex items-start gap-3 rounded-xl border border-outline bg-white p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 shrink-0">
-                      <span className="text-blue-600 text-[14px]">✓</span>
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-bold text-text-primary">Verified Listings</p>
-                      <p className="mt-0.5 text-[11px] text-text-muted">All pricing data is benchmarked against local market transparency standards.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-xl border border-outline bg-white p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 shrink-0">
-                      <span className="text-green-600 text-[14px]">📈</span>
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-bold text-text-primary">Pricing Insights</p>
-                      <p className="mt-0.5 text-[11px] text-text-muted">Properties with included utilities tend to close 15% faster in this zip code.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-xl border border-outline bg-white p-4">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 shrink-0">
-                      <span className="text-slate-600 text-[14px]">🔒</span>
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-bold text-text-primary">Data Privacy</p>
-                      <p className="mt-0.5 text-[11px] text-text-muted">All financial details are encrypted and visible only to verified applicants.</p>
-                    </div>
-                  </div>
+                {/* Info note about pricing */}
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+                  <p className="text-[13px] font-semibold text-amber-800">💡 Pricing is set per unit</p>
+                  <p className="mt-1 text-[12px] text-amber-700">After registering the property, use "Add Unit" to configure individual unit pricing (rent, deposit). Each unit will be listed separately for tenants.</p>
                 </div>
               </div>
             )}

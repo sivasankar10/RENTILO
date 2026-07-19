@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building2, ChevronLeft, ChevronRight, MoreVertical, Plus } from 'lucide-react'
+import { Building2, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { ROUTES } from '@shared/constants/routes'
+import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { useEnterpriseContext } from '../hooks/useEnterpriseContext'
 
 const PAGE_SIZE = 6
@@ -16,10 +17,12 @@ const statusStyles: Record<string, string> = {
 export function EnterprisePortfolio() {
   const navigate = useNavigate()
   const { currentBlockId, enterpriseBlocks } = useEnterpriseContext()
+  const leases = usePrototypeStore((s) => s.leases)
+  const users = usePrototypeStore((s) => s.users)
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState('All Statuses')
 
-  const currentBlock = enterpriseBlocks.find((b) => b.id === currentBlockId)
+  const currentBlock = enterpriseBlocks.find((b) => b.id === currentBlockId) ?? (currentBlockId === '' ? enterpriseBlocks[0] : undefined)
   const blockData = currentBlock?.enterpriseBlock
   const units = blockData?.units ?? []
 
@@ -32,8 +35,11 @@ export function EnterprisePortfolio() {
   const currentPage = Math.min(page, totalPages)
   const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
-  const occupiedCount = units.filter((u) => u.status === 'Occupied').length
-  const vacantCount = units.filter((u) => u.status === 'Vacant').length
+  const occupiedCount = units.filter((u) => {
+    if (u.propertyId && leases.some((l) => l.propertyId === u.propertyId && (l.status === 'active' || l.status === 'pending_owner_onboarding'))) return true
+    return u.status === 'Occupied'
+  }).length
+  const vacantCount = units.length - occupiedCount
   const occupancyRate = units.length ? Math.round((occupiedCount / units.length) * 100) : 0
 
   return (
@@ -48,18 +54,56 @@ export function EnterprisePortfolio() {
             {currentBlock?.title ?? 'Property Portfolio'}
           </h1>
           <p className="mt-2 max-w-2xl text-[14px] text-text-muted leading-relaxed">
-            {blockData ? `Block ${blockData.blockName} — ${blockData.floors} floors, ${blockData.unitsPerFloor} units per floor. Manage occupancy and assignments.` : 'Select a block to view units.'}
+            {blockData ? `Block ${blockData.blockName} — ${blockData.floors} floors. ${units.length} units added.` : 'Manage your enterprise properties, blocks, and units.'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/add-unit`)} className="inline-flex items-center gap-2 rounded-xl border border-outline bg-white px-5 py-3 text-[13px] font-bold text-[#0f172a] hover:bg-hover-light transition-colors shadow-sm">
-            <Plus size={16} /> Add Unit
-          </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          {blockData && (
+            <>
+              <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/edit-block/${currentBlockId}`)} className="inline-flex items-center gap-2 rounded-xl border border-outline bg-white px-5 py-3 text-[13px] font-bold text-[#0f172a] hover:bg-hover-light transition-colors shadow-sm">Edit Block</button>
+              <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/${currentBlockId}`)} className="inline-flex items-center gap-2 rounded-xl border border-outline bg-white px-5 py-3 text-[13px] font-bold text-[#0f172a] hover:bg-hover-light transition-colors shadow-sm">View Details</button>
+              <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/add-unit`)} className="inline-flex items-center gap-2 rounded-xl border border-outline bg-white px-5 py-3 text-[13px] font-bold text-[#0f172a] hover:bg-hover-light transition-colors shadow-sm"><Plus size={16} /> Add Unit</button>
+            </>
+          )}
           <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/register`)} className="inline-flex items-center gap-2 rounded-xl bg-[#0f172a] px-5 py-3 text-[13px] font-bold text-white hover:bg-navy/80 transition-colors shadow-sm">
             <Plus size={16} /> Add Property
           </button>
         </div>
       </div>
+
+      {/* No Block State - Show Property Info */}
+      {!blockData && currentBlock && (
+        <div className="rounded-xl border border-outline bg-white p-6 shadow-sm space-y-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-[18px] font-bold text-[#0f172a]">{currentBlock.title}</h2>
+              <p className="mt-1 text-[13px] text-text-muted">{currentBlock.address}</p>
+              <p className="mt-1 text-[13px] text-text-muted">{currentBlock.city}, {currentBlock.neighborhood}</p>
+            </div>
+            <span className="rounded-pill bg-amber-50 border border-amber-200 px-3 py-1 text-[10px] font-bold text-amber-700">No Blocks</span>
+          </div>
+          {currentBlock.description && <p className="text-[13px] text-text-muted leading-relaxed">{currentBlock.description}</p>}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-outline pt-4">
+            <div><p className="text-[10px] font-bold uppercase text-text-muted">Type</p><p className="mt-1 text-[14px] font-bold text-[#0f172a]">{currentBlock.propertyType}</p></div>
+            <div><p className="text-[10px] font-bold uppercase text-text-muted">Price</p><p className="mt-1 text-[14px] font-bold text-[#0f172a]">{currentBlock.price}</p></div>
+            <div><p className="text-[10px] font-bold uppercase text-text-muted">Area</p><p className="mt-1 text-[14px] font-bold text-[#0f172a]">{currentBlock.sqft} sqft</p></div>
+            <div><p className="text-[10px] font-bold uppercase text-text-muted">Posted</p><p className="mt-1 text-[14px] font-bold text-[#0f172a]">{new Date(currentBlock.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p></div>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/edit-block/${currentBlock.id}`)} className="rounded-xl bg-[#0f172a] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-slate-800">Edit Property / Add Block</button>
+          </div>
+        </div>
+      )}
+
+      {/* No Property State */}
+      {!currentBlock && (
+        <div className="rounded-xl border border-dashed border-outline bg-white p-12 text-center">
+          <Building2 size={36} className="mx-auto text-text-muted" />
+          <h2 className="mt-4 text-[18px] font-bold text-[#0f172a]">No Properties Yet</h2>
+          <p className="mt-2 text-[13px] text-text-muted">Create your first enterprise property to get started.</p>
+          <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/register`)} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0f172a] px-6 py-3 text-[13px] font-bold text-white hover:bg-slate-800"><Plus size={16} /> Add Property</button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -95,21 +139,31 @@ export function EnterprisePortfolio() {
             </tr>
           </thead>
           <tbody>
-            {paginated.map((unit) => (
-              <tr key={unit.unitId} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
-                <td className="px-6 py-4 text-[13px] font-bold text-[#0f172a]">{unit.unitNumber}</td>
-                <td className="px-4 py-4 text-[13px] text-text-muted">Floor {unit.floor}</td>
-                <td className="px-4 py-4">
-                  <span className={cn('rounded-pill px-2.5 py-1 text-[10px] font-bold', statusStyles[unit.status])}>
-                    {unit.status}
-                  </span>
-                </td>
-                <td className="px-4 py-4 text-[13px] text-text-primary">{unit.tenantName ?? '—'}</td>
-                <td className="px-4 py-4 text-center">
-                  <button className="p-1.5 rounded-lg text-text-muted hover:bg-hover-light"><MoreVertical size={16} /></button>
-                </td>
-              </tr>
-            ))}
+            {paginated.map((unit) => {
+              // Dynamically check lease status for this unit
+              const unitLease = unit.propertyId ? leases.find((l) => l.propertyId === unit.propertyId && (l.status === 'active' || l.status === 'pending_owner_onboarding')) : null
+              const dynamicStatus = unitLease ? 'Occupied' : unit.status
+              const tenantUser = unitLease ? users.find((u) => u.id === unitLease.tenantId) : null
+              const tenantName = tenantUser ? `${tenantUser.firstName} ${tenantUser.lastName}` : unit.tenantName
+              return (
+                <tr key={unit.unitId} className="border-b border-outline last:border-0 hover:bg-hover-light transition-colors">
+                  <td className="px-6 py-4 text-[13px] font-bold text-[#0f172a]">{unit.unitNumber}</td>
+                  <td className="px-4 py-4 text-[13px] text-text-muted">Floor {unit.floor}</td>
+                  <td className="px-4 py-4">
+                    <span className={cn('rounded-pill px-2.5 py-1 text-[10px] font-bold', statusStyles[dynamicStatus])}>
+                      {dynamicStatus}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-[13px] text-text-primary">{tenantName ?? '—'}</td>
+                  <td className="px-4 py-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      {unit.propertyId && <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/edit-unit/${unit.propertyId}`)} className="rounded-lg border border-outline px-3 py-1.5 text-[11px] font-bold text-[#0f172a] hover:bg-hover-light">Edit</button>}
+                      <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/${currentBlockId}`)} className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-text-muted hover:bg-hover-light">View</button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
             {paginated.length === 0 && (
               <tr><td colSpan={5} className="px-6 py-10 text-center text-[13px] text-text-muted">No units match the current filter.</td></tr>
             )}

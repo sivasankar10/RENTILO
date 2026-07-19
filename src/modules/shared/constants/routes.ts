@@ -83,8 +83,17 @@ export const ROUTES = {
     ROOT: '/enterprise',
     DASHBOARD: '/enterprise/dashboard',
     PORTFOLIO: '/enterprise/portfolio',
+    PROPERTY_DETAIL: (id: string) => `/enterprise/portfolio/${id}`,
+    REGISTER_PROPERTY: '/enterprise/portfolio/register',
     TEAMS: '/enterprise/teams',
     REPORTS: '/enterprise/reports',
+    LEASES: '/enterprise/leases',
+    ASSIGNMENT_MANAGEMENT: '/enterprise/assignments',
+    BROKERS: '/enterprise/brokers',
+    TENANTS: '/enterprise/tenants',
+    FINANCE: '/enterprise/finance',
+    MESSAGES: '/enterprise/messages',
+    NOTIFICATIONS: '/enterprise/notifications',
   },
 
   // Admin

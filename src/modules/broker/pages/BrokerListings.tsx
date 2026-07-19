@@ -299,6 +299,8 @@ export function BrokerListings() {
   const prototypeProperties = usePrototypeStore((s) => s.properties)
   const prototypeUsers = usePrototypeStore((s) => s.users)
   const decideBrokerOffer = usePrototypeStore((s) => s.decideBrokerOffer)
+  const counterCommissionOffer = usePrototypeStore((s) => s.counterCommissionOffer)
+  const sendBrokerOffer = usePrototypeStore((s) => s.sendBrokerOffer)
   const {
     assignedBundles,
     leads,
@@ -339,6 +341,9 @@ export function BrokerListings() {
   const [openActionId, setOpenActionId] = useState<string | null>(null)
   const [removalTarget, setRemovalTarget] = useState<ActiveListing | null>(null)
   const [removalReason, setRemovalReason] = useState('')
+  const [counterFor, setCounterFor] = useState<{ negId: string } | null>(null)
+  const [counterCommValue, setCounterCommValue] = useState('3')
+  const [counterNote, setCounterNote] = useState('')
   const removalRequests = Object.fromEntries(
     requests
       .filter((request) => request.type === 'broker_listing_removal' && request.status === 'Pending' && request.listingId)
@@ -435,6 +440,13 @@ export function BrokerListings() {
                         className="rounded-button bg-primary px-4 py-2.5 text-label font-bold text-white hover:bg-primary-700"
                       >
                         Accept
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setCounterFor({ negId: negotiation.id }); setCounterCommValue('3'); setCounterNote('') }}
+                        className="rounded-button border border-primary bg-white px-4 py-2.5 text-label font-bold text-primary hover:bg-primary-50"
+                      >
+                        Counter
                       </button>
                       <button
                         type="button"
@@ -550,6 +562,33 @@ export function BrokerListings() {
             setRemovalReason('')
           }}
         />
+      )}
+
+      {/* Counter Offer Modal */}
+      {counterFor && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-navy/40 backdrop-blur-sm" onClick={() => setCounterFor(null)} />
+          <div className="relative w-full max-w-md rounded-card bg-white shadow-xl">
+            <div className="border-b border-outline px-6 py-5">
+              <h2 className="text-heading-3 font-bold text-text-primary">Counter Offer</h2>
+              <p className="mt-1 text-label text-text-muted">Propose your commission percentage to the property owner.</p>
+            </div>
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="text-label font-bold text-text-primary">Your Commission (%)</label>
+                <input type="number" min="0.5" max="10" step="0.5" value={counterCommValue} onChange={(e) => setCounterCommValue(e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-heading-3 font-bold text-text-primary outline-none focus:border-primary" />
+              </div>
+              <div>
+                <label className="text-label font-bold text-text-primary">Note (optional)</label>
+                <textarea value={counterNote} onChange={(e) => setCounterNote(e.target.value)} rows={3} placeholder="Explain your counter-offer..." className="mt-1.5 w-full rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary outline-none resize-none focus:border-primary" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-outline px-6 py-4">
+              <button type="button" onClick={() => setCounterFor(null)} className="rounded-button border border-outline px-5 py-3 text-body font-bold">Cancel</button>
+              <button type="button" onClick={() => { counterCommissionOffer(counterFor.negId, 'admin', `${counterCommValue}%`, counterNote || 'Broker counter-offer'); sendBrokerOffer(counterFor.negId, brokerId, `${counterCommValue}%`); setCounterFor(null) }} className="rounded-button bg-primary px-5 py-3 text-body font-bold text-white">Send Counter Offer</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -81,7 +81,7 @@ export interface PrototypeProperty {
     blockName: string
     floors: number
     unitsPerFloor: number
-    units: { unitId: string; floor: number; unitNumber: string; status: 'Vacant' | 'Occupied' | 'Maintenance'; tenantName?: string }[]
+    units: { unitId: string; floor: number; unitNumber: string; status: 'Vacant' | 'Occupied' | 'Maintenance'; tenantName?: string; propertyId?: string }[]
   }
   createdAt: string
   updatedAt: string
@@ -385,6 +385,33 @@ export interface OwnerPropertyInput {
   amenities?: Record<string, boolean>
   buildingFeatures?: Record<string, boolean>
   petPolicy?: boolean
+  // New property specification fields
+  bedrooms?: number
+  bathrooms?: number
+  sqft?: string
+  furnishingStatus?: string
+  facing?: string
+  floor?: string
+  totalFloors?: string
+  balcony?: string
+  ageOfBuilding?: string
+  preferredTenant?: string
+  possession?: string
+  parkingType?: string
+  waterSupply?: string
+  nonVegAllowed?: boolean
+  // Nearby places
+  nearby?: {
+    essentials: { name: string; distance: string; time: string }[]
+    utility: { name: string; distance: string; time: string }[]
+    transit: {
+      busStations: { name: string; distance: string; time: string }[]
+      airport: { name: string; distance: string; time: string }[]
+      trainStations: { name: string; distance: string; time: string }[]
+    }
+  }
+  // Property rules
+  rules?: { rule: string; category: string }[]
 }
 
 
