@@ -20,6 +20,7 @@ type TenantNotification = {
   source: 'onboarding' | 'proto'
   onboardingId?: string
   action?: string
+  relatedId?: string
 }
 
 export function NotificationsPage() {
@@ -63,6 +64,8 @@ export function NotificationsPage() {
       createdAt: new Date(n.createdAt).toLocaleString('en-GB', {
         day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
       }),
+      action: n.action,
+      relatedId: n.relatedId,
       source: 'proto' as const,
     })),
   ].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
@@ -77,8 +80,13 @@ export function NotificationsPage() {
 
   const open = (notification: TenantNotification) => {
     markNotificationRead(notification)
-    // Broadcasts have no workflow target — reading them is enough.
-    if (notification.source === 'proto') return
+    if (notification.source === 'proto') {
+      // Answered-query notifications deep-link to the support thread; other broadcasts just read.
+      if (notification.action === 'view_support_query') {
+        navigate(notification.relatedId ? `${ROUTES.TENANT.SUPPORT}?query=${notification.relatedId}` : ROUTES.TENANT.SUPPORT)
+      }
+      return
+    }
     const record = records.find((item) => item.id === notification.onboardingId && item.tenant.id === tenantId)
     if (!record) return
     if (notification.action === 'review_agreement' && tenantCanViewAgreement(record)) {

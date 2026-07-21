@@ -157,10 +157,16 @@ export function TenantProfileMenu({ open, onClose }: TenantProfileMenuProps) {
         <button
           type="button"
           role="menuitem"
-          className="flex items-center gap-3 px-4 py-3 border-0 bg-transparent text-left font-body text-sm font-semibold tracking-wide text-brand-outline cursor-pointer transition-colors hover:bg-brand-container-low hover:text-brand"
+          className={cn(
+            'flex items-center gap-3 px-4 py-3 border-0 bg-transparent text-left font-body text-sm font-semibold tracking-wide cursor-pointer transition-colors',
+            pathname.includes('/support')
+              ? 'bg-brand-container-low text-brand'
+              : 'text-brand-outline hover:bg-brand-container-low hover:text-brand',
+          )}
+          onClick={() => handleNavigate(ROUTES.TENANT.SUPPORT)}
         >
           <MaterialIcon name="help" className="!text-xl shrink-0" />
-          Help Center
+          Help &amp; Support
         </button>
         <button
           type="button"

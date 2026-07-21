@@ -25,6 +25,7 @@ import { OwnerViewings } from '../pages/OwnerViewings'
 import { OwnerPromotions } from '../pages/OwnerPromotions'
 import { OwnerFinancials } from '../pages/OwnerFinancials'
 import { OwnerBrokerManagement } from '../pages/OwnerBrokerManagement'
+import { OwnerSupport } from '../pages/OwnerSupport'
 
 export const ownerRoutes: RouteObject[] = [
   // Base routes (available to all)
@@ -49,6 +50,7 @@ export const ownerRoutes: RouteObject[] = [
   { path: 'profile', element: <OwnerProfile /> },
   { path: 'notifications', element: <OwnerNotifications /> },
   { path: 'messages', element: <OwnerMessages /> },
+  { path: 'support', element: <OwnerSupport /> },
   { path: 'brokers/:brokerId', element: <OwnerBrokerProfile /> },
   
   // Premium features routes

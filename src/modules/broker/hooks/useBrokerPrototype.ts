@@ -39,8 +39,7 @@ export function useBrokerPrototype() {
       notifications: state.notifications.filter(
         (notification) =>
           notification.userId === brokerId ||
-          notification.role === 'broker' ||
-          notification.role === 'all',
+          ((notification.role === 'broker' || notification.role === 'all') && !notification.userId),
       ),
       chats: state.chats.filter((thread) => thread.participantIds.includes(brokerId)),
       commissions: state.payments.filter(

@@ -88,6 +88,7 @@ export function OwnerNotifications() {
       if (n.action === 'review_broker_request') navigate('/owner/brokers')
       else if (n.action === 'view_assignment') navigate('/owner/brokers')
       else if (n.action === 'view_listing') navigate('/owner/portfolio')
+      else if (n.action === 'view_support_query') navigate(n.relatedId ? `/owner/support?query=${n.relatedId}` : '/owner/support')
     } else {
       markOnboardingRead(n.id)
       if (n.onboardingId) navigate(`/owner/leases?tab=applications&application=${n.onboardingId}`)
