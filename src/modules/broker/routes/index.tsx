@@ -13,6 +13,7 @@ import { BrokerMessagesPage } from '../pages/BrokerMessagesPage'
 import { BrokerProfile } from '../pages/BrokerProfile'
 import { BrokerEditProfile } from '../pages/BrokerEditProfile'
 import { BrokerNotifications } from '../pages/BrokerNotifications'
+import { BrokerSupport } from '../pages/BrokerSupport'
 
 export const brokerRoutes: RouteObject[] = [
   { index: true, element: <BrokerDashboard /> },
@@ -30,5 +31,6 @@ export const brokerRoutes: RouteObject[] = [
   { path: 'profile', element: <BrokerProfile /> },
   { path: 'profile/edit', element: <BrokerEditProfile /> },
   { path: 'notifications', element: <BrokerNotifications /> },
+  { path: 'support', element: <BrokerSupport /> },
   { path: 'settings', element: <Navigate to={ROUTES.BROKER.PROFILE} replace /> },
 ]

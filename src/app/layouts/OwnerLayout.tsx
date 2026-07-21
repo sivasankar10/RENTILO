@@ -49,6 +49,7 @@ const baseSidebarItems: OwnerSidebarItem[] = [
   { label: 'Maintenance', href: ROUTES.OWNER.MAINTENANCE, icon: Wrench },
   { label: 'Leases', href: ROUTES.OWNER.LEASES, icon: FileText },
   { label: 'Payments', href: ROUTES.OWNER.PAYMENTS, icon: CreditCard },
+  { label: 'Help & Support', href: ROUTES.OWNER.SUPPORT, icon: HelpCircle },
 ]
 
 // Premium-only features (locked for FREE users)
@@ -168,10 +169,11 @@ function OwnerProfileMenu({
         <button
           type="button"
           role="menuitem"
+          onClick={() => handleNavigate(ROUTES.OWNER.SUPPORT)}
           className="flex items-center gap-3 border-0 bg-transparent px-4 py-3 text-left text-sm font-semibold tracking-wide text-brand-outline transition-colors hover:bg-brand-container-low hover:text-brand"
         >
           <HelpCircle size={18} className="shrink-0" />
-          Help Center
+          Help &amp; Support
         </button>
         <button
           type="button"

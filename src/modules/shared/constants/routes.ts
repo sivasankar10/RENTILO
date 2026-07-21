@@ -29,6 +29,7 @@ export const ROUTES = {
     MY_LEASE: '/tenant/my-lease',
     NOTIFICATIONS: '/tenant/notifications',
     MESSAGES: '/tenant/messages',
+    SUPPORT: '/tenant/support',
     SERIOUS_BUYER_BADGE: '/tenant/serious-buyer-badge',
     SERIOUS_BUYER_PAYMENT: '/tenant/serious-buyer-badge/payment',
   },
@@ -56,6 +57,7 @@ export const ROUTES = {
     SETTINGS: '/owner/settings',
     NOTIFICATIONS: '/owner/notifications',
     MESSAGES: '/owner/messages',
+    SUPPORT: '/owner/support',
     BROKER_PROFILE: (id: string | number) => `/owner/brokers/${id}`,
   },
 
@@ -73,6 +75,7 @@ export const ROUTES = {
     ANALYTICS: '/broker/analytics',
     MESSAGES: '/broker/messages',
     NOTIFICATIONS: '/broker/notifications',
+    SUPPORT: '/broker/support',
     SETTINGS: '/broker/settings',
     PROFILE: '/broker/profile',
     EDIT_PROFILE: '/broker/profile/edit',
@@ -112,5 +115,6 @@ export const ROUTES = {
     MAINTENANCE_TICKETS: '/admin/maintenance-tickets',
     NOTIFICATIONS: '/admin/notifications',
     MESSAGES: '/admin/messages',
+    SUPPORT_QUERIES: '/admin/support-queries',
   },
 } as const

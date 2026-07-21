@@ -8,6 +8,7 @@ import {
   CreditCard,
   FileText,
   LayoutGrid,
+  LifeBuoy,
   LogOut,
   Menu,
   MessageSquare,
@@ -23,6 +24,7 @@ import { ROUTES } from '@shared/constants/routes'
 import { cn } from '@shared/utils/cn'
 import { useAuthStore } from '@app/store/authStore'
 import { usePrototypeStore } from '@shared/store/prototypeStore'
+import { useSupportStore, selectAdminUnreadCount } from '@shared/store/supportStore'
 import { STATIC_ADMIN_UNREAD_IDS } from '@modules/admin/constants/adminNotifications'
 import { useAdminNotificationsReadStore } from '@modules/admin/store/adminNotificationsReadStore'
 import { ToastContainer } from '@modules/admin/components/Toast'
@@ -51,14 +53,17 @@ const mainNavItems: AdminNavItem[] = [
   { label: 'Platform Configuration', href: ROUTES.ADMIN.PLATFORM_CONFIGURATION, icon: Settings },
   { label: 'Approval Requests', href: ROUTES.ADMIN.APPROVAL_REQUESTS, icon: ClipboardCheck },
   { label: 'Assignment Management', href: ROUTES.ADMIN.ASSIGNMENT_MANAGEMENT, icon: LayoutGrid },
+  { label: 'Help & Support', href: ROUTES.ADMIN.SUPPORT_QUERIES, icon: LifeBuoy },
 ]
 
 function NavItemLink({
   item,
   onNavigate,
+  alert = false,
 }: {
   item: AdminNavItem
   onNavigate?: () => void
+  alert?: boolean
 }) {
   const Icon = item.icon
   const { pathname } = useLocation()
@@ -82,12 +87,18 @@ function NavItemLink({
         const active = activeOverride ?? isActive
         return (
           <>
-            <Icon
-              size={18}
-              strokeWidth={1.75}
-              className={cn('shrink-0', active ? 'text-primary' : 'text-text-muted')}
-            />
+            <span className="relative shrink-0">
+              <Icon
+                size={18}
+                strokeWidth={1.75}
+                className={cn(active ? 'text-primary' : 'text-text-muted')}
+              />
+              {alert && (
+                <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-status-error ring-2 ring-surface" />
+              )}
+            </span>
             <span>{item.label}</span>
+            {alert && <span className="ml-auto h-2 w-2 rounded-full bg-status-error" />}
           </>
         )
       }}
@@ -100,12 +111,13 @@ function NavItemLink({
  */
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
   const isMobile = useMediaQuery('(max-width: 1024px)')
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const isNotificationsPage = pathname.startsWith(ROUTES.ADMIN.NOTIFICATIONS)
   const isMessagesPage = pathname.startsWith(ROUTES.ADMIN.MESSAGES)
+  const isSupportPage = pathname.startsWith(ROUTES.ADMIN.SUPPORT_QUERIES)
+  const hasUnreadSupport = useSupportStore((state) => selectAdminUnreadCount(state.queries) > 0)
   const logout = useAuthStore((s) => s.logout)
   const hasUnreadSharedNotifications = usePrototypeStore((state) =>
     state.notifications.some(
@@ -166,10 +178,7 @@ export function AdminLayout() {
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => {
-                navigate(ROUTES.ADMIN.NOTIFICATIONS)
-                setHelpOpen(false)
-              }}
+              onClick={() => navigate(ROUTES.ADMIN.NOTIFICATIONS)}
               className={cn(
                 'relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors',
                 isNotificationsPage && 'bg-white/15 text-white',
@@ -184,10 +193,7 @@ export function AdminLayout() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                navigate(ROUTES.ADMIN.MESSAGES)
-                setHelpOpen(false)
-              }}
+              onClick={() => navigate(ROUTES.ADMIN.MESSAGES)}
               className={cn(
                 'p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors',
                 isMessagesPage && 'bg-white/15 text-white',
@@ -197,17 +203,21 @@ export function AdminLayout() {
             >
               <MessageSquare size={20} strokeWidth={1.75} />
             </button>
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setHelpOpen((v) => !v)}
-                className="p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
-                aria-label="Help"
-              >
-                <CircleHelp size={20} strokeWidth={1.75} />
-              </button>
-              {helpOpen && <HelpPopover onClose={() => setHelpOpen(false)} />}
-            </div>
+            <button
+              type="button"
+              onClick={() => navigate(ROUTES.ADMIN.SUPPORT_QUERIES)}
+              className={cn(
+                'relative p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors',
+                isSupportPage && 'bg-white/15 text-white',
+              )}
+              aria-label="Help & Support"
+              aria-current={isSupportPage ? 'page' : undefined}
+            >
+              <CircleHelp size={20} strokeWidth={1.75} />
+              {hasUnreadSupport && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-status-error rounded-full ring-2 ring-[#0f172a]" />
+              )}
+            </button>
             <button
               type="button"
               className="ml-1 p-0.5 rounded-full ring-2 ring-white/20 hover:ring-white/40 transition-all"
@@ -262,7 +272,11 @@ export function AdminLayout() {
             <ul className="space-y-1">
               {mainNavItems.map((item) => (
                 <li key={item.href}>
-                  <NavItemLink item={item} onNavigate={() => isMobile && setSidebarOpen(false)} />
+                  <NavItemLink
+                    item={item}
+                    onNavigate={() => isMobile && setSidebarOpen(false)}
+                    alert={item.href === ROUTES.ADMIN.SUPPORT_QUERIES && hasUnreadSupport}
+                  />
                 </li>
               ))}
             </ul>
@@ -300,38 +314,4 @@ export function AdminLayout() {
   )
 }
 
-function HelpPopover({ onClose }: { onClose: () => void }) {
-  const items = [
-    { title: 'Documentation', desc: 'Read the admin handbook' },
-    { title: 'Contact support', desc: '24/7 enterprise success team' },
-    { title: 'Keyboard shortcuts', desc: 'View all available shortcuts' },
-    { title: "What's new", desc: 'See the latest platform updates' },
-  ]
-  return (
-    <div className="absolute right-0 top-full mt-2 w-72 rounded-card border border-outline bg-white shadow-modal overflow-hidden z-50">
-      <div className="flex items-center justify-between border-b border-outline px-4 py-3">
-        <p className="text-body font-bold text-text-primary">Help & Support</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-label text-text-muted hover:text-text-primary transition-colors"
-        >
-          Close
-        </button>
-      </div>
-      <div className="divide-y divide-outline">
-        {items.map((item) => (
-          <button
-            key={item.title}
-            type="button"
-            onClick={onClose}
-            className="block w-full px-4 py-3 text-left hover:bg-hover-light transition-colors"
-          >
-            <p className="text-body font-semibold text-text-primary">{item.title}</p>
-            <p className="text-label text-text-muted">{item.desc}</p>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
+

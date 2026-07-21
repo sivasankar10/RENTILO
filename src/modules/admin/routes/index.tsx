@@ -17,6 +17,7 @@ import { AdminAssignmentManagement } from '../pages/AdminAssignmentManagement'
 import { AdminNotifications } from '../pages/AdminNotifications'
 import { AdminMaintenanceTickets } from '../pages/AdminMaintenanceTickets'
 import { AdminMessages } from '../pages/AdminMessages'
+import { AdminSupportQueries } from '../pages/AdminSupportQueries'
 
 export const adminRoutes: RouteObject[] = [
   { index: true, element: <AdminDashboard /> },
@@ -38,4 +39,5 @@ export const adminRoutes: RouteObject[] = [
   { path: 'maintenance-tickets', element: <AdminMaintenanceTickets /> },
   { path: 'notifications', element: <AdminNotifications /> },
   { path: 'messages', element: <AdminMessages /> },
+  { path: 'support-queries', element: <AdminSupportQueries /> },
 ]

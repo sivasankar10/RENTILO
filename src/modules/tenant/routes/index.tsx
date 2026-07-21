@@ -19,6 +19,7 @@ import { TenantAgreementReview } from '../pages/TenantAgreementReview'
 import { TenantOnboardingPayment } from '../pages/TenantOnboardingPayment'
 import { TenantMyLease } from '../pages/TenantMyLease'
 import { TenantMaintenanceDetail } from '../pages/TenantMaintenanceDetail'
+import { TenantSupport } from '../pages/TenantSupport'
 import { PaymentReceiptPage } from '@shared/pages/PaymentReceiptPage'
 import { TenantHomeBackBar } from '../components/TenantHomeBackBar'
 
@@ -38,6 +39,7 @@ export const tenantRoutes: RouteObject[] = [
   { path: 'saved', element: <SavedPropertiesPage /> },
   { path: 'notifications', element: <NotificationsPage /> },
   { path: 'messages', element: <MessagesPage /> },
+  { path: 'support', element: <TenantSupport /> },
   { path: 'serious-buyer-badge', element: <SeriousBuyerBadgePage /> },
   { path: 'serious-buyer-badge/payment', element: <SeriousBuyerPaymentPage /> },
   { path: 'profile', element: <EditProfilePage /> },

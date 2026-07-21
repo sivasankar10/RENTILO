@@ -31,6 +31,7 @@ export function BrokerNotifications() {
       navigate(relatedId ? ROUTES.BROKER.PROPERTY(relatedId) : ROUTES.BROKER.ASSIGNED_PROPERTIES)
     } else if (action === 'view_lead') navigate(ROUTES.BROKER.CLIENTS)
     else if (action === 'view_commission') navigate(ROUTES.BROKER.COMMISSION)
+    else if (action === 'view_support_query') navigate(relatedId ? `${ROUTES.BROKER.SUPPORT}?query=${relatedId}` : ROUTES.BROKER.SUPPORT)
     else navigate(ROUTES.BROKER.LISTINGS)
   }
 

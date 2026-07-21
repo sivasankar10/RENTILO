@@ -7,6 +7,7 @@ import {
   CircleHelp,
   FileText,
   LayoutGrid,
+  LifeBuoy,
   LogOut,
   Menu,
   MessageSquare,
@@ -43,6 +44,7 @@ const mainNavItems: BrokerNavItem[] = [
   { label: 'Tenant leads', href: ROUTES.BROKER.CLIENTS, icon: Users },
   { label: 'Listings', href: ROUTES.BROKER.LISTINGS, icon: FileText },
   { label: 'Analytics', href: ROUTES.BROKER.ANALYTICS, icon: BarChart3 },
+  { label: 'Help & Support', href: ROUTES.BROKER.SUPPORT, icon: LifeBuoy },
 ]
 
 const footerNavItems: BrokerNavItem[] = []
@@ -309,8 +311,13 @@ export function BrokerDashboardLayout() {
             </button>
             <button
               type="button"
-              className="p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors"
-              aria-label="Help"
+              onClick={() => navigate(ROUTES.BROKER.SUPPORT)}
+              className={cn(
+                'p-2.5 rounded-lg text-white/90 hover:bg-white/10 transition-colors',
+                pathname.startsWith(ROUTES.BROKER.SUPPORT) && 'bg-white/15 text-white',
+              )}
+              aria-label="Help & Support"
+              aria-current={pathname.startsWith(ROUTES.BROKER.SUPPORT) ? 'page' : undefined}
             >
               <CircleHelp size={20} strokeWidth={1.75} />
             </button>
