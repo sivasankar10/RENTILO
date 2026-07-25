@@ -45,7 +45,9 @@ export function BrokerMessagesPage() {
       const participant = users.find(
         (user) =>
           thread.participantIds.includes(user.id) &&
-          user.roles.includes(thread.type === 'owner_broker' ? 'owner' : 'tenant'),
+          (thread.type === 'owner_broker'
+            ? user.roles.includes('owner') || user.roles.includes('enterprise')
+            : user.roles.includes('tenant')),
       )
       if (!participant) return
       const messages: Message[] = thread.messages.map((message) => ({

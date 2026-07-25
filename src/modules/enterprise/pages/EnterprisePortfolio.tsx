@@ -73,12 +73,12 @@ export function EnterprisePortfolio() {
 
       {/* No Block State - Show Property Info */}
       {!blockData && currentBlock && (
-        <div className="rounded-xl border border-outline bg-white p-6 shadow-sm space-y-4">
+        <div className="rounded-xl border border-outline bg-white p-6 shadow-sm space-y-5">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-[18px] font-bold text-[#0f172a]">{currentBlock.title}</h2>
               <p className="mt-1 text-[13px] text-text-muted">{currentBlock.address}</p>
-              <p className="mt-1 text-[13px] text-text-muted">{currentBlock.city}, {currentBlock.neighborhood}</p>
+              <p className="mt-1 text-[13px] text-text-muted">{currentBlock.neighborhood}, {currentBlock.city}</p>
             </div>
             <span className="rounded-pill bg-amber-50 border border-amber-200 px-3 py-1 text-[10px] font-bold text-amber-700">No Blocks</span>
           </div>
@@ -87,8 +87,18 @@ export function EnterprisePortfolio() {
             <div><p className="text-[10px] font-bold uppercase text-text-muted">Type</p><p className="mt-1 text-[14px] font-bold text-[#0f172a]">{currentBlock.propertyType}</p></div>
             <div><p className="text-[10px] font-bold uppercase text-text-muted">Price</p><p className="mt-1 text-[14px] font-bold text-[#0f172a]">{currentBlock.price}</p></div>
             <div><p className="text-[10px] font-bold uppercase text-text-muted">Area</p><p className="mt-1 text-[14px] font-bold text-[#0f172a]">{currentBlock.sqft} sqft</p></div>
-            <div><p className="text-[10px] font-bold uppercase text-text-muted">Posted</p><p className="mt-1 text-[14px] font-bold text-[#0f172a]">{new Date(currentBlock.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p></div>
+            <div><p className="text-[10px] font-bold uppercase text-text-muted">Beds / Baths</p><p className="mt-1 text-[14px] font-bold text-[#0f172a]">{currentBlock.beds} / {currentBlock.baths}</p></div>
           </div>
+          {/* Highlights */}
+          {currentBlock.highlights.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-outline pt-4">
+              {currentBlock.highlights.map((h) => (<div key={h.label}><p className="text-[10px] font-bold uppercase text-text-muted">{h.label}</p><p className="mt-1 text-[13px] font-semibold text-[#0f172a]">{h.value}</p></div>))}
+            </div>
+          )}
+          {/* Image */}
+          {currentBlock.image && (
+            <div className="rounded-xl overflow-hidden"><img src={currentBlock.image} alt={currentBlock.title} className="w-full h-48 object-cover" /></div>
+          )}
           <div className="flex gap-3 pt-2">
             <button onClick={() => navigate(`${ROUTES.ENTERPRISE.PORTFOLIO}/edit-block/${currentBlock.id}`)} className="rounded-xl bg-[#0f172a] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-slate-800">Edit Property / Add Block</button>
           </div>

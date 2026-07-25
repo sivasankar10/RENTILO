@@ -73,6 +73,19 @@ export function PropertyDetailsPage() {
 
   const onboardingRecords = useOnboardingStore((state) => state.records)
   const showInterest = useOnboardingStore((state) => state.showInterest)
+
+  // Track view: increment property view count when tenant opens this page
+  const updateOwnerProperty = usePrototypeStore((state) => state.updateOwnerProperty)
+  const prototypeListings = usePrototypeStore((state) => state.listings)
+  useMemo(() => {
+    if (!id) return
+    const listing = prototypeListings.find((l) => l.id === id)
+    if (listing) {
+      const prop = usePrototypeStore.getState().properties.find((p) => p.id === listing.propertyId)
+      if (prop) updateOwnerProperty(listing.propertyId, { views: prop.views + 1 })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
   const scheduleVisit = useOnboardingStore((state) => state.scheduleVisit)
   const localKycVerified = useTenantKycStore((state) => state.status === 'verified')
   const sharedKycVerified = usePrototypeStore((state) => state.users.find((item) => item.id === user?.id)?.kycStatus === 'Verified')

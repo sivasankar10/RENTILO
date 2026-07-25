@@ -4,7 +4,8 @@ import { ROUTES } from '@shared/constants/routes'
 import { useAuth } from '@shared/hooks/useAuth'
 import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { cn } from '@shared/utils/cn'
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
+import { useEnterpriseStore } from '@modules/enterprise/store/enterpriseStore'
 
 const sidebarItems = [
   { label: 'Dashboard', href: ROUTES.ENTERPRISE.DASHBOARD, icon: LayoutGrid },
@@ -69,8 +70,8 @@ export function EnterpriseLayout() {
     return Array.from(names)
   }, [enterpriseBlocks, standaloneProperties])
 
-  const [selectedProperty, setSelectedProperty] = useState('')
-  const [selectedBlockId, setSelectedBlockId] = useState('')
+  const [selectedProperty, setSelectedProperty] = [useEnterpriseStore((s) => s.selectedProperty), useEnterpriseStore((s) => s.setSelectedProperty)]
+  const [selectedBlockId, setSelectedBlockId] = [useEnterpriseStore((s) => s.selectedBlockId), useEnterpriseStore((s) => s.setSelectedBlockId)]
 
   // Current property
   const currentPropertyName = propertyNames.includes(selectedProperty) ? selectedProperty : propertyNames[0] ?? ''
@@ -189,7 +190,7 @@ export function EnterpriseLayout() {
           <NavLink to={`${ROUTES.ENTERPRISE.ROOT}/notifications`} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-semibold text-text-muted hover:bg-hover-light">
             <Settings size={17} /> Settings
           </NavLink>
-          <button className="w-full rounded-xl bg-primary px-4 py-2.5 text-[12px] font-bold text-white text-center">
+          <button onClick={() => navigate(`${ROUTES.ENTERPRISE.ROOT}/support`)} className="w-full rounded-xl bg-primary px-4 py-2.5 text-[12px] font-bold text-white text-center">
             ⓘ Help Center
           </button>
           <button onClick={handleLogout} className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-[13px] font-semibold text-text-muted hover:bg-hover-light">

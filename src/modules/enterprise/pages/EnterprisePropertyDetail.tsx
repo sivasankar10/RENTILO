@@ -16,6 +16,8 @@ export function EnterprisePropertyDetail() {
   const allProperties = usePrototypeStore((s) => s.properties)
   const prototypeApplications = usePrototypeStore((s) => s.applications)
   const prototypeUsers = usePrototypeStore((s) => s.users)
+  const tenantSavedListings = usePrototypeStore((s) => s.tenantSavedListings)
+  const listings = usePrototypeStore((s) => s.listings)
   const maintenanceTickets = useOwnerMaintenanceStore((s) => s.tickets)
   const ensureLeaseThread = useLeaseChatStore((s) => s.ensureThread)
   const { user } = useAuth()
@@ -252,9 +254,9 @@ export function EnterprisePropertyDetail() {
             <p className="text-[22px] font-extrabold text-[#0f172a]">{displayProperty?.price ?? currentBlock.price}<span className="ml-1 text-[13px] font-semibold text-text-muted">{displayProperty?.pricePeriod ?? '/ mo'}</span></p>
             <p className="text-[11px] text-text-muted">Deposit: {displayProperty?.deposit ?? currentBlock.deposit}</p>
             <div className="mt-4 grid grid-cols-3 gap-3 border-t border-outline pt-4 text-center">
-              <div><p className="text-[16px] font-bold text-[#0f172a]">{displayProperty?.views ?? 0}</p><p className="text-[9px] text-text-muted">Views</p></div>
-              <div><p className="text-[16px] font-bold text-[#0f172a]">{displayProperty?.shortlists ?? 0}</p><p className="text-[9px] text-text-muted">Shortlists</p></div>
-              <div><p className="text-[16px] font-bold text-[#0f172a]">{interestedLeads.length}</p><p className="text-[9px] text-text-muted">Leads</p></div>
+              <div><p className="text-[16px] font-bold text-[#0f172a]">{(() => { const pid = selectedUnitProperty?.id; if (!pid) return displayProperty?.views ?? 0; const listing = listings.find((l) => l.propertyId === pid); return listing ? (displayProperty?.views ?? 0) + prototypeApplications.filter((a) => a.propertyId === pid).length : displayProperty?.views ?? 0 })()}</p><p className="text-[9px] text-text-muted">Views</p></div>
+              <div><p className="text-[16px] font-bold text-[#0f172a]">{(() => { const pid = selectedUnitProperty?.id; if (!pid) return displayProperty?.shortlists ?? 0; const listing = listings.find((l) => l.propertyId === pid); return listing ? tenantSavedListings.filter((s) => s.listingId === listing.id).length : displayProperty?.shortlists ?? 0 })()}</p><p className="text-[9px] text-text-muted">Shortlists</p></div>
+              <div><p className="text-[16px] font-bold text-[#0f172a]">{(() => { const pid = selectedUnitProperty?.id ?? propertyId; return prototypeApplications.filter((a) => a.propertyId === pid && a.status !== 'rejected').length })()}</p><p className="text-[9px] text-text-muted">Leads</p></div>
             </div>
           </div>
 
