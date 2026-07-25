@@ -16,6 +16,7 @@ import { EnterpriseReports } from '../pages/EnterpriseReports'
 import { EnterpriseLeases } from '../pages/EnterpriseLeases'
 import { EnterpriseAssignmentManagement } from '../pages/EnterpriseAssignmentManagement'
 import { EnterpriseMaintenance } from '../pages/EnterpriseMaintenance'
+import { EnterpriseSupport } from '../pages/EnterpriseSupport'
 
 export const enterpriseRoutes: RouteObject[] = [
   { index: true, element: <EnterpriseDashboard /> },
@@ -36,4 +37,5 @@ export const enterpriseRoutes: RouteObject[] = [
   { path: 'reports', element: <EnterpriseReports /> },
   { path: 'leases', element: <EnterpriseLeases /> },
   { path: 'assignments', element: <EnterpriseAssignmentManagement /> },
+  { path: 'support', element: <EnterpriseSupport /> },
 ]

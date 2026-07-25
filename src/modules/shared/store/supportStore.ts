@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { usePrototypeStore } from './prototypeStore'
 
 // ───────────────────────── Types ─────────────────────────
-export type SupportRole = 'tenant' | 'owner' | 'broker'
+export type SupportRole = 'tenant' | 'owner' | 'broker' | 'enterprise'
 export type SupportAuthorRole = SupportRole | 'admin'
 export type SupportCategory = 'App' | 'Property' | 'Payments' | 'Account' | 'Listings' | 'Other'
 export type SupportStatus = 'Open' | 'Answered' | 'Resolved'

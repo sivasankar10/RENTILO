@@ -47,6 +47,11 @@ export function EnterpriseRegisterProperty() {
   const [description, setDescription] = useState('')
   const [blocks, setBlocks] = useState<BlockData[]>([])
   const [supportStatus, setSupportStatus] = useState('')
+  const [leaseDurationValue, setLeaseDurationValue] = useState(12)
+  const [customTags, setCustomTags] = useState<string[]>([])
+  const [streetAddress, setStreetAddress] = useState('')
+  const [city, setCity] = useState('Bangalore')
+  const [neighborhood, setNeighborhood] = useState('')
 
   // Pre-fill in edit mode
   useEffect(() => {
@@ -56,6 +61,9 @@ export function EnterpriseRegisterProperty() {
       setPropertyName(editProperty.title.replace(` - Block ${editBlockData.blockName}`, '').replace(` - ${editBlockData.blockName}`, ''))
       setPropertyType(editProperty.propertyType)
       setDescription(editProperty.description)
+      setStreetAddress(editProperty.address)
+      setCity(editProperty.city)
+      setNeighborhood(editProperty.neighborhood)
       setBlocks([{
         id: 'edit-block',
         name: `Block ${editBlockData.blockName}`,
@@ -67,6 +75,9 @@ export function EnterpriseRegisterProperty() {
       setPropertyName(editProperty.title)
       setPropertyType(editProperty.propertyType)
       setDescription(editProperty.description)
+      setStreetAddress(editProperty.address)
+      setCity(editProperty.city)
+      setNeighborhood(editProperty.neighborhood)
       setBlocks([]) // No blocks
     }
   }, [editProperty, editBlockData])
@@ -109,6 +120,9 @@ export function EnterpriseRegisterProperty() {
               title: propertyName || p.title,
               propertyType: propertyType || p.propertyType,
               description: description || p.description,
+              address: streetAddress || p.address,
+              city: city || p.city,
+              neighborhood: neighborhood || p.neighborhood,
               updatedAt: timestamp,
             } : p
           ),
@@ -146,11 +160,11 @@ export function EnterpriseRegisterProperty() {
             title: `${propertyName || 'Enterprise Property'} - ${block.name}`,
             propertyType: propertyType || 'Commercial Complex',
             description: description || `${block.name}. ${block.floors} floors, ${block.totalUnits} units capacity.`,
-            address: `${propertyName}, ${block.name}`,
+            address: streetAddress || `${propertyName}, ${block.name}`,
             unit: block.name,
             postalCode: '560001',
-            city: 'Bangalore',
-            neighborhood: 'Central',
+            city: city || 'Bangalore',
+            neighborhood: neighborhood || 'Central',
             price: 'Rs. 45,000',
             pricePeriod: '/ mo',
             deposit: 'Rs. 90,000',
@@ -163,7 +177,7 @@ export function EnterpriseRegisterProperty() {
             visitEndTime: '1:00 PM',
             preferredVisitSlots: [{ day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' }],
             visitSchedulingEnabled: true,
-            leaseDuration: 12,
+            leaseDuration: leaseDurationValue,
             noticePeriod: '30',
             image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
             gallery: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'],
@@ -210,11 +224,11 @@ export function EnterpriseRegisterProperty() {
           title: `${propertyName || 'Enterprise Property'} - ${block.name}`,
           propertyType: propertyType || 'Commercial Complex',
           description: description || `${block.name} of ${propertyName}. ${block.floors} floors, ${block.totalUnits} total units.`,
-          address: `${propertyName}, ${block.name}`,
+          address: streetAddress || `${propertyName}, ${block.name}`,
           unit: block.name,
           postalCode: '560001',
-          city: 'Bangalore',
-          neighborhood: 'Central',
+          city: city || 'Bangalore',
+          neighborhood: neighborhood || 'Central',
           price: 'Rs. 45,000',
           pricePeriod: '/ mo',
           deposit: 'Rs. 90,000',
@@ -227,7 +241,7 @@ export function EnterpriseRegisterProperty() {
           visitEndTime: '1:00 PM',
           preferredVisitSlots: [{ day: 'Saturday', startTime: '10:00 AM', endTime: '1:00 PM' }],
           visitSchedulingEnabled: true,
-          leaseDuration: 12,
+          leaseDuration: leaseDurationValue,
           noticePeriod: '30',
           image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
           gallery: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'],
@@ -443,7 +457,7 @@ export function EnterpriseRegisterProperty() {
 
                   <div>
                     <label className="text-label font-medium text-text-muted">Street Address</label>
-                    <input placeholder="e.g., 123 Architecture Blvd" className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                    <input value={streetAddress} onChange={(e) => setStreetAddress(e.target.value)} placeholder="e.g., 123 Architecture Blvd" className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
                     <p className="mt-1 text-[11px] text-text-muted">Full legal address as it appears on title deeds.</p>
                   </div>
 
@@ -461,21 +475,18 @@ export function EnterpriseRegisterProperty() {
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <label className="text-label font-medium text-text-muted">City</label>
-                      <select className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-3 text-body text-text-primary focus:border-primary focus:outline-none">
+                      <select value={city} onChange={(e) => setCity(e.target.value)} className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-3 text-body text-text-primary focus:border-primary focus:outline-none">
                         <option>New York City</option>
                         <option>London</option>
-                        <option>Berlin</option>
-                        <option>Tokyo</option>
-                        <option>Singapore</option>
-                        <option>Dubai</option>
-                        <option>Sydney</option>
-                        <option>Toronto</option>
                         <option>Bangalore</option>
+                        <option>Mumbai</option>
+                        <option>Delhi</option>
+                        <option>Chennai</option>
                       </select>
                     </div>
                     <div>
                       <label className="text-label font-medium text-text-muted">Neighborhood</label>
-                      <input placeholder="Manhattan" className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none" />
+                      <input value={neighborhood} onChange={(e) => setNeighborhood(e.target.value)} placeholder="Manhattan" className="mt-1.5 h-11 w-full rounded-input border border-outline bg-white px-4 text-body text-text-primary focus:border-primary focus:outline-none" />
                     </div>
                   </div>
                 </div>
@@ -612,9 +623,19 @@ export function EnterpriseRegisterProperty() {
                     <label className="text-label font-medium text-text-muted">Unique Selling Points</label>
                     <textarea rows={4} placeholder="Describe unique features like floor-to-ceiling windows, private balconies, or designer finishes..." className="mt-1.5 w-full resize-none rounded-input border border-outline bg-white px-4 py-3 text-body text-text-primary focus:border-primary focus:outline-none" />
                   </div>
-                  <button type="button" className="inline-flex items-center gap-1.5 rounded-lg border border-outline px-4 py-2 text-[12px] font-semibold text-text-primary hover:bg-hover-light transition-colors">
+                  <button type="button" onClick={() => { const tag = prompt('Enter custom tag:'); if (tag?.trim()) setCustomTags([...customTags, tag.trim()]) }} className="inline-flex items-center gap-1.5 rounded-lg border border-outline px-4 py-2 text-[12px] font-semibold text-text-primary hover:bg-hover-light transition-colors">
                     <Plus size={13} /> Add custom tag
                   </button>
+                  {customTags.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {customTags.map((tag, i) => (
+                        <span key={i} className="inline-flex items-center gap-1.5 rounded-pill bg-primary-50 px-3 py-1 text-[11px] font-bold text-primary">
+                          {tag}
+                          <button type="button" onClick={() => setCustomTags(customTags.filter((_, idx) => idx !== i))} className="text-primary/60 hover:text-primary">×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Bottom Info Cards */}
@@ -753,10 +774,10 @@ export function EnterpriseRegisterProperty() {
                     <label className="text-label font-medium text-text-muted">Minimum Lease Duration (Months)</label>
                     <div className="mt-3 flex items-center justify-between text-[12px] text-text-muted">
                       <span>1 Month</span>
-                      <span className="text-primary font-bold">12 Months</span>
+                      <span className="text-primary font-bold">{leaseDurationValue} Months</span>
                       <span>24 Months</span>
                     </div>
-                    <input type="range" min="1" max="24" defaultValue="12" className="mt-1 w-full accent-primary" />
+                    <input type="range" min={1} max={24} value={leaseDurationValue} onChange={(e) => setLeaseDurationValue(parseInt(e.target.value))} className="mt-1 w-full accent-primary" />
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">

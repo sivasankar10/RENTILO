@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { CheckCircle2, CreditCard, Download, IndianRupee, Search } from 'lucide-react'
+import { CheckCircle2, CreditCard, Download, IndianRupee, Search, X } from 'lucide-react'
 import { cn } from '@shared/utils/cn'
 import { useAuth } from '@shared/hooks/useAuth'
 import { usePrototypeStore } from '@shared/store/prototypeStore'
 import { useEnterpriseContext } from '../hooks/useEnterpriseContext'
+import type { PrototypePayment } from '@shared/types/prototype'
 
 type FilterStatus = 'All' | 'Successful' | 'Pending' | 'Failed'
 
@@ -32,6 +33,7 @@ export function EnterpriseFinance() {
 
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('All')
   const [search, setSearch] = useState('')
+  const [selectedReceipt, setSelectedReceipt] = useState<PrototypePayment | null>(null)
 
   // Get all property IDs owned by this enterprise (block + unit properties)
   const enterprisePropertyIds = useMemo(() => {
@@ -153,7 +155,7 @@ export function EnterpriseFinance() {
                     </span>
                     <span className="text-[11px] text-text-muted">{payment.paidAt}</span>
                     {payment.status === 'Successful' && (
-                      <button type="button" className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0f172a] hover:text-primary">
+                      <button type="button" onClick={() => setSelectedReceipt(payment)} className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0f172a] hover:text-primary">
                         <Download size={13} /> Receipt
                       </button>
                     )}
@@ -172,6 +174,46 @@ export function EnterpriseFinance() {
           </div>
         )}
       </div>
+
+      {/* Receipt Modal */}
+      {selectedReceipt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-[#0f172a]/40 backdrop-blur-sm" onClick={() => setSelectedReceipt(null)} />
+          <div className="relative w-full max-w-lg rounded-xl bg-white shadow-xl">
+            <div className="flex items-start justify-between border-b border-outline px-6 py-5">
+              <div>
+                <h2 className="text-[18px] font-bold text-[#0f172a]">Payment Receipt</h2>
+                <p className="mt-1 text-[12px] text-text-muted">{selectedReceipt.txnId}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedReceipt(null)} className="rounded-lg p-2 text-text-muted hover:bg-hover-light"><X size={18} /></button>
+            </div>
+            <div className="px-6 py-5 space-y-5">
+              <div className="text-center border-b border-outline pb-5">
+                <p className="text-[32px] font-black text-[#0f172a]">{selectedReceipt.amountDisplay}</p>
+                <span className={cn('mt-2 inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-[11px] font-bold', statusStyles[selectedReceipt.status] ?? 'bg-slate-100 text-slate-600')}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" />{selectedReceipt.status}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-[13px]">
+                <div><p className="text-[10px] font-bold uppercase text-text-muted">Category</p><p className="mt-1 font-bold text-[#0f172a]">{selectedReceipt.category}</p></div>
+                <div><p className="text-[10px] font-bold uppercase text-text-muted">Transaction ID</p><p className="mt-1 font-bold text-[#0f172a]">{selectedReceipt.txnId}</p></div>
+                <div><p className="text-[10px] font-bold uppercase text-text-muted">Payment Method</p><p className="mt-1 font-bold text-[#0f172a]">{selectedReceipt.method}</p></div>
+                <div><p className="text-[10px] font-bold uppercase text-text-muted">Flow</p><p className="mt-1 font-bold text-[#0f172a]">{selectedReceipt.flow.replace(/_/g, ' ')}</p></div>
+                <div><p className="text-[10px] font-bold uppercase text-text-muted">Date & Time</p><p className="mt-1 font-bold text-[#0f172a]">{selectedReceipt.paidAt}</p></div>
+                <div><p className="text-[10px] font-bold uppercase text-text-muted">Reference</p><p className="mt-1 font-bold text-[#0f172a]">{selectedReceipt.refId}</p></div>
+                {selectedReceipt.propertyId && <div className="col-span-2"><p className="text-[10px] font-bold uppercase text-text-muted">Property</p><p className="mt-1 font-bold text-[#0f172a]">{allProperties.find((p) => p.id === selectedReceipt.propertyId)?.title ?? selectedReceipt.propertyId}</p></div>}
+                {selectedReceipt.tenantId && <div className="col-span-2"><p className="text-[10px] font-bold uppercase text-text-muted">Tenant</p><p className="mt-1 font-bold text-[#0f172a]">{users.find((u) => u.id === selectedReceipt.tenantId)?.firstName} {users.find((u) => u.id === selectedReceipt.tenantId)?.lastName}</p></div>}
+              </div>
+              {selectedReceipt.description && (
+                <div className="border-t border-outline pt-4"><p className="text-[10px] font-bold uppercase text-text-muted">Description</p><p className="mt-1 text-[13px] text-[#0f172a]">{selectedReceipt.description}</p></div>
+              )}
+            </div>
+            <div className="border-t border-outline px-6 py-4">
+              <button type="button" onClick={() => setSelectedReceipt(null)} className="w-full rounded-lg bg-[#0f172a] px-5 py-3 text-[13px] font-bold text-white hover:bg-slate-800">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
