@@ -29,6 +29,7 @@ function isProfileSectionActive(pathname: string, id: string): boolean {
   if (id === 'maintenance') return pathname.includes('/maintenance')
   if (id === 'documents') return pathname.includes('/documents')
   if (id === 'my-lease') return pathname.includes('/my-lease')
+  if (id === 'exit-notice') return pathname.includes('/exit-notice')
   return false
 }
 
@@ -45,9 +46,14 @@ export function TenantProfileMenu({ open, onClose }: TenantProfileMenuProps) {
   const hasLease = useOnboardingStore((state) =>
     state.records.some((record) => record.tenant.id === tenantId && Boolean(record.lease))
   )
-  const menuItems = hasLease
-    ? [...MENU_ITEMS, { id: 'my-lease', label: 'My Lease', icon: 'key', href: ROUTES.TENANT.MY_LEASE }]
-    : [...MENU_ITEMS]
+  const hasActiveLease = useOnboardingStore((state) =>
+    state.records.some((record) => record.tenant.id === tenantId && record.lease?.status === 'active')
+  )
+  const menuItems = [
+    ...MENU_ITEMS,
+    ...(hasLease ? [{ id: 'my-lease', label: 'My Lease', icon: 'key', href: ROUTES.TENANT.MY_LEASE } as const] : []),
+    ...(hasActiveLease ? [{ id: 'exit-notice', label: 'Exit Notice', icon: 'logout', href: ROUTES.TENANT.EXIT_NOTICE } as const] : []),
+  ]
 
   useEffect(() => {
     if (!open) return

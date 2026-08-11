@@ -176,6 +176,73 @@ export interface RentalApplication {
   updatedAt: string
 }
 
+export type LeaseExitType = 'notice_period' | 'immediate'
+
+/**
+ * Exit workflow state machine.
+ * Normal notice: inspection_pending -> inspection_scheduled -> refunded
+ * Early exit:    penalty_pending -> penalty_payment -> inspection_pending -> inspection_scheduled -> refunded
+ */
+export type LeaseExitStatus =
+  | 'penalty_pending' // early exit: owner must set the penalty amount
+  | 'penalty_payment' // early exit: owner set the penalty, tenant must pay it
+  | 'inspection_pending' // tenant must schedule the damage-inspection visit
+  | 'inspection_scheduled' // inspection booked, owner must inspect and refund the deposit
+  | 'refunded' // deposit refunded (minus damages); property released for new tenants
+
+export interface LeaseExitInspection {
+  date: string
+  time: string
+  scheduledAt: string
+}
+
+export interface LeaseExitNotice {
+  id: string
+  /** notice_period = tenant serves the full notice period; immediate = tenant pays a penalty to leave early */
+  type: LeaseExitType
+  status: LeaseExitStatus
+  /** ISO timestamp when the exit notice was initiated */
+  requestedAt: string
+  /** Display date the tenant will vacate the property */
+  moveOutDate: string
+  /** ISO date (yyyy-mm-dd) the tenant will vacate the property */
+  moveOutDateIso: string
+  /** Notice period (in days) that applied to this property at the time of notice */
+  noticePeriodDays: number
+  /** Display date of the earliest move-out permitted without paying a penalty */
+  earliestMoveOutDate: string
+  /** ISO date (yyyy-mm-dd) of the earliest move-out permitted without paying a penalty */
+  earliestMoveOutDateIso: string
+  /**
+   * Deadline by which the owner must refund the security deposit.
+   * Normal notice: the chosen move-out date (end of notice period).
+   * Early exit: the earliest move-out date (before the original notice period would have ended).
+   */
+  refundDueDate: string
+  refundDueDateIso: string
+  /** Security deposit held for this lease, used as the refund base */
+  securityDepositAmount: number
+  securityDepositDisplay: string
+  /** Early-exit penalty, decided by the owner (immediate exits only) */
+  penaltyAmount?: number
+  penaltyAmountDisplay?: string
+  penaltyPaymentId?: string
+  penaltyPaidAt?: string
+  /** Damage-inspection visit scheduled by the tenant */
+  inspectionVisit?: LeaseExitInspection
+  /** Damage assessment recorded by the owner during/after the inspection */
+  damageAmount?: number
+  damageAmountDisplay?: string
+  damageNotes?: string
+  /** Security deposit refund (deposit minus damages) paid by the owner */
+  refundAmount?: number
+  refundAmountDisplay?: string
+  refundPaymentId?: string
+  refundedAt?: string
+  /** Set once the refund is complete and the property is released for new tenants */
+  releasedAt?: string
+}
+
 export interface LeaseRecord {
   id: string
   applicationId: string
@@ -186,6 +253,7 @@ export interface LeaseRecord {
   status: 'pending_owner_onboarding' | 'active'
   accessKey?: string
   activatedAt?: string
+  exitNotice?: LeaseExitNotice
   createdAt: string
   updatedAt: string
 }

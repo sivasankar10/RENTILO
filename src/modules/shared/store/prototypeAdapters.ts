@@ -45,6 +45,8 @@ export function toTenantProperty(bundle: PrototypeListingBundle): TenantProperty
     sqft: property.sqft,
     posted: `Posted ${listing.postedDate}`,
     badge: listing.badge ?? (bundle.brokerAssignment ? 'Recommended' : null),
+    noticePeriod: property.noticePeriod,
+    leaseDuration: property.leaseDuration,
     image: property.image,
     gallery: property.gallery,
     highlights: property.highlights,

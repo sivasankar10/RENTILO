@@ -18,6 +18,7 @@ import { SeriousBuyerPaymentPage } from '../pages/SeriousBuyerPaymentPage'
 import { TenantAgreementReview } from '../pages/TenantAgreementReview'
 import { TenantOnboardingPayment } from '../pages/TenantOnboardingPayment'
 import { TenantMyLease } from '../pages/TenantMyLease'
+import { TenantExitNotice } from '../pages/TenantExitNotice'
 import { TenantMaintenanceDetail } from '../pages/TenantMaintenanceDetail'
 import { TenantSupport } from '../pages/TenantSupport'
 import { PaymentReceiptPage } from '@shared/pages/PaymentReceiptPage'
@@ -120,6 +121,14 @@ export const tenantRoutes: RouteObject[] = [
     element: (
       <TenantPageShell>
         <TenantMyLease />
+      </TenantPageShell>
+    ),
+  },
+  {
+    path: 'exit-notice',
+    element: (
+      <TenantPageShell>
+        <TenantExitNotice />
       </TenantPageShell>
     ),
   },]
