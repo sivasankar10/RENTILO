@@ -168,6 +168,10 @@ export function PropertyDetailsPage() {
 
   const gallery = property.gallery.length ? property.gallery : [property.image]
   const visitAlreadyScheduled = onboardingRecord && onboardingRecord.status !== 'interest_shown'
+  const noticePeriodRaw = property.noticePeriod ?? ''
+  const noticePeriodLabel = /\d/.test(noticePeriodRaw) && !/day|month|week/i.test(noticePeriodRaw)
+    ? `${noticePeriodRaw} days`
+    : noticePeriodRaw || 'Not specified'
 
   return (
     <div className={cn(tenantStyles.page, 'min-h-screen')}>
@@ -200,6 +204,9 @@ export function PropertyDetailsPage() {
             </div>
             <p className="text-xs font-semibold tracking-wider text-brand-outline mt-1">
               DEPOSIT: {property.deposit}
+            </p>
+            <p className="text-xs font-semibold tracking-wider text-brand-outline mt-1">
+              NOTICE PERIOD: {noticePeriodLabel}
             </p>
           </div>
         </div>
@@ -249,6 +256,10 @@ export function PropertyDetailsPage() {
                       <span className="text-sm font-semibold text-brand">{spec.value}</span>
                     </div>
                   ))}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-brand-outline font-medium">Notice Period</span>
+                    <span className="text-sm font-semibold text-brand">{noticePeriodLabel}</span>
+                  </div>
                 </div>
               )}
               {property.noBrokerServices && (

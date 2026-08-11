@@ -7,6 +7,8 @@ import type {
   ApplicationStatus,
   BrokerAssignment,
   ChatMessage,
+  LeaseExitNotice,
+  LeaseExitType,
   LeaseRecord,
   MaintenanceTicket,
   OwnerPropertyInput,
@@ -43,6 +45,24 @@ type PrototypeState = PrototypeStateData & {
   approveAgreement: (applicationId: string, tenantSignature: string) => void
   completeOnboardingPayment: (applicationId: string, paymentInput: { method: string; refId?: string }) => void
   confirmTenantOnboarding: (applicationId: string) => void
+  initiateLeaseExit: (
+    leaseId: string,
+    input: {
+      type: LeaseExitType
+      moveOutDate: string
+      moveOutDateIso: string
+      earliestMoveOutDate: string
+      earliestMoveOutDateIso: string
+      noticePeriodDays: number
+    },
+  ) => void
+  setEarlyExitPenalty: (leaseId: string, penaltyAmount: number) => void
+  payEarlyExitPenalty: (leaseId: string, paymentInput: { method: string; refId?: string }) => void
+  scheduleExitInspection: (leaseId: string, visit: { date: string; time: string }) => void
+  settleExitRefund: (
+    leaseId: string,
+    input: { damageAmount: number; damageNotes?: string; method: string; refId?: string },
+  ) => void
   sendChatMessage: (threadId: string, senderId: string, text: string) => void
   createMaintenanceTicket: (
     tenantId: string,
@@ -853,6 +873,262 @@ export const usePrototypeStore = create<PrototypeState>()(
                   }
                 : lease,
             ),
+          }
+        }),
+
+      initiateLeaseExit: (leaseId, input) =>
+        set((state) => {
+          const lease = state.leases.find((item) => item.id === leaseId)
+          if (!lease || lease.status !== 'active' || lease.exitNotice) return state
+          const property = state.properties.find((item) => item.id === lease.propertyId)
+          const timestamp = nowIso()
+          const isImmediate = input.type === 'immediate'
+          const deposit = property ? moneyToNumber(property.deposit) : 0
+
+          // Refund deadline: end of the (original) notice period in both cases.
+          const refundDueDateIso = isImmediate ? input.earliestMoveOutDateIso : input.moveOutDateIso
+          const refundDueDate = isImmediate ? input.earliestMoveOutDate : input.moveOutDate
+
+          const exitNotice: LeaseExitNotice = {
+            id: createId('exit-notice'),
+            type: input.type,
+            // Early exit waits for the owner to set a penalty; a normal notice goes straight to inspection.
+            status: isImmediate ? 'penalty_pending' : 'inspection_pending',
+            requestedAt: timestamp,
+            moveOutDate: input.moveOutDate,
+            moveOutDateIso: input.moveOutDateIso,
+            noticePeriodDays: input.noticePeriodDays,
+            earliestMoveOutDate: input.earliestMoveOutDate,
+            earliestMoveOutDateIso: input.earliestMoveOutDateIso,
+            refundDueDate,
+            refundDueDateIso,
+            securityDepositAmount: deposit,
+            securityDepositDisplay: property?.deposit ?? formatRs(deposit),
+          }
+
+          return {
+            leases: state.leases.map((item) =>
+              item.id === leaseId ? { ...item, exitNotice, updatedAt: timestamp } : item,
+            ),
+            notifications: [
+              {
+                id: createId('notification-exit-notice'),
+                userId: lease.ownerId,
+                role: 'owner',
+                title: isImmediate ? 'Tenant requested early exit' : 'Tenant served exit notice',
+                description: isImmediate
+                  ? `The tenant wants to leave ${property?.title ?? 'the property'} early. Set the early-exit penalty to proceed.`
+                  : `The tenant will vacate ${property?.title ?? 'the property'} on ${input.moveOutDate}. Schedule a damage inspection and refund the deposit before then.`,
+                action: 'view_lease',
+                relatedId: lease.applicationId,
+                unread: true,
+                important: true,
+                createdAt: timestamp,
+              },
+              ...state.notifications,
+            ],
+          }
+        }),
+
+      setEarlyExitPenalty: (leaseId, penaltyAmount) =>
+        set((state) => {
+          const lease = state.leases.find((item) => item.id === leaseId)
+          if (!lease?.exitNotice || lease.exitNotice.status !== 'penalty_pending') return state
+          const property = state.properties.find((item) => item.id === lease.propertyId)
+          const timestamp = nowIso()
+          const amount = Math.max(0, Math.round(penaltyAmount))
+          // A zero penalty is waived: no payment is required, so jump straight
+          // to scheduling the damage inspection.
+          const waived = amount === 0
+          const exitNotice: LeaseExitNotice = {
+            ...lease.exitNotice,
+            status: waived ? 'inspection_pending' : 'penalty_payment',
+            penaltyAmount: amount,
+            penaltyAmountDisplay: formatRs(amount),
+            penaltyPaidAt: waived ? displayDate(timestamp) : undefined,
+          }
+          return {
+            leases: state.leases.map((item) =>
+              item.id === leaseId ? { ...item, exitNotice, updatedAt: timestamp } : item,
+            ),
+            notifications: [
+              {
+                id: createId('notification-exit-penalty'),
+                userId: lease.tenantId,
+                role: 'tenant',
+                title: waived ? 'Early exit approved - no penalty' : 'Early-exit penalty set',
+                description: waived
+                  ? `The owner waived the early-exit penalty for ${property?.title ?? 'your lease'}. Schedule the damage inspection to proceed.`
+                  : `Pay the early-exit penalty of ${formatRs(amount)} for ${property?.title ?? 'your lease'} to proceed with an immediate exit.`,
+                action: 'view_lease',
+                relatedId: lease.applicationId,
+                unread: true,
+                important: true,
+                createdAt: timestamp,
+              },
+              ...state.notifications,
+            ],
+          }
+        }),
+
+      payEarlyExitPenalty: (leaseId, paymentInput) =>
+        set((state) => {
+          const lease = state.leases.find((item) => item.id === leaseId)
+          if (!lease?.exitNotice || lease.exitNotice.status !== 'penalty_payment') return state
+          const property = state.properties.find((item) => item.id === lease.propertyId)
+          const timestamp = nowIso()
+          const amount = lease.exitNotice.penaltyAmount ?? 0
+          const penaltyPaymentId = createId('payment-exit-penalty')
+          const payment: PrototypePayment = {
+            id: penaltyPaymentId,
+            applicationId: lease.applicationId,
+            leaseId: lease.id,
+            tenantId: lease.tenantId,
+            ownerId: lease.ownerId,
+            propertyId: lease.propertyId,
+            listingId: lease.listingId,
+            category: 'OTHER',
+            amount,
+            amountDisplay: formatRs(amount),
+            txnId: `RTL-${Date.now()}-EXIT`,
+            refId: paymentInput.refId || 'EARLY-EXIT-PENALTY',
+            method: paymentInput.method,
+            status: 'Successful',
+            flow: 'tenant_to_owner',
+            counterparty: lease.ownerId,
+            description: `Early-exit penalty - ${property?.title ?? 'Lease'}`,
+            paidAt: displayDate(timestamp),
+            paidAtIso: timestamp,
+          }
+          const exitNotice: LeaseExitNotice = {
+            ...lease.exitNotice,
+            status: 'inspection_pending',
+            penaltyPaymentId,
+            penaltyPaidAt: displayDate(timestamp),
+          }
+          return {
+            payments: [payment, ...state.payments],
+            leases: state.leases.map((item) =>
+              item.id === leaseId ? { ...item, exitNotice, updatedAt: timestamp } : item,
+            ),
+            notifications: [
+              {
+                id: createId('notification-exit-penalty-paid'),
+                userId: lease.ownerId,
+                role: 'owner',
+                title: 'Early-exit penalty paid',
+                description: `The tenant paid the early-exit penalty for ${property?.title ?? 'the property'}. They will now schedule a damage inspection.`,
+                action: 'view_lease',
+                relatedId: lease.applicationId,
+                unread: true,
+                important: true,
+                createdAt: timestamp,
+              },
+              ...state.notifications,
+            ],
+          }
+        }),
+
+      scheduleExitInspection: (leaseId, visit) =>
+        set((state) => {
+          const lease = state.leases.find((item) => item.id === leaseId)
+          if (!lease?.exitNotice || lease.exitNotice.status !== 'inspection_pending') return state
+          const property = state.properties.find((item) => item.id === lease.propertyId)
+          const timestamp = nowIso()
+          const exitNotice: LeaseExitNotice = {
+            ...lease.exitNotice,
+            status: 'inspection_scheduled',
+            inspectionVisit: { date: visit.date, time: visit.time, scheduledAt: timestamp },
+          }
+          return {
+            leases: state.leases.map((item) =>
+              item.id === leaseId ? { ...item, exitNotice, updatedAt: timestamp } : item,
+            ),
+            notifications: [
+              {
+                id: createId('notification-exit-inspection'),
+                userId: lease.ownerId,
+                role: 'owner',
+                title: 'Move-out inspection scheduled',
+                description: `The tenant scheduled the damage inspection for ${property?.title ?? 'the property'} on ${visit.date} at ${visit.time}.`,
+                action: 'view_lease',
+                relatedId: lease.applicationId,
+                unread: true,
+                important: true,
+                createdAt: timestamp,
+              },
+              ...state.notifications,
+            ],
+          }
+        }),
+
+      settleExitRefund: (leaseId, input) =>
+        set((state) => {
+          const lease = state.leases.find((item) => item.id === leaseId)
+          if (!lease?.exitNotice || lease.exitNotice.status !== 'inspection_scheduled') return state
+          const property = state.properties.find((item) => item.id === lease.propertyId)
+          const timestamp = nowIso()
+          const deposit = lease.exitNotice.securityDepositAmount
+          const damage = Math.min(Math.max(0, Math.round(input.damageAmount)), deposit)
+          const refund = Math.max(0, deposit - damage)
+          const refundPaymentId = createId('payment-deposit-refund')
+          const refundPayment: PrototypePayment = {
+            id: refundPaymentId,
+            applicationId: lease.applicationId,
+            leaseId: lease.id,
+            tenantId: lease.tenantId,
+            ownerId: lease.ownerId,
+            propertyId: lease.propertyId,
+            listingId: lease.listingId,
+            category: 'SECURITY DEPOSIT',
+            amount: refund,
+            amountDisplay: formatRs(refund),
+            txnId: `RTL-${Date.now()}-REFUND`,
+            refId: input.refId || 'DEPOSIT-REFUND',
+            method: input.method,
+            status: 'Refunded',
+            flow: 'owner_outgoing',
+            counterparty: lease.tenantId,
+            description: `Security deposit refund (${formatRs(deposit)} deposit - ${formatRs(damage)} damages) - ${property?.title ?? 'Lease'}`,
+            paidAt: displayDate(timestamp),
+            paidAtIso: timestamp,
+          }
+          const exitNotice: LeaseExitNotice = {
+            ...lease.exitNotice,
+            status: 'refunded',
+            damageAmount: damage,
+            damageAmountDisplay: formatRs(damage),
+            damageNotes: input.damageNotes,
+            refundAmount: refund,
+            refundAmountDisplay: formatRs(refund),
+            refundPaymentId,
+            refundedAt: displayDate(timestamp),
+            releasedAt: displayDate(timestamp),
+          }
+          return {
+            payments: [refundPayment, ...state.payments],
+            leases: state.leases.map((item) =>
+              item.id === leaseId ? { ...item, exitNotice, updatedAt: timestamp } : item,
+            ),
+            // Property released for new tenants once the deposit is refunded.
+            listings: state.listings.map((item) =>
+              item.id === lease.listingId ? { ...item, status: 'Active', updated: 'Just now', updatedAt: timestamp } : item,
+            ),
+            notifications: [
+              {
+                id: createId('notification-exit-refund'),
+                userId: lease.tenantId,
+                role: 'tenant',
+                title: 'Security deposit refunded',
+                description: `Your deposit for ${property?.title ?? 'the property'} was refunded: ${formatRs(refund)} (after ${formatRs(damage)} in damages).`,
+                action: 'view_lease',
+                relatedId: lease.applicationId,
+                unread: true,
+                important: true,
+                createdAt: timestamp,
+              },
+              ...state.notifications,
+            ],
           }
         }),
 

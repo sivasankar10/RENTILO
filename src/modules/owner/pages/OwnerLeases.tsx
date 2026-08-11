@@ -14,6 +14,7 @@ import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { useOwnerChatStore } from '../store/chatStore'
 import { useOwnerStore } from '../store/ownerStore'
 import { useOwnerPrototype } from '../hooks/useOwnerPrototype'
+import { OwnerExitNoticePanel } from '../components/OwnerExitNoticePanel'
 
 const statusLabels: Record<OnboardingRecord['status'], string> = {
   interest_shown: 'Interest shown',
@@ -55,6 +56,7 @@ export function OwnerLeases() {
   const [tab, setTab] = useState<'applications' | 'leases' | 'agreements'>('applications')
   const [draftFor, setDraftFor] = useState<OnboardingRecord | null>(null)
   const [terms, setTerms] = useState<AgreementTerms | null>(null)
+  const [exitFor, setExitFor] = useState<OnboardingRecord | null>(null)
   const records = useOnboardingStore((state) => state.records)
   const approveTenant = useOnboardingStore((state) => state.approveTenant)
   const rejectTenant = useOnboardingStore((state) => state.rejectTenant)
@@ -203,12 +205,25 @@ export function OwnerLeases() {
                   <div><p className="text-filter-label font-bold uppercase text-status-success">Active lease</p><h2 className="mt-2 text-heading-3 font-bold text-navy">{record.propertyName}</h2><p className="text-label text-text-muted">{record.unit} - {record.address}</p></div>
                   <CalendarCheck className="text-status-success" />
                 </div>
+                {record.lease?.exitNotice && (
+                  <div className="mt-4 rounded-button border border-status-warning/30 bg-status-warning-bg px-3 py-2">
+                    <p className="text-label font-bold text-status-warning-text">
+                      {record.lease.exitNotice.status === 'refunded' ? 'Exit complete - deposit refunded' : 'Tenant is exiting - action needed'}
+                    </p>
+                    <p className="mt-0.5 text-label text-text-muted">
+                      {record.lease.exitNotice.type === 'immediate' ? 'Early exit' : `${record.lease.exitNotice.noticePeriodDays}-day notice`} · refund due by {record.lease.exitNotice.refundDueDate}
+                    </p>
+                  </div>
+                )}
                 <div className="mt-5 grid grid-cols-2 gap-4 border-y border-outline py-5 text-label">
                   <Info label="Tenant" value={record.tenant.name} /><Info label="Lease ID" value={record.lease?.id ?? '-'} /><Info label="Rent" value={record.monthlyRent} /><Info label="Access key" value={record.lease?.accessKey ?? '-'} />
                 </div>
-                <div className="mt-4 flex gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   <a href={`tel:${record.tenant.phone}`} onClick={(event) => event.stopPropagation()} className="rounded-button border border-outline px-3 py-2 text-label font-bold text-navy">Call tenant</a>
                   <button type="button" onClick={(event) => { event.stopPropagation(); openTenantChat(record) }} className="rounded-button bg-navy px-3 py-2 text-label font-bold text-white">Chat</button>
+                  {record.lease?.exitNotice && (
+                    <button type="button" onClick={(event) => { event.stopPropagation(); setExitFor(record) }} className="rounded-button bg-status-warning-text px-3 py-2 text-label font-bold text-white">Manage exit</button>
+                  )}
                 </div>
               </article>
             ))}
@@ -252,6 +267,14 @@ export function OwnerLeases() {
           </div>
         </div>
       )}
+
+      {exitFor && (() => {
+        const liveRecord = ownerRecords.find((item) => item.id === exitFor.id)
+        if (!liveRecord?.lease?.exitNotice) {
+          return null
+        }
+        return <OwnerExitNoticePanel record={liveRecord} onClose={() => setExitFor(null)} />
+      })()}
     </div>
   )
 }

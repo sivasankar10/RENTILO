@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Building2, FileSignature, KeyRound, MessageCircle, ReceiptText, ShieldCheck } from 'lucide-react'
+import { Building2, DoorOpen, FileSignature, KeyRound, MessageCircle, ReceiptText, ShieldCheck } from 'lucide-react'
 import { ROUTES } from '@shared/constants/routes'
 import { useOnboardingStore } from '@shared/store/onboardingStore'
 import { useTenantChatStore } from '../store/chatStore'
@@ -84,6 +84,9 @@ export function TenantMyLease() {
                     <MessageCircle size={16} /> Message Owner
                   </button>
                   <button onClick={() => navigate(ROUTES.TENANT.MAINTENANCE)} className="rounded-button bg-navy px-4 py-2 text-body font-bold text-white">Raise Maintenance Request</button>
+                  <button onClick={() => navigate(ROUTES.TENANT.EXIT_NOTICE)} className="inline-flex items-center gap-2 rounded-button border border-outline px-4 py-2 text-body font-bold text-navy">
+                    <DoorOpen size={16} /> {record.lease?.exitNotice ? 'View Exit Notice' : 'Initiate Exit Notice'}
+                  </button>
                 </>
               )}
             </div>

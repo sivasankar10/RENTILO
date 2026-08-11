@@ -27,6 +27,7 @@ export const ROUTES = {
     AGREEMENT: (id: string) => `/tenant/agreements/${id}`,
     ONBOARDING_PAYMENT: (id: string) => `/tenant/onboarding/${id}/payment`,
     MY_LEASE: '/tenant/my-lease',
+    EXIT_NOTICE: '/tenant/exit-notice',
     NOTIFICATIONS: '/tenant/notifications',
     MESSAGES: '/tenant/messages',
     SUPPORT: '/tenant/support',

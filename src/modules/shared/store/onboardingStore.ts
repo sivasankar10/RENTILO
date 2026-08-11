@@ -1,7 +1,7 @@
 ﻿import { usePrototypeStore, type PrototypeState } from '@shared/store/prototypeStore'
 import { useLeaseChatStore } from '@shared/store/leaseChatStore'
 import { PROTOTYPE_USER_IDS } from '@shared/data/prototypeSeed'
-import type { AgreementTerms as PrototypeAgreementTerms, PrototypeNotification } from '@shared/types/prototype'
+import type { AgreementTerms as PrototypeAgreementTerms, LeaseExitNotice, LeaseExitType, PrototypeNotification } from '@shared/types/prototype'
 
 export type OnboardingStatus =
   | 'interest_shown'
@@ -73,6 +73,7 @@ export interface LeaseState {
   status: 'pending_owner_onboarding' | 'active'
   activatedAt?: string
   accessKey?: string
+  exitNotice?: LeaseExitNotice
 }
 
 export interface ScheduledVisit {
@@ -90,6 +91,8 @@ export interface OnboardingRecord {
   address: string
   monthlyRent: string
   securityDeposit: string
+  monthlyRentAmount: number
+  noticePeriodDays: number
   tenant: OnboardingParty
   owner: OnboardingParty
   status: OnboardingStatus
@@ -156,6 +159,15 @@ function money(value: number) {
   return `Rs. ${value.toLocaleString('en-IN')}`
 }
 
+function moneyToNumber(value: string | undefined) {
+  return Number((value ?? '').replace(/\D/g, '')) || 0
+}
+
+function parseNoticePeriodDays(value: string | undefined) {
+  const days = Number((value ?? '').replace(/\D/g, ''))
+  return Number.isFinite(days) && days > 0 ? days : 30
+}
+
 function mapRecords(state: PrototypeState): OnboardingRecord[] {
   return state.applications.map((application) => {
     const property = state.properties.find((item) => item.id === application.propertyId)
@@ -178,6 +190,8 @@ function mapRecords(state: PrototypeState): OnboardingRecord[] {
       address: property?.address ?? '',
       monthlyRent: property?.price ?? 'Rs. 0',
       securityDeposit: property?.deposit ?? 'Rs. 0',
+      monthlyRentAmount: moneyToNumber(property?.price),
+      noticePeriodDays: parseNoticePeriodDays(property?.noticePeriod),
       tenant: party(state, application.tenantId),
       owner: party(state, application.ownerId),
       status: application.status,
@@ -200,6 +214,7 @@ function mapRecords(state: PrototypeState): OnboardingRecord[] {
             status: lease.status,
             activatedAt: lease.activatedAt,
             accessKey: lease.accessKey,
+            exitNotice: lease.exitNotice,
           }
         : undefined,
     }
@@ -304,6 +319,24 @@ interface OnboardingState {
   approveAgreement: (id: string, tenantSignature: string) => void
   completeOnboardingPayment: (id: string, method: string, refId?: string) => void
   confirmTenantOnboarding: (id: string) => void
+  initiateLeaseExit: (
+    leaseId: string,
+    input: {
+      type: LeaseExitType
+      moveOutDate: string
+      moveOutDateIso: string
+      earliestMoveOutDate: string
+      earliestMoveOutDateIso: string
+      noticePeriodDays: number
+    },
+  ) => void
+  setEarlyExitPenalty: (leaseId: string, penaltyAmount: number) => void
+  payEarlyExitPenalty: (leaseId: string, paymentInput: { method: string; refId?: string }) => void
+  scheduleExitInspection: (leaseId: string, visit: { date: string; time: string }) => void
+  settleExitRefund: (
+    leaseId: string,
+    input: { damageAmount: number; damageNotes?: string; method: string; refId?: string },
+  ) => void
   markNotificationRead: (notificationId: string) => void
   toggleNotificationImportant: (notificationId: string) => void
   resetOnboardingDemo: () => void
@@ -447,6 +480,11 @@ function bridgeState(state: PrototypeState): OnboardingState {
         important: true,
       })
     },
+    initiateLeaseExit: (leaseId, input) => usePrototypeStore.getState().initiateLeaseExit(leaseId, input),
+    setEarlyExitPenalty: (leaseId, penaltyAmount) => usePrototypeStore.getState().setEarlyExitPenalty(leaseId, penaltyAmount),
+    payEarlyExitPenalty: (leaseId, paymentInput) => usePrototypeStore.getState().payEarlyExitPenalty(leaseId, paymentInput),
+    scheduleExitInspection: (leaseId, visit) => usePrototypeStore.getState().scheduleExitInspection(leaseId, visit),
+    settleExitRefund: (leaseId, input) => usePrototypeStore.getState().settleExitRefund(leaseId, input),
     markNotificationRead: (id) => usePrototypeStore.getState().markNotificationRead(id),
     toggleNotificationImportant: (id) => usePrototypeStore.setState((current) => ({
       notifications: current.notifications.map((notification) =>

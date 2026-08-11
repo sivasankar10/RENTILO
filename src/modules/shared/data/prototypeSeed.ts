@@ -3,11 +3,14 @@ import type {
   AdminRequest,
   BrokerAssignment,
   ChatThread,
+  LeaseRecord,
   PrototypeListing,
   PrototypeNotification,
+  PrototypePayment,
   PrototypeProperty,
   PrototypeStateData,
   PrototypeUser,
+  RentalApplication,
 } from '@shared/types/prototype'
 
 export const PROTOTYPE_OTP = '123456'
@@ -685,15 +688,116 @@ export const prototypeAdminRequests: AdminRequest[] = [
   },
 ]
 
+// ─── Pre-mapped active lease: Tenant1 renting MultiOwner Skyline 14B ─────────
+// Seeded so the tenant exit-notice flow can be tested immediately without
+// running the full interest -> visit -> agreement -> payment onboarding.
+const SEEDED_EXIT_APPLICATION_ID = 'application-seed-tenant1-multi1'
+const SEEDED_EXIT_LEASE_ID = 'lease-seed-tenant1-multi1'
+const SEEDED_EXIT_ISO = '2026-06-01T04:30:00.000Z'
+const SEEDED_EXIT_DATE = '1 Jun 2026, 10:00 am'
+
+export const prototypeApplications: RentalApplication[] = [
+  {
+    id: SEEDED_EXIT_APPLICATION_ID,
+    tenantId: PROTOTYPE_USER_IDS.tenant1,
+    ownerId: PROTOTYPE_USER_IDS.multiPropertyOwner,
+    propertyId: PROTOTYPE_PROPERTY_IDS.multi1,
+    listingId: PROTOTYPE_LISTING_IDS.multi1,
+    status: 'active',
+    agreementVersions: [
+      {
+        id: 'agreement-seed-tenant1-multi1',
+        version: 1,
+        sentAt: SEEDED_EXIT_DATE,
+        startDate: '2026-06-01',
+        endDate: '2027-05-31',
+        monthlyRent: 'Rs. 85,000',
+        securityDeposit: 'Rs. 1,70,000',
+        noticePeriod: '30 days',
+        utilities: 'Electricity and internet paid by tenant. Water included in rent.',
+        maintenanceResponsibility: 'Owner handles structural repairs; tenant handles routine upkeep.',
+        petPolicy: 'Pets require written owner approval.',
+        specialClauses: 'No subletting without written consent.',
+        ownerSignature: 'MultiProperty Owner',
+        tenantSignature: 'Tenant One',
+        tenantApprovedAt: SEEDED_EXIT_DATE,
+      },
+    ],
+    createdAt: SEEDED_EXIT_ISO,
+    updatedAt: SEEDED_EXIT_ISO,
+  },
+]
+
+export const prototypeLeases: LeaseRecord[] = [
+  {
+    id: SEEDED_EXIT_LEASE_ID,
+    applicationId: SEEDED_EXIT_APPLICATION_ID,
+    tenantId: PROTOTYPE_USER_IDS.tenant1,
+    ownerId: PROTOTYPE_USER_IDS.multiPropertyOwner,
+    propertyId: PROTOTYPE_PROPERTY_IDS.multi1,
+    listingId: PROTOTYPE_LISTING_IDS.multi1,
+    status: 'active',
+    accessKey: 'KEY-MULTI1-4821',
+    activatedAt: SEEDED_EXIT_DATE,
+    createdAt: SEEDED_EXIT_ISO,
+    updatedAt: SEEDED_EXIT_ISO,
+  },
+]
+
+export const prototypePayments: PrototypePayment[] = [
+  {
+    id: 'payment-seed-tenant1-multi1-rent',
+    applicationId: SEEDED_EXIT_APPLICATION_ID,
+    leaseId: SEEDED_EXIT_LEASE_ID,
+    tenantId: PROTOTYPE_USER_IDS.tenant1,
+    ownerId: PROTOTYPE_USER_IDS.multiPropertyOwner,
+    propertyId: PROTOTYPE_PROPERTY_IDS.multi1,
+    listingId: PROTOTYPE_LISTING_IDS.multi1,
+    category: 'RENT',
+    amount: 85000,
+    amountDisplay: 'Rs. 85,000',
+    txnId: 'RTL-SEED-RENT',
+    refId: 'ONBOARDING-RENT',
+    method: 'UPI',
+    status: 'Successful',
+    flow: 'tenant_to_owner',
+    counterparty: PROTOTYPE_USER_IDS.multiPropertyOwner,
+    description: 'First month rent - MultiOwner Skyline 14B',
+    paidAt: SEEDED_EXIT_DATE,
+    paidAtIso: SEEDED_EXIT_ISO,
+  },
+  {
+    id: 'payment-seed-tenant1-multi1-deposit',
+    applicationId: SEEDED_EXIT_APPLICATION_ID,
+    leaseId: SEEDED_EXIT_LEASE_ID,
+    tenantId: PROTOTYPE_USER_IDS.tenant1,
+    ownerId: PROTOTYPE_USER_IDS.multiPropertyOwner,
+    propertyId: PROTOTYPE_PROPERTY_IDS.multi1,
+    listingId: PROTOTYPE_LISTING_IDS.multi1,
+    category: 'SECURITY DEPOSIT',
+    amount: 170000,
+    amountDisplay: 'Rs. 1,70,000',
+    txnId: 'RTL-SEED-DEP',
+    refId: 'ONBOARDING-DEP',
+    method: 'UPI',
+    status: 'Successful',
+    flow: 'tenant_to_owner',
+    counterparty: PROTOTYPE_USER_IDS.multiPropertyOwner,
+    description: 'Security deposit - MultiOwner Skyline 14B',
+    paidAt: SEEDED_EXIT_DATE,
+    paidAtIso: SEEDED_EXIT_ISO,
+  },
+]
+
 export const initialPrototypeState: PrototypeStateData = {
   users: prototypeUsers,
   properties: prototypeProperties,
   listings: prototypeListings,
   brokerAssignments: prototypeBrokerAssignments,
   tenantSavedListings: [],
-  applications: [],
-  leases: [],
-  payments: [],
+  applications: prototypeApplications,
+  leases: prototypeLeases,
+  payments: prototypePayments,
   chats: prototypeChats,
   maintenanceTickets: [],
   notifications: prototypeNotifications,

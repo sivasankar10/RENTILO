@@ -924,9 +924,10 @@ export function Step5Pricing({ formData, update, onComplete, goPrev }: StepProps
             <div>
               <label className="text-label font-medium text-text-muted">Notice Period (Days)</label>
               <div className="mt-1.5 grid grid-cols-[96px_auto] items-center gap-2">
-                <input type="text" value={formData.noticePeriod} onChange={(e) => update('noticePeriod', e.target.value)} className="h-11 w-full rounded-input border border-outline bg-white px-3 text-center text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                <input type="number" min={0} inputMode="numeric" value={formData.noticePeriod} onChange={(e) => update('noticePeriod', e.target.value)} className="h-11 w-full rounded-input border border-outline bg-white px-3 text-center text-body text-text-primary focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30" />
                 <span className="text-body text-text-muted">Days</span>
               </div>
+              <p className="mt-1 text-label text-text-muted">How many days' notice a tenant must give before moving out. Used for the tenant's exit-notice date and deposit-refund deadline.</p>
             </div>
           </div>
 

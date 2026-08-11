@@ -48,6 +48,8 @@ export interface Property {
   sqft: string
   posted: string
   badge: string | null
+  noticePeriod?: string
+  leaseDuration?: number
   image: string
   gallery: string[]
   highlights: PropertyHighlight[]
