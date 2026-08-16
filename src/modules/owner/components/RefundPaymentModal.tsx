@@ -15,6 +15,14 @@ interface RefundPaymentModalProps {
 
 const PAYMENT_METHODS = ['UPI', 'Net Banking', 'Credit Card', 'Debit Card'] as const
 
+function formatCardNumber(value: string) {
+  return value.replace(/\D/g, '').slice(0, 16).replace(/(.{4})/g, '$1 ').trim()
+}
+function formatExpiry(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 4)
+  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits
+}
+
 export function RefundPaymentModal({
   propertyTitle,
   tenantName,
@@ -28,6 +36,9 @@ export function RefundPaymentModal({
 }: RefundPaymentModalProps) {
   const [method, setMethod] = useState<(typeof PAYMENT_METHODS)[number]>('UPI')
   const [refId, setRefId] = useState('')
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -35,6 +46,9 @@ export function RefundPaymentModal({
     if (isOpen) {
       setMethod('UPI')
       setRefId('')
+      setCardNumber('')
+      setCardExpiry('')
+      setCardCvv('')
       setError('')
       setSubmitting(false)
     }
@@ -53,22 +67,44 @@ export function RefundPaymentModal({
 
   if (!isOpen) return null
 
-  const refField = method === 'UPI' ? 'UPI ID' : method === 'Net Banking' ? 'Account Reference' : 'Card Reference'
+  const isCard = method === 'Credit Card' || method === 'Debit Card'
+  const nonCardField = method === 'UPI' ? 'UPI ID' : 'Account Reference'
+
+  function validate(): string | null {
+    if (isCard) {
+      const digits = cardNumber.replace(/\s/g, '')
+      if (digits.length < 12) return 'Enter a valid card number.'
+      if (!/^\d{2}\/\d{2}$/.test(cardExpiry)) return 'Enter a valid expiry (MM/YY).'
+      const month = Number(cardExpiry.slice(0, 2))
+      if (month < 1 || month > 12) return 'Enter a valid expiry month.'
+      if (!/^\d{3,4}$/.test(cardCvv)) return 'Enter a valid CVV.'
+      return null
+    }
+    if (!refId.trim()) return `${nonCardField} is required.`
+    return null
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!refId.trim()) { setError(`${refField} is required.`); return }
+    const validationError = validate()
+    if (validationError) { setError(validationError); return }
     setError('')
     setSubmitting(true)
     await new Promise((r) => setTimeout(r, 1200))
     setSubmitting(false)
-    onConfirm(method, refId.trim())
+    const reference = isCard
+      ? `${method} ending ${cardNumber.replace(/\s/g, '').slice(-4)}`
+      : refId.trim()
+    onConfirm(method, reference)
   }
+
+  const fieldBase = 'w-full px-4 py-3 rounded-xl border-2 outline-none font-body text-[14px] text-[#0F172A] bg-[#f8fafc] transition-all duration-150 placeholder:text-[#cbd5e1]'
+  const fieldState = error ? 'border-red-400 bg-red-50' : 'border-[#e2e8f0] focus:border-[#0F172A] focus:bg-white'
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-[#0F172A]/40 backdrop-blur-md" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-[460px] bg-white rounded-2xl shadow-[0_24px_48px_-8px_rgba(0,0,0,0.18)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-[460px] max-h-[92vh] overflow-y-auto bg-white rounded-2xl shadow-[0_24px_48px_-8px_rgba(0,0,0,0.18)] animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-7 pb-5 border-b border-[#f1f5f9]">
           <div>
@@ -118,13 +154,38 @@ export function RefundPaymentModal({
             </select>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold tracking-widest text-[#64748b] uppercase mb-1.5">{refField}</label>
-            <input type="text" placeholder={method === 'UPI' ? 'e.g. tenant@upi' : 'Enter dummy reference'} value={refId} onChange={(e) => { setRefId(e.target.value); setError('') }}
-              className={cn('w-full px-4 py-3 rounded-xl border-2 outline-none font-body text-[14px] text-[#0F172A] bg-[#f8fafc] transition-all duration-150 placeholder:text-[#cbd5e1]',
-                error ? 'border-red-400 bg-red-50' : 'border-[#e2e8f0] focus:border-[#0F172A] focus:bg-white')} />
-            {error && <p className="mt-1 text-[12px] text-red-500">{error}</p>}
-          </div>
+          {isCard ? (
+            <>
+              <div>
+                <label className="block text-[11px] font-bold tracking-widest text-[#64748b] uppercase mb-1.5">Card Number</label>
+                <input type="text" inputMode="numeric" autoComplete="cc-number" placeholder="1234 5678 9012 3456"
+                  value={cardNumber} onChange={(e) => { setCardNumber(formatCardNumber(e.target.value)); setError('') }}
+                  className={cn(fieldBase, fieldState)} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold tracking-widest text-[#64748b] uppercase mb-1.5">Expiry</label>
+                  <input type="text" inputMode="numeric" autoComplete="cc-exp" placeholder="MM/YY"
+                    value={cardExpiry} onChange={(e) => { setCardExpiry(formatExpiry(e.target.value)); setError('') }}
+                    className={cn(fieldBase, fieldState)} />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold tracking-widest text-[#64748b] uppercase mb-1.5">CVV</label>
+                  <input type="password" inputMode="numeric" autoComplete="cc-csc" placeholder="123" maxLength={4}
+                    value={cardCvv} onChange={(e) => { setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4)); setError('') }}
+                    className={cn(fieldBase, fieldState)} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="block text-[11px] font-bold tracking-widest text-[#64748b] uppercase mb-1.5">{nonCardField}</label>
+              <input type="text" placeholder={method === 'UPI' ? 'e.g. tenant@upi' : 'Enter dummy reference'} value={refId} onChange={(e) => { setRefId(e.target.value); setError('') }}
+                className={cn(fieldBase, fieldState)} />
+            </div>
+          )}
+
+          {error && <p className="text-[12px] text-red-500">{error}</p>}
 
           <button type="submit" disabled={submitting}
             className={cn('w-full py-3.5 rounded-xl font-display text-[15px] font-bold text-white border-0 transition-all duration-150 mt-1',
