@@ -688,17 +688,20 @@ export const prototypeAdminRequests: AdminRequest[] = [
   },
 ]
 
-// ─── Pre-mapped active lease: Tenant1 renting MultiOwner Skyline 14B ─────────
-// Seeded so the tenant exit-notice flow can be tested immediately without
-// running the full interest -> visit -> agreement -> payment onboarding.
-const SEEDED_EXIT_APPLICATION_ID = 'application-seed-tenant1-multi1'
-const SEEDED_EXIT_LEASE_ID = 'lease-seed-tenant1-multi1'
-const SEEDED_EXIT_ISO = '2026-06-01T04:30:00.000Z'
-const SEEDED_EXIT_DATE = '1 Jun 2026, 10:00 am'
+// ─── Demo onboarded lease: Tenant1 renting MultiOwner Skyline 14B ────────────
+// This mirrors a lease that has already completed the full onboarding flow
+// (interest -> visit -> agreement -> payment -> owner confirmation), so the
+// tenant exit-notice flow can be tested immediately. It is a single, intended
+// demo lease — it is NOT an "un-onboarded" shortcut: the application is 'active'
+// and the lease is 'active' with an issued access key, exactly like a real one.
+const DEMO_LEASE_APPLICATION_ID = 'application-demo-tenant1-multi1'
+const DEMO_LEASE_ID = 'lease-demo-tenant1-multi1'
+const DEMO_LEASE_ISO = '2026-06-01T04:30:00.000Z'
+const DEMO_LEASE_DATE = '1 Jun 2026, 10:00 am'
 
-export const prototypeApplications: RentalApplication[] = [
+const demoOnboardedApplications: RentalApplication[] = [
   {
-    id: SEEDED_EXIT_APPLICATION_ID,
+    id: DEMO_LEASE_APPLICATION_ID,
     tenantId: PROTOTYPE_USER_IDS.tenant1,
     ownerId: PROTOTYPE_USER_IDS.multiPropertyOwner,
     propertyId: PROTOTYPE_PROPERTY_IDS.multi1,
@@ -706,9 +709,9 @@ export const prototypeApplications: RentalApplication[] = [
     status: 'active',
     agreementVersions: [
       {
-        id: 'agreement-seed-tenant1-multi1',
+        id: 'agreement-demo-tenant1-multi1',
         version: 1,
-        sentAt: SEEDED_EXIT_DATE,
+        sentAt: DEMO_LEASE_DATE,
         startDate: '2026-06-01',
         endDate: '2027-05-31',
         monthlyRent: 'Rs. 85,000',
@@ -720,35 +723,35 @@ export const prototypeApplications: RentalApplication[] = [
         specialClauses: 'No subletting without written consent.',
         ownerSignature: 'MultiProperty Owner',
         tenantSignature: 'Tenant One',
-        tenantApprovedAt: SEEDED_EXIT_DATE,
+        tenantApprovedAt: DEMO_LEASE_DATE,
       },
     ],
-    createdAt: SEEDED_EXIT_ISO,
-    updatedAt: SEEDED_EXIT_ISO,
+    createdAt: DEMO_LEASE_ISO,
+    updatedAt: DEMO_LEASE_ISO,
   },
 ]
 
-export const prototypeLeases: LeaseRecord[] = [
+const demoOnboardedLeases: LeaseRecord[] = [
   {
-    id: SEEDED_EXIT_LEASE_ID,
-    applicationId: SEEDED_EXIT_APPLICATION_ID,
+    id: DEMO_LEASE_ID,
+    applicationId: DEMO_LEASE_APPLICATION_ID,
     tenantId: PROTOTYPE_USER_IDS.tenant1,
     ownerId: PROTOTYPE_USER_IDS.multiPropertyOwner,
     propertyId: PROTOTYPE_PROPERTY_IDS.multi1,
     listingId: PROTOTYPE_LISTING_IDS.multi1,
     status: 'active',
     accessKey: 'KEY-MULTI1-4821',
-    activatedAt: SEEDED_EXIT_DATE,
-    createdAt: SEEDED_EXIT_ISO,
-    updatedAt: SEEDED_EXIT_ISO,
+    activatedAt: DEMO_LEASE_DATE,
+    createdAt: DEMO_LEASE_ISO,
+    updatedAt: DEMO_LEASE_ISO,
   },
 ]
 
-export const prototypePayments: PrototypePayment[] = [
+const demoOnboardedPayments: PrototypePayment[] = [
   {
-    id: 'payment-seed-tenant1-multi1-rent',
-    applicationId: SEEDED_EXIT_APPLICATION_ID,
-    leaseId: SEEDED_EXIT_LEASE_ID,
+    id: 'payment-demo-tenant1-multi1-rent',
+    applicationId: DEMO_LEASE_APPLICATION_ID,
+    leaseId: DEMO_LEASE_ID,
     tenantId: PROTOTYPE_USER_IDS.tenant1,
     ownerId: PROTOTYPE_USER_IDS.multiPropertyOwner,
     propertyId: PROTOTYPE_PROPERTY_IDS.multi1,
@@ -756,20 +759,20 @@ export const prototypePayments: PrototypePayment[] = [
     category: 'RENT',
     amount: 85000,
     amountDisplay: 'Rs. 85,000',
-    txnId: 'RTL-SEED-RENT',
+    txnId: 'RTL-DEMO-RENT',
     refId: 'ONBOARDING-RENT',
     method: 'UPI',
     status: 'Successful',
     flow: 'tenant_to_owner',
     counterparty: PROTOTYPE_USER_IDS.multiPropertyOwner,
     description: 'First month rent - MultiOwner Skyline 14B',
-    paidAt: SEEDED_EXIT_DATE,
-    paidAtIso: SEEDED_EXIT_ISO,
+    paidAt: DEMO_LEASE_DATE,
+    paidAtIso: DEMO_LEASE_ISO,
   },
   {
-    id: 'payment-seed-tenant1-multi1-deposit',
-    applicationId: SEEDED_EXIT_APPLICATION_ID,
-    leaseId: SEEDED_EXIT_LEASE_ID,
+    id: 'payment-demo-tenant1-multi1-deposit',
+    applicationId: DEMO_LEASE_APPLICATION_ID,
+    leaseId: DEMO_LEASE_ID,
     tenantId: PROTOTYPE_USER_IDS.tenant1,
     ownerId: PROTOTYPE_USER_IDS.multiPropertyOwner,
     propertyId: PROTOTYPE_PROPERTY_IDS.multi1,
@@ -777,15 +780,15 @@ export const prototypePayments: PrototypePayment[] = [
     category: 'SECURITY DEPOSIT',
     amount: 170000,
     amountDisplay: 'Rs. 1,70,000',
-    txnId: 'RTL-SEED-DEP',
+    txnId: 'RTL-DEMO-DEP',
     refId: 'ONBOARDING-DEP',
     method: 'UPI',
     status: 'Successful',
     flow: 'tenant_to_owner',
     counterparty: PROTOTYPE_USER_IDS.multiPropertyOwner,
     description: 'Security deposit - MultiOwner Skyline 14B',
-    paidAt: SEEDED_EXIT_DATE,
-    paidAtIso: SEEDED_EXIT_ISO,
+    paidAt: DEMO_LEASE_DATE,
+    paidAtIso: DEMO_LEASE_ISO,
   },
 ]
 
@@ -795,9 +798,9 @@ export const initialPrototypeState: PrototypeStateData = {
   listings: prototypeListings,
   brokerAssignments: prototypeBrokerAssignments,
   tenantSavedListings: [],
-  applications: prototypeApplications,
-  leases: prototypeLeases,
-  payments: prototypePayments,
+  applications: demoOnboardedApplications,
+  leases: demoOnboardedLeases,
+  payments: demoOnboardedPayments,
   chats: prototypeChats,
   maintenanceTickets: [],
   notifications: prototypeNotifications,
